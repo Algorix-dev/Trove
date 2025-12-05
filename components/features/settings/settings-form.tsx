@@ -13,7 +13,9 @@ import { useRouter } from "next/navigation"
 
 export function SettingsForm() {
     const [fullName, setFullName] = useState("")
+    const [username, setUsername] = useState("")
     const [email, setEmail] = useState("")
+    const [dailyGoal, setDailyGoal] = useState(30)
     const [loading, setLoading] = useState(false)
     const [emailNotifications, setEmailNotifications] = useState(true)
     const [inAppNotifications, setInAppNotifications] = useState(true)
@@ -32,12 +34,14 @@ export function SettingsForm() {
             const fetchProfile = async () => {
                 const { data } = await supabase
                     .from('profiles')
-                    .select('full_name')
+                    .select('full_name, username, daily_goal_minutes')
                     .eq('id', user.id)
                     .single()
 
                 if (data) {
                     setFullName(data.full_name || user.user_metadata?.full_name || "")
+                    setUsername(data.username || "")
+                    setDailyGoal(data.daily_goal_minutes || 30)
                 }
             }
             fetchProfile()
@@ -52,7 +56,11 @@ export function SettingsForm() {
             // Update profile in profiles table
             const { error: profileError } = await supabase
                 .from('profiles')
-                .update({ full_name: fullName })
+                .update({
+                    full_name: fullName,
+                    username: username || null,
+                    daily_goal_minutes: dailyGoal
+                })
                 .eq('id', user.id)
 
             if (profileError) throw profileError
@@ -83,6 +91,18 @@ export function SettingsForm() {
                     <CardDescription>Update your personal details.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="username">Username</Label>
+                        <Input
+                            id="username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="Enter a unique username"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            This will be displayed on your dashboard greeting.
+                        </p>
+                    </div>
                     <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
                         <Input
@@ -118,6 +138,37 @@ export function SettingsForm() {
                         )}
                     </Button>
                 </CardFooter>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Reading Goals</CardTitle>
+                    <CardDescription>Set your daily reading targets.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <Label>Daily Goal</Label>
+                            <span className="font-medium">{dailyGoal} minutes</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <span className="text-xs text-muted-foreground">15m</span>
+                            <input
+                                type="range"
+                                min="15"
+                                max="120"
+                                step="5"
+                                value={dailyGoal}
+                                onChange={(e) => setDailyGoal(parseInt(e.target.value))}
+                                className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+                            />
+                            <span className="text-xs text-muted-foreground">120m</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Aim to read for at least {dailyGoal} minutes every day to build your streak.
+                        </p>
+                    </div>
+                </CardContent>
             </Card>
 
             <Card>

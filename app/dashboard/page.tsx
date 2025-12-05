@@ -16,11 +16,12 @@ export default async function DashboardPage() {
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('full_name, username')
         .eq('id', user.id)
         .single()
 
-    const name = profile?.full_name || user.user_metadata?.full_name || "Reader"
+    // Use username if available, otherwise full name, otherwise "Reader"
+    const name = profile?.username || profile?.full_name || user.user_metadata?.full_name || "Reader"
     const hour = new Date().getHours()
     let greeting = "Good Morning"
     if (hour >= 12 && hour < 17) greeting = "Good Afternoon"
