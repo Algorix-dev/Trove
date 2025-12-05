@@ -26,7 +26,13 @@ export function LibraryDebugger() {
 
                 const { data: books, error: bookError } = await supabase
                     .from('books')
-                    .select('*')
+                    .select(`
+                        *,
+                        reading_progress (
+                            current_page,
+                            total_pages
+                        )
+                    `)
 
                 if (bookError) {
                     setError(bookError)
