@@ -16,6 +16,7 @@ export default function SignupPage() {
     const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [success, setSuccess] = useState(false)
     const router = useRouter()
 
     const supabase = createBrowserClient(
@@ -27,6 +28,7 @@ export default function SignupPage() {
         e.preventDefault()
         setLoading(true)
         setError(null)
+        setSuccess(false)
 
         try {
             const { error } = await supabase.auth.signUp({
@@ -42,9 +44,11 @@ export default function SignupPage() {
 
             if (error) throw error
 
-            // Automatically sign in or redirect to dashboard
-            router.push("/dashboard")
-            router.refresh()
+            // Show success message instead of redirecting
+            setSuccess(true)
+            setName("")
+            setEmail("")
+            setPassword("")
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -85,6 +89,12 @@ export default function SignupPage() {
                             {error && (
                                 <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
                                     {error}
+                                </div>
+                            )}
+                            {success && (
+                                <div className="bg-green-500/15 text-green-700 dark:text-green-400 text-sm p-3 rounded-md space-y-2">
+                                    <p className="font-semibold">✅ Account created successfully!</p>
+                                    <p>Please check your email to confirm your account before logging in.</p>
                                 </div>
                             )}
                             <div className="space-y-2">
