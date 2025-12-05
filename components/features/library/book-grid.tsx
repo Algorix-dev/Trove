@@ -67,7 +67,7 @@ export function BookGrid({ books }: BookGridProps) {
                             <CardFooter className="p-4 pt-0 block">
                                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                                     <span>{book.progress || 0}%</span>
-                                    <span>{book.progress > 0 ? 'In Progress' : 'Not Started'}</span>
+                                    <span>{(book.progress ?? 0) > 0 ? 'In Progress' : 'Not Started'}</span>
                                 </div>
                                 <Progress value={book.progress || 0} className="h-1" />
                             </CardFooter>
