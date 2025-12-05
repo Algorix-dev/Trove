@@ -2,18 +2,23 @@
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { BookOpen, MoreVertical } from "lucide-react"
+import { BookOpen } from "lucide-react"
 import Link from "next/link"
+import { type Book } from "@/types"
 
-const books = [
-    { id: 1, title: "The Great Gatsby", author: "F. Scott Fitzgerald", progress: 25, cover: null },
-    { id: 2, title: "1984", author: "George Orwell", progress: 0, cover: null },
-    { id: 3, title: "Pride and Prejudice", author: "Jane Austen", progress: 100, cover: null },
-    { id: 4, title: "To Kill a Mockingbird", author: "Harper Lee", progress: 10, cover: null },
-    { id: 5, title: "The Catcher in the Rye", author: "J.D. Salinger", progress: 0, cover: null },
-]
+interface BookGridProps {
+    books: Book[]
+}
 
-export function BookGrid() {
+export function BookGrid({ books }: BookGridProps) {
+    if (books.length === 0) {
+        return (
+            <div className="text-center py-12">
+                <p className="text-muted-foreground">No books found. Upload one to get started!</p>
+            </div>
+        )
+    }
+
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {books.map((book) => (
@@ -21,8 +26,14 @@ export function BookGrid() {
                     <Card className="h-full hover:shadow-md transition-shadow cursor-pointer group">
                         <CardContent className="p-4">
                             <div className="aspect-[2/3] bg-muted rounded-md mb-4 flex items-center justify-center relative overflow-hidden">
-                                {/* Placeholder for cover */}
-                                <BookOpen className="h-12 w-12 text-muted-foreground/50" />
+                                {book.cover_url ? (
+                                    <img src={book.cover_url} alt={book.title} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center text-muted-foreground/50 w-full h-full bg-secondary/30">
+                                        <BookOpen className="h-12 w-12 mb-2" />
+                                        <span className="text-xs uppercase font-bold tracking-wider opacity-70">{book.format}</span>
+                                    </div>
+                                )}
                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-medium">
                                     Read Now
                                 </div>
@@ -31,10 +42,11 @@ export function BookGrid() {
                             <p className="text-sm text-muted-foreground truncate">{book.author}</p>
                         </CardContent>
                         <CardFooter className="p-4 pt-0 block">
+                            {/* Progress would need to be fetched separately or joined, for now assuming 0 if not present */}
                             <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                                <span>{book.progress}%</span>
+                                <span>0%</span>
                             </div>
-                            <Progress value={book.progress} className="h-1" />
+                            <Progress value={0} className="h-1" />
                         </CardFooter>
                     </Card>
                 </Link>
