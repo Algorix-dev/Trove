@@ -13,6 +13,25 @@ interface ReaderLayoutProps {
 
 export function ReaderLayout({ children, title }: ReaderLayoutProps) {
     const [showSettings, setShowSettings] = useState(false)
+    const [isBookmarked, setIsBookmarked] = useState(false)
+    const [highlightMode, setHighlightMode] = useState(false)
+
+    const handleBookmark = () => {
+        setIsBookmarked(!isBookmarked)
+        // TODO: Save bookmark to database
+        console.log(isBookmarked ? "Bookmark removed" : "Bookmark added")
+    }
+
+    const handleHighlight = () => {
+        setHighlightMode(!highlightMode)
+        // TODO: Enable text selection and highlighting
+        console.log(highlightMode ? "Highlight mode off" : "Highlight mode on")
+    }
+
+    const handleNotes = () => {
+        // TODO: Open notes modal
+        console.log("Open notes for this book")
+    }
 
     return (
         <div className="flex flex-col h-screen bg-background">
@@ -27,13 +46,27 @@ export function ReaderLayout({ children, title }: ReaderLayoutProps) {
                     <h1 className="font-semibold truncate max-w-[200px] md:max-w-md">{title}</h1>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon">
-                        <Bookmark className="h-5 w-5" />
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleBookmark}
+                        className={isBookmarked ? "text-primary" : ""}
+                    >
+                        <Bookmark className={`h-5 w-5 ${isBookmarked ? "fill-current" : ""}`} />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleHighlight}
+                        className={highlightMode ? "text-primary bg-primary/10" : ""}
+                    >
                         <Highlighter className="h-5 w-5" />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleNotes}
+                    >
                         <MessageSquare className="h-5 w-5" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => setShowSettings(!showSettings)}>
