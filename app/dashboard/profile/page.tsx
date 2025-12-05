@@ -18,12 +18,26 @@ export default async function ProfilePage() {
         .eq('id', user.id)
         .single()
 
-    // Mock stats for now (would fetch from DB in real app)
+    // Fetch books read count
+    const { count: booksRead } = await supabase
+        .from('reading_progress')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('progress_percentage', 100)
+
+    // Fetch total reading time
+    const { data: sessions } = await supabase
+        .from('reading_sessions')
+        .select('duration_minutes')
+        .eq('user_id', user.id)
+
+    const totalMinutes = sessions?.reduce((acc, session) => acc + session.duration_minutes, 0) || 0
+
     const stats = {
-        booksRead: 12,
-        streak: 5,
-        highestStreak: 14, // Best streak ever achieved
-        totalMinutes: 1450
+        booksRead: booksRead || 0,
+        streak: profile?.current_streak || 0,
+        highestStreak: profile?.highest_streak || 0,
+        totalMinutes: totalMinutes
     }
 
     // Combine auth user data with profile data
