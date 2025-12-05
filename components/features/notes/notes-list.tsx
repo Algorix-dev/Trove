@@ -9,16 +9,15 @@ import { useAuth } from "@/components/providers/auth-provider"
 import { useEffect, useState } from "react"
 
 
+import { Button } from "@/components/ui/button"
+import { Trash2 } from "lucide-react"
+import { toast } from "sonner"
+
 export function NotesList() {
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
-
-    // Client-side fetching for search interaction would be better, 
-    // but for now let's make it a client component that fetches data
-    // We need to change the function to be a client component properly or use hooks.
-    // Given the "use client" at top, it IS a client component.
 
     const [notes, setNotes] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -26,25 +25,39 @@ export function NotesList() {
 
     useEffect(() => {
         if (!user) return
-
-        const fetchNotes = async () => {
-            const { data } = await supabase
-                .from('notes')
-                .select('*')
-                // Rely on RLS for user filtering
-                .order('created_at', { ascending: false })
-
-            if (data) {
-                // Transform data if necessary, or just use as is
-                // We might need to map book_id to title if we had that relation set up properly
-                // For now, let's assume valid data
-                setNotes(data)
-            }
-            setLoading(false)
-        }
-
         fetchNotes()
     }, [user])
+
+    const fetchNotes = async () => {
+        if (!user) return
+        const { data } = await supabase
+            .from('notes')
+            .select('*')
+            .order('created_at', { ascending: false })
+
+        if (data) {
+            setNotes(data)
+        }
+        setLoading(false)
+    }
+
+    const handleDelete = async (noteId: string) => {
+        if (!confirm("Are you sure you want to delete this note?")) return
+
+        try {
+            const { error } = await supabase
+                .from('notes')
+                .delete()
+                .eq('id', noteId)
+
+            if (error) throw error
+
+            setNotes(prev => prev.filter(n => n.id !== noteId))
+            toast.success("Note deleted")
+        } catch (error: any) {
+            toast.error("Failed to delete note")
+        }
+    }
 
     if (loading) {
         return <div className="text-center py-10">Loading notes...</div>
@@ -81,12 +94,19 @@ export function NotesList() {
 
             <div className="grid gap-4">
                 {notes.map((note) => (
-                    <Card key={note.id}>
+                    <Card key={note.id} className="group relative hover:border-primary/50 transition-colors">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleDelete(note.id)}
+                        >
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
                         <CardHeader className="pb-2">
                             <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <BookOpen className="h-4 w-4" />
-                                    {/* For now, just show 'General Note' or try to fetch book title if linked */}
                                     {note.book_id ? "Book Note" : "General Note"}
                                 </div>
                                 <span className="text-xs text-muted-foreground">
@@ -95,12 +115,6 @@ export function NotesList() {
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            {/* If we had highlighting logic, we'd show it here. 
-                                For now, just showing content. 
-                                The 'create' modal has 'highlight' field but current implementation 
-                                of 'create' modal puts 'content' as note. 
-                                We probably need to verify schema for notes. 
-                            */}
                             <p className="text-sm">{note.content}</p>
                         </CardContent>
                     </Card>
