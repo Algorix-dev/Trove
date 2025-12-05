@@ -23,7 +23,7 @@ export function BookGrid({ books }: BookGridProps) {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {books.map((book) => {
                 const isGradient = book.cover_url?.startsWith('gradient:')
-                const gradientStyle = isGradient ? book.cover_url.replace('gradient:', '') : null
+                const gradientStyle = isGradient ? book.cover_url?.replace('gradient:', '') : null
 
                 return (
                     <Link href={`/dashboard/reader/${book.id}`} key={book.id}>
