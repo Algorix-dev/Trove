@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Search, BookOpen } from "lucide-react"
+import { CreateNoteModal } from "./create-note-modal"
 
 const notes = [
     {
@@ -34,9 +35,12 @@ const notes = [
 export function NotesList() {
     return (
         <div className="space-y-6">
-            <div className="relative max-w-md">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input type="search" placeholder="Search notes..." className="pl-8" />
+            <div className="flex items-center justify-between gap-4">
+                <div className="relative max-w-md flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input type="search" placeholder="Search notes..." className="pl-8" />
+                </div>
+                <CreateNoteModal />
             </div>
 
             <div className="grid gap-4">
