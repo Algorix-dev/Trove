@@ -31,7 +31,20 @@ export function UploadModal() {
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0])
+            const selectedFile = e.target.files[0]
+            const fileType = selectedFile.type
+            const validTypes = ['application/pdf', 'application/epub+zip']
+
+            // Simple extension check as fallback
+            const fileExt = selectedFile.name.split('.').pop()?.toLowerCase()
+            const validExts = ['pdf', 'epub']
+
+            if (!validTypes.includes(fileType) && !validExts.includes(fileExt || '')) {
+                alert("Invalid file type. Please upload a PDF or EPUB file.")
+                return
+            }
+
+            setFile(selectedFile)
         }
     }
 
