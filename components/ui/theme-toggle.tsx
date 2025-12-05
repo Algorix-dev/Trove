@@ -6,18 +6,29 @@ import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
 
 export function ThemeToggle() {
-    const { theme, setTheme, resolvedTheme } = useTheme()
+    const { setTheme, resolvedTheme } = useTheme()
     const [mounted, setMounted] = useState(false)
+    const [currentTheme, setCurrentTheme] = useState<string | undefined>(undefined)
 
     useEffect(() => {
         setMounted(true)
     }, [])
 
+    useEffect(() => {
+        if (mounted) {
+            setCurrentTheme(resolvedTheme)
+        }
+    }, [mounted, resolvedTheme])
+
     if (!mounted) {
-        return null
+        return (
+            <Button variant="ghost" size="icon" className="relative">
+                <Moon className="h-5 w-5" />
+            </Button>
+        )
     }
 
-    const isDark = resolvedTheme === "dark"
+    const isDark = currentTheme === "dark"
 
     return (
         <Button
