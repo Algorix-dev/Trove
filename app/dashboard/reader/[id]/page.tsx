@@ -40,9 +40,9 @@ export default async function ReaderPage({ params }: { params: Promise<{ id: str
     return (
         <ReaderLayout title={book.title} bookId={id} userId={user.id}>
             {format === 'epub' ? (
-                <EpubViewer url={fileUrl} />
+                <EpubViewer url={fileUrl} userId={user.id} bookId={id} />
             ) : format === 'txt' ? (
-                <TxtViewer url={fileUrl} />
+                <TxtViewer url={fileUrl} userId={user.id} bookId={id} />
             ) : (
                 <PDFViewer fileUrl={fileUrl} bookId={id} userId={user.id} />
             )}

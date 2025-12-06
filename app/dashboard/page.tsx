@@ -3,6 +3,8 @@ import { DashboardCharts } from "@/components/features/dashboard-charts"
 import { ContinueReading } from "@/components/features/continue-reading"
 import { QuickActions } from "@/components/features/quick-actions"
 import { ShareInviteModal } from "@/components/features/share-invite-modal"
+import { LevelProgress } from "@/components/features/gamification/level-progress"
+import { AchievementConfetti } from "@/components/features/gamification/achievement-confetti"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
@@ -16,9 +18,24 @@ export default async function DashboardPage() {
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name, username')
+        .select('full_name, username, total_xp, current_level')
         .eq('id', user.id)
         .single()
+
+    // Fetch levels for progress calculation
+    const { data: levels } = await supabase
+        .from('levels')
+        .select('*')
+        .order('min_xp', { ascending: true })
+
+    const currentLevel = profile?.current_level || 1
+    const currentXP = profile?.total_xp || 0
+
+    const levelInfo = levels?.find(l => l.level === currentLevel)
+    const nextLevelInfo = levels?.find(l => l.level === currentLevel + 1)
+
+    const nextLevelXP = nextLevelInfo?.min_xp || (levelInfo?.min_xp || 0) + 1000 // Fallback if max level
+    const levelTitle = levelInfo?.title || "Reader"
 
     // Use username if available, otherwise full name, otherwise "Reader"
     const name = profile?.username || profile?.full_name || user.user_metadata?.full_name || "Reader"
@@ -43,6 +60,15 @@ export default async function DashboardPage() {
             </div>
 
             <DashboardStats />
+
+            <LevelProgress
+                level={currentLevel}
+                currentXP={currentXP}
+                nextLevelXP={nextLevelXP}
+                levelTitle={levelTitle}
+            />
+
+            <AchievementConfetti />
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 space-y-6">

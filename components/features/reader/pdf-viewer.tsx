@@ -7,6 +7,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { createBrowserClient } from "@supabase/ssr";
+import { GamificationService } from "@/lib/gamification";
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -65,6 +66,18 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light' }: PD
             saveProgress();
         }
     }, [pageNumber, numPages, bookId, userId]);
+
+    // Track reading time and award XP
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            // Check if actively reading (mock check for now, could be interaction based)
+            if (!loading && numPages > 0) {
+                await GamificationService.awardXP(userId, 1, "Reading Time", bookId)
+            }
+        }, 60000) // Every minute
+
+        return () => clearInterval(interval)
+    }, [userId, loading, numPages, bookId])
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
         setNumPages(numPages);

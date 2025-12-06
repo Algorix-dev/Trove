@@ -11,7 +11,10 @@ export function DashboardStats() {
         totalMinutes: 0,
         booksRead: 0,
         dailyGoal: 30,
-        todayMinutes: 0
+        booksRead: 0,
+        dailyGoal: 30,
+        todayMinutes: 0,
+        readingNow: 0
     })
     const [loading, setLoading] = useState(true)
 
@@ -58,8 +61,20 @@ export function DashboardStats() {
                 totalMinutes,
                 booksRead: booksRead || 0,
                 dailyGoal: profile?.daily_goal_minutes || 30,
-                todayMinutes
+                todayMinutes,
+                readingNow: 0 // Will be updated below
             })
+
+            // Fetch books currently reading (progress > 0 and < 100)
+            const { count: readingNow } = await supabase
+                .from('reading_progress')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .gt('progress_percentage', 0)
+                .lt('progress_percentage', 100)
+
+            setStats(prev => ({ ...prev, readingNow: readingNow || 0 }))
+
             setLoading(false)
         }
 
@@ -125,6 +140,16 @@ export function DashboardStats() {
                 <CardContent>
                     <div className="text-2xl font-bold">{stats.todayMinutes}/{stats.dailyGoal}</div>
                     <p className="text-xs text-muted-foreground">Minutes today</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Reading Now</CardTitle>
+                    <BookOpen className="h-4 w-4 text-indigo-500" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.readingNow}</div>
+                    <p className="text-xs text-muted-foreground">Active Books</p>
                 </CardContent>
             </Card>
         </div>

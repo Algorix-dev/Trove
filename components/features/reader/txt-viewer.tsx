@@ -3,15 +3,18 @@
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { GamificationService } from "@/lib/gamification"
 
 interface TxtViewerProps {
     url: string
     initialLocation?: string | number
     onLocationChange?: (location: string, progress: number) => void
     readerTheme?: 'light' | 'dark' | 'sepia'
+    userId: string
+    bookId: string
 }
 
-export function TxtViewer({ url, initialLocation, onLocationChange, readerTheme = 'light' }: TxtViewerProps) {
+export function TxtViewer({ url, initialLocation, onLocationChange, readerTheme = 'light', userId, bookId }: TxtViewerProps) {
     const [content, setContent] = useState<string>("")
     const [loading, setLoading] = useState(true)
     const scrollRef = useRef<HTMLDivElement>(null)
@@ -30,9 +33,18 @@ export function TxtViewer({ url, initialLocation, onLocationChange, readerTheme 
             background: 'bg-[#f6f1d1]',
             color: 'text-[#5f4b32]',
         }
-    }
-
     const currentTheme = themeStyles[readerTheme]
+
+    // Track reading time and award XP
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            if (!loading && content) {
+                await GamificationService.awardXP(userId, 1, "Reading Time", bookId)
+            }
+        }, 60000)
+
+        return () => clearInterval(interval)
+    }, [userId, loading, content, bookId])
 
     useEffect(() => {
         const fetchContent = async () => {

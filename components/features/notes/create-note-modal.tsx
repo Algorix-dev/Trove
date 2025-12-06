@@ -19,6 +19,7 @@ import { createBrowserClient } from "@supabase/ssr"
 import { useAuth } from "@/components/providers/auth-provider"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { GamificationService } from "@/lib/gamification"
 
 export function CreateNoteModal() {
     const [open, setOpen] = useState(false)

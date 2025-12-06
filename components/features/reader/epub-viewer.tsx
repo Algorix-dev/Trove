@@ -5,15 +5,18 @@ import Epub from "epubjs"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { createBrowserClient } from "@supabase/ssr"
+import { GamificationService } from "@/lib/gamification"
 
 interface EpubViewerProps {
     url: string
     initialLocation?: string | number
     onLocationChange?: (location: string, progress: number) => void
     readerTheme?: 'light' | 'dark' | 'sepia'
+    userId: string
+    bookId: string
 }
 
-export function EpubViewer({ url, initialLocation, onLocationChange, readerTheme = 'light' }: EpubViewerProps) {
+export function EpubViewer({ url, initialLocation, onLocationChange, readerTheme = 'light', userId, bookId }: EpubViewerProps) {
     const viewerRef = useRef<HTMLDivElement>(null)
     const renditionRef = useRef<any>(null)
     const bookRef = useRef<any>(null)
@@ -82,69 +85,67 @@ export function EpubViewer({ url, initialLocation, onLocationChange, readerTheme
 
         // Select theme
         themes.select(readerTheme)
-    }, [readerTheme, isReady])
+        const updateProgress = () => {
+            if (!bookRef.current || !renditionRef.current) return
 
-    const updateProgress = () => {
-        if (!bookRef.current || !renditionRef.current) return
+            const currentLocation = renditionRef.current.currentLocation()
+            if (currentLocation && currentLocation.start) {
+                const cfi = currentLocation.start.cfi
+                // Get percentage
+                const percentage = bookRef.current.locations.percentageFromCfi(cfi)
+                const progressValue = Math.round(percentage * 100)
 
-        const currentLocation = renditionRef.current.currentLocation()
-        if (currentLocation && currentLocation.start) {
-            const cfi = currentLocation.start.cfi
-            // Get percentage
-            const percentage = bookRef.current.locations.percentageFromCfi(cfi)
-            const progressValue = Math.round(percentage * 100)
+                setProgress(progressValue)
 
-            setProgress(progressValue)
-
-            if (onLocationChange) {
-                onLocationChange(cfi, progressValue)
+                if (onLocationChange) {
+                    onLocationChange(cfi, progressValue)
+                }
             }
         }
-    }
 
-    const prevPage = () => {
-        if (renditionRef.current) {
-            renditionRef.current.prev()
+        const prevPage = () => {
+            if (renditionRef.current) {
+                renditionRef.current.prev()
+            }
         }
-    }
 
-    const nextPage = () => {
-        if (renditionRef.current) {
-            renditionRef.current.next()
+        const nextPage = () => {
+            if (renditionRef.current) {
+                renditionRef.current.next()
+            }
         }
-    }
 
-    return (
-        <div className="flex flex-col h-full relative group">
-            <div className="flex-1 relative">
-                <div ref={viewerRef} className="h-full w-full" />
+        return (
+            <div className="flex flex-col h-full relative group">
+                <div className="flex-1 relative">
+                    <div ref={viewerRef} className="h-full w-full" />
 
-                {/* Navigation Overlays */}
-                <div className="absolute inset-y-0 left-0 w-16 flex items-center justify-start opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-12 w-12 rounded-full bg-background/80 shadow-md ml-4"
-                        onClick={prevPage}
-                    >
-                        <ChevronLeft className="h-6 w-6" />
-                    </Button>
+                    {/* Navigation Overlays */}
+                    <div className="absolute inset-y-0 left-0 w-16 flex items-center justify-start opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-12 w-12 rounded-full bg-background/80 shadow-md ml-4"
+                            onClick={prevPage}
+                        >
+                            <ChevronLeft className="h-6 w-6" />
+                        </Button>
+                    </div>
+                    <div className="absolute inset-y-0 right-0 w-16 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-12 w-12 rounded-full bg-background/80 shadow-md mr-4"
+                            onClick={nextPage}
+                        >
+                            <ChevronRight className="h-6 w-6" />
+                        </Button>
+                    </div>
                 </div>
-                <div className="absolute inset-y-0 right-0 w-16 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-12 w-12 rounded-full bg-background/80 shadow-md mr-4"
-                        onClick={nextPage}
-                    >
-                        <ChevronRight className="h-6 w-6" />
-                    </Button>
+
+                <div className="h-8 border-t bg-background flex items-center justify-center text-xs text-muted-foreground">
+                    {progress}% Read
                 </div>
             </div>
-
-            <div className="h-8 border-t bg-background flex items-center justify-center text-xs text-muted-foreground">
-                {progress}% Read
-            </div>
-        </div>
-    )
-}
+        )
+    }

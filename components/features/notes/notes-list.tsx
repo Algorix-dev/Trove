@@ -12,6 +12,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import { GamificationService } from "@/lib/gamification"
 import { DeleteConfirmDialog } from "@/components/features/delete-confirm-dialog"
 
 export function NotesList() {
@@ -55,12 +56,13 @@ export function NotesList() {
 
     const performDelete = async (noteId: string) => {
         try {
-            const { error } = await supabase
+            const { error, count } = await supabase
                 .from('notes')
-                .delete()
+                .delete({ count: 'exact' })
                 .eq('id', noteId)
 
             if (error) throw error
+            if (count === 0) throw new Error("Could not delete note. You might not have permission.")
 
             setNotes(prev => prev.filter(n => n.id !== noteId))
             toast.success("Note deleted")
