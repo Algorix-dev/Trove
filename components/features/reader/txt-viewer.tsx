@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { GamificationService } from "@/lib/gamification"
+import { createBrowserClient } from "@supabase/ssr"
 
 interface TxtViewerProps {
     url: string
@@ -84,6 +85,32 @@ export function TxtViewer({ url, initialLocation, onLocationChange, readerTheme 
         if (onLocationChange) {
             onLocationChange(scrollTop.toString(), progress)
         }
+
+        saveProgress(progress)
+    }
+
+    const saveProgress = async (progressValue: number) => {
+        // Debounce could be good here but keeping it simple first
+        const supabase = createBrowserClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+
+        // Only save if progress changed significantly?
+        // Or assume component state updates are frequent. 
+        // We really should debounce this.
+
+        await supabase
+            .from('reading_progress')
+            .upsert({
+                book_id: bookId,
+                user_id: userId,
+                current_page: 0,
+                progress_percentage: progressValue,
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'book_id,user_id'
+            })
     }
 
     if (loading) {

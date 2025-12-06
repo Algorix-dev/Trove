@@ -39,7 +39,32 @@ export function EpubViewer({ url, initialLocation, onLocationChange, readerTheme
             if (onLocationChange) {
                 onLocationChange(cfi, progressValue)
             }
+
+            // Debounced save or just save on significant change?
+            // For simplicity, save on every update but maybe we should debounce.
+            // Let's add a debounced save function or just save here for now.
+            saveProgress(cfi, progressValue)
         }
+    }
+
+    const saveProgress = async (cfi: string, progressValue: number) => {
+        const supabase = createBrowserClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+
+        await supabase
+            .from('reading_progress')
+            .upsert({
+                book_id: bookId,
+                user_id: userId,
+                current_page: 0, // Epub doesn't have linear pages nicely mapped to numbers usually so we trust percentage
+                progress_percentage: progressValue,
+                epub_cfi: cfi,
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'book_id,user_id'
+            })
     }
 
     // Initialize EPUB

@@ -58,6 +58,7 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light' }: PD
                         user_id: userId,
                         current_page: pageNumber,
                         total_pages: numPages,
+                        progress_percentage: Math.round((pageNumber / numPages) * 100),
                         updated_at: new Date().toISOString()
                     }, {
                         onConflict: 'book_id,user_id'
