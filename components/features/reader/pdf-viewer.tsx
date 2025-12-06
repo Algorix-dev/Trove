@@ -70,10 +70,30 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light' }: PD
 
     // Track reading time and award XP
     useEffect(() => {
+        let sessionStart = Date.now()
+
         const interval = setInterval(async () => {
-            // Check if actively reading (mock check for now, could be interaction based)
+            // Check if actively reading
             if (!loading && numPages > 0) {
-                await GamificationService.awardXP(userId, 1, "Reading Time", bookId)
+                const minutesRead = Math.round((Date.now() - sessionStart) / 60000)
+
+                if (minutesRead >= 1) {
+                    // Create reading session record
+                    await supabase
+                        .from('reading_sessions')
+                        .insert({
+                            user_id: userId,
+                            book_id: bookId,
+                            duration_minutes: 1,
+                            session_date: new Date().toISOString().split('T')[0]
+                        })
+
+                    // Award XP
+                    await GamificationService.awardXP(userId, 1, "Reading Time", bookId)
+
+                    // Reset session start
+                    sessionStart = Date.now()
+                }
             }
         }, 60000) // Every minute
 

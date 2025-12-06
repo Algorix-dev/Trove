@@ -39,9 +39,34 @@ export function TxtViewer({ url, initialLocation, onLocationChange, readerTheme 
 
     // Track reading time and award XP
     useEffect(() => {
+        let sessionStart = Date.now()
+
         const interval = setInterval(async () => {
             if (!loading && content) {
-                await GamificationService.awardXP(userId, 1, "Reading Time", bookId)
+                const minutesRead = Math.round((Date.now() - sessionStart) / 60000)
+
+                if (minutesRead >= 1) {
+                    const supabase = createBrowserClient(
+                        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                    )
+
+                    // Create reading session record
+                    await supabase
+                        .from('reading_sessions')
+                        .insert({
+                            user_id: userId,
+                            book_id: bookId,
+                            duration_minutes: 1,
+                            session_date: new Date().toISOString().split('T')[0]
+                        })
+
+                    // Award XP
+                    await GamificationService.awardXP(userId, 1, "Reading Time", bookId)
+
+                    // Reset session start
+                    sessionStart = Date.now()
+                }
             }
         }, 60000)
 

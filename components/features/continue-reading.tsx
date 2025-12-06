@@ -18,6 +18,15 @@ interface ContinueReadingBook {
     progress_percentage?: number
 }
 
+// Helper function to clean up book titles
+function cleanTitle(title: string): string {
+    return title
+        .replace(/_/g, ' ') // Replace underscores with spaces
+        .replace(/\.(pdf|epub|txt)$/i, '') // Remove file extensions
+        .replace(/^.*?_/, '') // Remove prefix like "OceanofPDF.com_"
+        .trim()
+}
+
 export function ContinueReading() {
     const [book, setBook] = useState<ContinueReadingBook | null>(null)
     const [loading, setLoading] = useState(true)
@@ -61,7 +70,8 @@ export function ContinueReading() {
                     author: bookData.author,
                     cover_url: bookData.cover_url,
                     current_page: data.current_page,
-                    total_pages: bookData.total_pages || 0
+                    total_pages: bookData.total_pages || 0,
+                    progress_percentage: data.progress_percentage
                 })
             }
 
@@ -126,7 +136,7 @@ export function ContinueReading() {
                 </div>
                 <div className="flex flex-col justify-between flex-1">
                     <div>
-                        <h3 className="text-lg font-semibold">{book.title}</h3>
+                        <h3 className="text-lg font-semibold line-clamp-2">{cleanTitle(book.title)}</h3>
                         <p className="text-sm text-muted-foreground">{book.author}</p>
                     </div>
                     <div className="space-y-2">
