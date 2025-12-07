@@ -1,3 +1,8 @@
+interface ReaderSettingsProps {
+    onThemeChange: (theme: 'light' | 'dark' | 'sepia') => void;
+    currentTheme: 'light' | 'dark' | 'sepia';
+}
+
 export function ReaderSettings({ onThemeChange, currentTheme }: ReaderSettingsProps) {
     return (
         <Card className="w-72 shadow-xl">
