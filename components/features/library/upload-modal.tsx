@@ -219,6 +219,14 @@ export function UploadModal({ open: controlledOpen, onOpenChange }: UploadModalP
             // Force refresh the library page
             router.refresh()
 
+            // Dispatch event to notify listeners (like library page) to refetch
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new Event('book-uploaded'))
+            }
+
+            // Dispatch event to notify listeners (like library page) to refetch
+            window.dispatchEvent(new Event('book-uploaded'))
+
             // Small delay then navigate to ensure data is fresh
             setTimeout(() => {
                 router.push('/dashboard/library')
