@@ -35,6 +35,7 @@ export function NotesList() {
         const { data } = await supabase
             .from('notes')
             .select('*')
+            .eq('user_id', user.id)
             .order('created_at', { ascending: false })
 
         if (data) {
