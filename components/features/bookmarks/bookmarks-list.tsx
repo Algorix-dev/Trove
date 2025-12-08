@@ -173,7 +173,7 @@ export function BookmarksList({ userId }: { userId: string }) {
                         {/* Book Header */}
                         <div className="flex gap-4 mb-4 pb-4 border-b">
                             <div className="w-16 h-24 rounded overflow-hidden flex-shrink-0 bg-gradient-to-br from-purple-500 to-pink-500">
-                                {book.cover_url ? (
+                                {book.cover_url && !book.cover_url.startsWith('gradient:') ? (
                                     <img
                                         src={book.cover_url}
                                         alt={book.title}
