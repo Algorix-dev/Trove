@@ -1,3 +1,9 @@
+"use client"
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Sun, Moon, Monitor } from "lucide-react"
+
 interface ReaderSettingsProps {
     onThemeChange: (theme: 'light' | 'dark' | 'sepia') => void;
     currentTheme: 'light' | 'dark' | 'sepia';
