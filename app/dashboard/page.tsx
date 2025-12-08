@@ -7,6 +7,7 @@ import { LevelProgress } from "@/components/features/gamification/level-progress
 import { AchievementConfetti } from "@/components/features/gamification/achievement-confetti"
 import { DailyGoalCelebration } from "@/components/features/gamification/daily-goal-celebration"
 import { LevelUpCelebration } from "@/components/features/gamification/level-up-celebration"
+import { ReadingStreakCalendar } from "@/components/features/analytics/reading-streak-calendar"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
@@ -69,6 +70,8 @@ export default async function DashboardPage() {
                 nextLevelXP={nextLevelXP}
                 levelTitle={levelTitle}
             />
+
+            <ReadingStreakCalendar />
 
             <AchievementConfetti />
             <DailyGoalCelebration />
