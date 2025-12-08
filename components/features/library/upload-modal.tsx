@@ -34,16 +34,25 @@ function generateGradient(title: string): string {
     return gradients[hash % gradients.length]
 }
 
-export function UploadModal() {
+interface UploadModalProps {
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
+}
+
+export function UploadModal({ open: controlledOpen, onOpenChange }: UploadModalProps = {}) {
     const [file, setFile] = useState<File | null>(null)
     const [coverFile, setCoverFile] = useState<File | null>(null)
     const [uploading, setUploading] = useState(false)
-    const [open, setOpen] = useState(false)
+    const [internalOpen, setInternalOpen] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const coverInputRef = useRef<HTMLInputElement>(null)
     const { user } = useAuth()
     const router = useRouter()
+
+    // Use controlled open state if provided, otherwise use internal state
+    const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+    const setOpen = onOpenChange || setInternalOpen
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -180,7 +189,7 @@ export function UploadModal() {
                 .trim()
 
             // 6. Insert record into database
-            const { error: dbError } = await supabase
+            const { data: insertedBook, error: dbError } = await supabase
                 .from('books')
                 .insert({
                     user_id: user.id,
@@ -191,14 +200,17 @@ export function UploadModal() {
                     format: fileExt || 'pdf',
                     total_pages: totalPages
                 })
+                .select()
+                .single()
 
             if (dbError) {
                 toast.error("Failed to save book details. Please try again.")
-                console.error(dbError)
+                console.error('Database insert error:', dbError)
                 setUploading(false)
                 return
             }
 
+            console.log('Book inserted successfully:', insertedBook)
             toast.success("Book uploaded successfully!")
             setFile(null)
             setCoverFile(null)
