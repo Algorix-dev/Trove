@@ -102,7 +102,6 @@ export function DashboardStats() {
     }
 
     return (
-    return (
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <Card className="bg-card/50 backdrop-blur-sm border-orange-500/20 shadow-lg shadow-orange-500/5 transition-all duration-300 hover:scale-105 hover:bg-card/80">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
