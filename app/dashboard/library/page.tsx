@@ -1,7 +1,5 @@
-import { BookGrid } from "@/components/features/library/book-grid"
+import { LibraryContent } from "@/components/features/library/library-content"
 import { UploadModal } from "@/components/features/library/upload-modal"
-import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
@@ -17,16 +15,27 @@ export default async function LibraryPage() {
     const { data: booksData } = await supabase
         .from('books')
         .select(`
-            *,
+            id,
+            user_id,
+            title,
+            author,
+            cover_url,
+            file_url,
+            format,
+            total_pages,
+            created_at,
+            updated_at,
             reading_progress (
                 progress_percentage
             )
         `)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
     // Transform data to include progress percentage
     const books = booksData?.map(book => ({
         ...book,
+        reading_progress: undefined, // Remove the nested object
         progress: book.reading_progress?.[0]?.progress_percentage || 0
     })) || []
 
@@ -37,15 +46,7 @@ export default async function LibraryPage() {
                 <UploadModal />
             </div>
 
-            <div className="flex items-center gap-4">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input type="search" placeholder="Search books..." className="pl-8" />
-                </div>
-                {/* Add filters here later if needed */}
-            </div>
-
-            <BookGrid books={books} />
+            <LibraryContent books={books} />
         </div>
     )
 }

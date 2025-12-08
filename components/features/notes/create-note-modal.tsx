@@ -21,6 +21,8 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { GamificationService } from "@/lib/gamification"
 
+import type { Book } from "@/types/database"
+
 export function CreateNoteModal() {
     const [open, setOpen] = useState(false)
 
@@ -42,7 +44,7 @@ export function CreateNoteModal() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    const [libraryBooks, setLibraryBooks] = useState<any[]>([])
+    const [libraryBooks, setLibraryBooks] = useState<Pick<Book, 'id' | 'title'>[]>([])
 
     // Fetch library books for matching
     const fetchBooks = async () => {
@@ -84,9 +86,10 @@ export function CreateNoteModal() {
             setNote("")
             router.refresh()
             toast.success(matchedBook ? "Note added to " + matchedBook.title : "General note created (Book not found in library)")
-        } catch (error: any) {
-            console.error(error)
-            toast.error(error.message)
+        } catch (error) {
+            console.error('Note creation error:', error)
+            const message = error instanceof Error ? error.message : 'Unknown error'
+            toast.error(message)
         } finally {
             setLoading(false)
         }
