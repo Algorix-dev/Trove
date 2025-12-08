@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Library, Highlighter, BarChart3, Users, Settings, BookOpen, User } from "lucide-react"
+import { LayoutDashboard, Library, Bookmark, Highlighter, BarChart3, Users, Settings, BookOpen, User } from "lucide-react"
 
 const routes = [
     {
@@ -15,6 +15,11 @@ const routes = [
         label: "Library",
         icon: Library,
         href: "/dashboard/library",
+    },
+    {
+        label: "Bookmarks",
+        icon: Bookmark,
+        href: "/dashboard/bookmarks",
     },
     {
         label: "Notes",

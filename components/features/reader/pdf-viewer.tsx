@@ -18,9 +18,10 @@ interface PDFViewerProps {
     userId: string;
     readerTheme?: 'light' | 'dark' | 'sepia';
     onLocationUpdate?: (data: { currentPage?: number; currentCFI?: string; progressPercentage?: number }) => void;
+    initialPage?: number;
 }
 
-export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light', onLocationUpdate }: PDFViewerProps) {
+export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light', onLocationUpdate, initialPage }: PDFViewerProps) {
     const [numPages, setNumPages] = useState<number>(0);
     const [pageNumber, setPageNumber] = useState<number>(1);
     const [scale, setScale] = useState<number>(1.0);
@@ -31,9 +32,16 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light', onLo
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Load bookmark on mount
+    // Load bookmark or saved progress on mount
     useEffect(() => {
-        const loadBookmark = async () => {
+        // If we have initialPage (from bookmark), use that
+        if (initialPage && initialPage > 0) {
+            setPageNumber(initialPage);
+            return;
+        }
+
+        // Otherwise load from reading progress
+        const loadProgress = async () => {
             const { data } = await supabase
                 .from('reading_progress')
                 .select('current_page')
@@ -45,8 +53,8 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light', onLo
                 setPageNumber(data.current_page);
             }
         };
-        loadBookmark();
-    }, [bookId, userId]);
+        loadProgress();
+    }, [bookId, userId, initialPage]);
 
     // Save progress when page changes
     useEffect(() => {

@@ -5,8 +5,15 @@ import { TxtViewer } from "@/components/features/reader/txt-viewer"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
-export default async function ReaderPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ReaderPage({
+    params,
+    searchParams
+}: {
+    params: Promise<{ id: string }>
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
     const { id } = await params
+    const search = await searchParams
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -37,14 +44,34 @@ export default async function ReaderPage({ params }: { params: Promise<{ id: str
     const fileUrl = data?.signedUrl || ""
     const format = book.format || 'pdf'
 
+    // Extract bookmark navigation params
+    const bookmarkPage = search.page ? parseInt(search.page as string) : undefined
+    const bookmarkCFI = search.cfi as string | undefined
+    const bookmarkProgress = search.progress ? parseFloat(search.progress as string) : undefined
+
     return (
         <ReaderLayout title={book.title} bookId={id} userId={user.id}>
             {format === 'epub' ? (
-                <EpubViewer url={fileUrl} userId={user.id} bookId={id} />
+                <EpubViewer
+                    url={fileUrl}
+                    userId={user.id}
+                    bookId={id}
+                    initialLocation={bookmarkCFI}
+                />
             ) : format === 'txt' ? (
-                <TxtViewer url={fileUrl} userId={user.id} bookId={id} />
+                <TxtViewer
+                    url={fileUrl}
+                    userId={user.id}
+                    bookId={id}
+                    initialLocation={bookmarkProgress}
+                />
             ) : (
-                <PDFViewer fileUrl={fileUrl} bookId={id} userId={user.id} />
+                <PDFViewer
+                    fileUrl={fileUrl}
+                    bookId={id}
+                    userId={user.id}
+                    initialPage={bookmarkPage}
+                />
             )}
         </ReaderLayout>
     )
