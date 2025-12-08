@@ -203,7 +203,14 @@ export function UploadModal() {
             setFile(null)
             setCoverFile(null)
             setOpen(false)
+
+            // Force refresh the library page
             router.refresh()
+
+            // Small delay then navigate to ensure data is fresh
+            setTimeout(() => {
+                router.push('/dashboard/library')
+            }, 100)
         } catch (error) {
             toast.error("An unexpected error occurred. Please try again.")
             console.error(error)
