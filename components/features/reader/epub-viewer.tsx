@@ -21,7 +21,7 @@ export function EpubViewer({ url, initialLocation, onLocationChange, readerTheme
     const viewerRef = useRef<HTMLDivElement>(null)
     const renditionRef = useRef<any>(null)
     const bookRef = useRef<any>(null)
-    const saveProgressDebounced = useRef<NodeJS.Timeout>()
+    const saveProgressDebounced = useRef<NodeJS.Timeout | undefined>(undefined)
     const [isReady, setIsReady] = useState(false)
     const [currentCfi, setCurrentCfi] = useState<string>("")
     const [progress, setProgress] = useState(0)
