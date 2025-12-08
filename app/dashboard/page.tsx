@@ -6,6 +6,7 @@ import { ShareInviteModal } from "@/components/features/share-invite-modal"
 import { LevelProgress } from "@/components/features/gamification/level-progress"
 import { AchievementConfetti } from "@/components/features/gamification/achievement-confetti"
 import { DailyGoalCelebration } from "@/components/features/gamification/daily-goal-celebration"
+import { LevelUpCelebration } from "@/components/features/gamification/level-up-celebration"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
@@ -71,6 +72,7 @@ export default async function DashboardPage() {
 
             <AchievementConfetti />
             <DailyGoalCelebration />
+            <LevelUpCelebration />
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
                 <div className="col-span-1 md:col-span-2 lg:col-span-3 space-y-6">

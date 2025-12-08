@@ -4,6 +4,9 @@ import { useEffect, useState } from "react"
 import Confetti from "react-confetti"
 import { useWindowSize } from "@/hooks/use-window-size"
 import { createBrowserClient } from "@supabase/ssr"
+import { toast } from "sonner"
+import { Trophy } from "lucide-react"
+import Link from "next/link"
 
 interface AchievementConfettiProps {
     duration?: number
@@ -32,7 +35,7 @@ export function AchievementConfetti({ duration = 5000 }: AchievementConfettiProp
             // 1. Get unnotified achievements
             const { data: newAchievements } = await supabase
                 .from('user_achievements')
-                .select('id, achievement_id, achievements(name)')
+                .select('id, achievement_id, achievements(name, description)')
                 .eq('user_id', user.id)
                 .eq('notified', false)
 
@@ -46,6 +49,26 @@ export function AchievementConfetti({ duration = 5000 }: AchievementConfettiProp
                     setShow(true)
                     const names = achievementsToShow.map((ua: any) => ua.achievements?.name || "New Achievement")
                     setAchievements(names)
+
+                    // Show toast notification for each achievement
+                    achievementsToShow.forEach((ua: any) => {
+                        toast.success(
+                            <div className="flex items-start gap-3">
+                                <Trophy className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                    <div className="font-semibold">Achievement Unlocked!</div>
+                                    <div className="text-sm opacity-90">{ua.achievements?.name || "New Achievement"}</div>
+                                </div>
+                            </div>,
+                            {
+                                duration: 6000,
+                                action: {
+                                    label: "View Profile",
+                                    onClick: () => window.location.href = '/dashboard/profile'
+                                }
+                            }
+                        )
+                    })
 
                     // 2. Mark as notified in database
                     const ids = achievementsToShow.map(ua => ua.id)
@@ -62,7 +85,7 @@ export function AchievementConfetti({ duration = 5000 }: AchievementConfettiProp
         }
 
         checkAchievements()
-        // Check every 30 seconds for new achievements (optional - can be removed if not needed)
+        // Check every 30 seconds for new achievements
         const interval = setInterval(checkAchievements, 30000)
         return () => clearInterval(interval)
     }, [])
@@ -85,7 +108,6 @@ export function AchievementConfetti({ duration = 5000 }: AchievementConfettiProp
                 recycle={false}
                 gravity={0.2}
             />
-            {/* Optional: Toast or popup for specific achievement names could go here or handled by global toaster */}
         </div>
     )
 }
