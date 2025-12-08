@@ -1,5 +1,5 @@
 import { ProfileHeader } from "@/components/features/profile/profile-header"
-import { BadgesList } from "@/components/features/profile/badges-list"
+import { ProfileTabs } from "@/components/features/profile/profile-tabs"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
@@ -51,7 +51,7 @@ export default async function ProfilePage() {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <ProfileHeader user={userData} stats={stats} />
-            <BadgesList />
+            <ProfileTabs />
         </div>
     )
 }
