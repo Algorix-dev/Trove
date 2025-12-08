@@ -63,61 +63,34 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light', onLo
 
             // Notify parent about location change
             if (onLocationUpdate) {
-                onLocationUpdate({
-                    currentPage: pageNumber,
-                    progressPercentage
-                });
-            }
 
-            const saveProgress = async () => {
-                await supabase
-                    .from('reading_progress')
-                    .upsert({
-                        book_id: bookId,
-                        user_id: userId,
-                        current_page: pageNumber,
-                        total_pages: numPages,
-                        progress_percentage: progressPercentage,
-                        updated_at: new Date().toISOString()
-                    }, {
-                        onConflict: 'book_id,user_id'
-                    });
-            };
-            saveProgress();
-        }
-    }, [pageNumber, numPages, bookId, userId, onLocationUpdate]);
+                const interval = setInterval(async () => {
+                    // Check if actively reading
+                    if (!loading && numPages > 0) {
+                        const minutesRead = Math.round((Date.now() - sessionStart) / 60000)
 
-    // Track reading time and award XP
-    useEffect(() => {
-        let sessionStart = Date.now()
+                        if (minutesRead >= 1) {
+                            // Create reading session record
+                            await supabase
+                                .from('reading_sessions')
+                                .insert({
+                                    user_id: userId,
+                                    book_id: bookId,
+                                    duration_minutes: 1,
+                                    session_date: new Date().toISOString().split('T')[0]
+                                })
 
-        const interval = setInterval(async () => {
-            // Check if actively reading
-            if (!loading && numPages > 0) {
-                const minutesRead = Math.round((Date.now() - sessionStart) / 60000)
+                            // Award XP
+                            await GamificationService.awardXP(userId, 1, "Reading Time", bookId)
 
-                if (minutesRead >= 1) {
-                    // Create reading session record
-                    await supabase
-                        .from('reading_sessions')
-                        .insert({
-                            user_id: userId,
-                            book_id: bookId,
-                            duration_minutes: 1,
-                            session_date: new Date().toISOString().split('T')[0]
-                        })
+                            // Reset session start
+                            sessionStart = Date.now()
+                        }
+                    }
+                }, 60000) // Every minute
 
-                    // Award XP
-                    await GamificationService.awardXP(userId, 1, "Reading Time", bookId)
-
-                    // Reset session start
-                    sessionStart = Date.now()
-                }
-            }
-        }, 60000) // Every minute
-
-        return () => clearInterval(interval)
-    }, [userId, loading, numPages, bookId])
+                return () => clearInterval(interval)
+            }, [userId, loading, numPages, bookId])
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
         setNumPages(numPages);
