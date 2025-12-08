@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { BookGrid } from "./book-grid"
 import { LibrarySearch } from "./library-search"
 import { EmptyLibrary } from "./empty-library"
@@ -12,6 +14,23 @@ interface LibraryContentProps {
 
 export function LibraryContent({ books }: LibraryContentProps) {
     const [filteredBooks, setFilteredBooks] = useState<BookWithProgress[]>(books)
+    const router = useRouter()
+
+    // Update state when initial books change (e.g. after router.refresh())
+    useEffect(() => {
+        setFilteredBooks(books)
+    }, [books])
+
+    // Listen for book uploads
+    useEffect(() => {
+        const handleBookUploaded = () => {
+            console.log("Book uploaded, refreshing library...")
+            router.refresh()
+        }
+
+        window.addEventListener('book-uploaded', handleBookUploaded)
+        return () => window.removeEventListener('book-uploaded', handleBookUploaded)
+    }, [router])
 
     if (books.length === 0) {
         return <EmptyLibrary />
