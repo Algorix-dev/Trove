@@ -38,9 +38,9 @@ export function ThemeToggle() {
             className="relative"
         >
             {isDark ? (
-                <Sun className="h-5 w-5 transition-transform duration-200 hover:rotate-12" />
+                <Sun className="h-5 w-5 transition-all duration-500 hover:rotate-12 hover:scale-110" />
             ) : (
-                <Moon className="h-5 w-5 transition-transform duration-200 hover:-rotate-12" />
+                <Moon className="h-5 w-5 transition-all duration-500 hover:-rotate-12 hover:scale-110" />
             )}
             <span className="sr-only">Toggle theme</span>
         </Button>

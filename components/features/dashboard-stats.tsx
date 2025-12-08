@@ -102,55 +102,80 @@ export function DashboardStats() {
     }
 
     return (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            <Card>
+    return (
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <Card className="bg-card/50 backdrop-blur-sm border-orange-500/20 shadow-lg shadow-orange-500/5 transition-all duration-300 hover:scale-105 hover:bg-card/80">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Current Streak</CardTitle>
-                    <Flame className="h-4 w-4 text-orange-500" />
+                    <div className="p-2 bg-orange-500/10 rounded-full">
+                        <Flame className="h-4 w-4 text-orange-500" />
+                    </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{stats.streak} Days</div>
-                    <p className="text-xs text-muted-foreground">Keep it up!</p>
+                    <div className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                        {stats.streak} Days
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Keep the flame alive!</p>
                 </CardContent>
             </Card>
-            <Card>
+
+            <Card className="bg-card/50 backdrop-blur-sm border-blue-500/20 shadow-lg shadow-blue-500/5 transition-all duration-300 hover:scale-105 hover:bg-card/80">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Today's Minutes</CardTitle>
-                    <Clock className="h-4 w-4 text-blue-500" />
+                    <div className="p-2 bg-blue-500/10 rounded-full">
+                        <Clock className="h-4 w-4 text-blue-500" />
+                    </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{stats.todayMinutes}</div>
-                    <p className="text-xs text-muted-foreground">Reading time today</p>
+                    <div className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
+                        {stats.todayMinutes}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Minutes read today</p>
                 </CardContent>
             </Card>
-            <Card>
+
+            <Card className="bg-card/50 backdrop-blur-sm border-green-500/20 shadow-lg shadow-green-500/5 transition-all duration-300 hover:scale-105 hover:bg-card/80">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Books Read</CardTitle>
-                    <BookOpen className="h-4 w-4 text-green-500" />
+                    <div className="p-2 bg-green-500/10 rounded-full">
+                        <BookOpen className="h-4 w-4 text-green-500" />
+                    </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{stats.booksRead}</div>
-                    <p className="text-xs text-muted-foreground">Completed books</p>
+                    <div className="text-3xl font-bold bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+                        {stats.booksRead}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Total completed books</p>
                 </CardContent>
             </Card>
-            <Card>
+
+            <Card className="bg-card/50 backdrop-blur-sm border-purple-500/20 shadow-lg shadow-purple-500/5 transition-all duration-300 hover:scale-105 hover:bg-card/80">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Daily Goal</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-purple-500" />
+                    <div className="p-2 bg-purple-500/10 rounded-full">
+                        <TrendingUp className="h-4 w-4 text-purple-500" />
+                    </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{stats.todayMinutes}/{stats.dailyGoal}</div>
-                    <p className="text-xs text-muted-foreground">Minutes today</p>
+                    <div className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+                        {Math.round((stats.todayMinutes / stats.dailyGoal) * 100)}%
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{stats.todayMinutes}/{stats.dailyGoal} minutes</p>
                 </CardContent>
             </Card>
-            <Card>
+
+            <Card className="bg-card/50 backdrop-blur-sm border-indigo-500/20 shadow-lg shadow-indigo-500/5 transition-all duration-300 hover:scale-105 hover:bg-card/80">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Reading Now</CardTitle>
-                    <BookOpen className="h-4 w-4 text-indigo-500" />
+                    <div className="p-2 bg-indigo-500/10 rounded-full">
+                        <BookOpen className="h-4 w-4 text-indigo-500" />
+                    </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{stats.readingNow}</div>
-                    <p className="text-xs text-muted-foreground">Active Books</p>
+                    <div className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent">
+                        {stats.readingNow}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Active books</p>
                 </CardContent>
             </Card>
         </div>
