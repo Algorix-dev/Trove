@@ -73,6 +73,7 @@ export function CreateNoteModal() {
                     user_id: user.id,
                     book_id: matchedBook ? matchedBook.id : null,
                     content: note,
+                    highlight_text: highlight || null,
                 })
 
             if (error) throw error
