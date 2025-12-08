@@ -56,41 +56,70 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light', onLo
         loadProgress();
     }, [bookId, userId, initialPage]);
 
-    // Save progress when page changes
+    // Save progress when page changes (DEBOUNCED)
     useEffect(() => {
         if (pageNumber > 0 && numPages > 0) {
             const progressPercentage = Math.round((pageNumber / numPages) * 100);
 
             // Notify parent about location change
             if (onLocationUpdate) {
+                onLocationUpdate({
+                    currentPage: pageNumber,
+                    progressPercentage
+                });
+            }
 
-                const interval = setInterval(async () => {
-                    // Check if actively reading
-                    if (!loading && numPages > 0) {
-                        const minutesRead = Math.round((Date.now() - sessionStart) / 60000)
+            // Debounced save - only save after user stops changing pages
+            const saveTimeout = setTimeout(async () => {
+                await supabase
+                    .from('reading_progress')
+                    .upsert({
+                        book_id: bookId,
+                        user_id: userId,
+                        current_page: pageNumber,
+                        total_pages: numPages,
+                        progress_percentage: progressPercentage,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'book_id,user_id'
+                    });
+            }, 1000); // Save 1 second after last page change
 
-                        if (minutesRead >= 1) {
-                            // Create reading session record
-                            await supabase
-                                .from('reading_sessions')
-                                .insert({
-                                    user_id: userId,
-                                    book_id: bookId,
-                                    duration_minutes: 1,
-                                    session_date: new Date().toISOString().split('T')[0]
-                                })
+            return () => clearTimeout(saveTimeout);
+        }
+    }, [pageNumber, numPages, bookId, userId, onLocationUpdate]);
 
-                            // Award XP
-                            await GamificationService.awardXP(userId, 1, "Reading Time", bookId)
+    // Track reading time and award XP
+    useEffect(() => {
+        let sessionStart = Date.now()
 
-                            // Reset session start
-                            sessionStart = Date.now()
-                        }
-                    }
-                }, 60000) // Every minute
+        const interval = setInterval(async () => {
+            // Check if actively reading
+            if (!loading && numPages > 0) {
+                const minutesRead = Math.round((Date.now() - sessionStart) / 60000)
 
-                return () => clearInterval(interval)
-            }, [userId, loading, numPages, bookId])
+                if (minutesRead >= 1) {
+                    // Create reading session record
+                    await supabase
+                        .from('reading_sessions')
+                        .insert({
+                            user_id: userId,
+                            book_id: bookId,
+                            duration_minutes: 1,
+                            session_date: new Date().toISOString().split('T')[0]
+                        })
+
+                    // Award XP
+                    await GamificationService.awardXP(userId, 1, "Reading Time", bookId)
+
+                    // Reset session start
+                    sessionStart = Date.now()
+                }
+            }
+        }, 60000) // Every minute
+
+        return () => clearInterval(interval)
+    }, [userId, loading, numPages, bookId])
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
         setNumPages(numPages);
