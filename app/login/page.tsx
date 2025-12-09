@@ -28,24 +28,12 @@ export default function LoginPage() {
         setError(null)
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             })
 
-            if (error) {
-                // Check if error is related to email confirmation
-                if (error.message.includes('Email not confirmed')) {
-                    throw new Error('Please confirm your email address before logging in. Check your inbox for the confirmation link.')
-                }
-                throw error
-            }
-
-            // Additional check for email confirmation status
-            if (data.user && !data.user.email_confirmed_at) {
-                await supabase.auth.signOut()
-                throw new Error('Please confirm your email address before logging in. Check your inbox for the confirmation link.')
-            }
+            if (error) throw error
 
             router.push("/dashboard")
             router.refresh()
@@ -103,7 +91,12 @@ export default function LoginPage() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="password">Password</Label>
+                                    <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                                        Forgot password?
+                                    </Link>
+                                </div>
                                 <Input
                                     id="password"
                                     type="password"
@@ -148,13 +141,6 @@ export default function LoginPage() {
                                 </svg>
                                 Sign in with Google
                             </Button>
-
-                            <p className="text-sm text-center text-muted-foreground">
-                                Don't have an account?{" "}
-                                <Link href="/signup" className="text-primary hover:underline">
-                                    Sign up
-                                </Link>
-                            </p>
                         </CardFooter>
                     </form>
                 </Card>
