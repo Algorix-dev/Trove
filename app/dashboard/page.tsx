@@ -14,9 +14,16 @@ import { redirect } from "next/navigation"
 
 export default async function DashboardPage() {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    console.log("Dashboard Auth Check:", {
+        hasUser: !!user,
+        userId: user?.id,
+        error: authError?.message
+    })
 
     if (!user) {
+        console.log("Redirecting to login due to missing user")
         redirect("/login")
     }
 
