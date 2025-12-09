@@ -9,6 +9,7 @@ import { BookOpen, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { createBrowserClient } from "@supabase/ssr"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 export default function LoginPage() {
     const [email, setEmail] = useState("")
