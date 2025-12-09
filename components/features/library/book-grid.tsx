@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { BookOpen, Trash2 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { type BookWithProgress } from "@/types/database"
 import { createBrowserClient } from "@supabase/ssr"
 import { useRouter } from "next/navigation"
@@ -99,10 +100,12 @@ export function BookGrid({ books }: BookGridProps) {
                                             <div className="absolute inset-0 bg-black/20"></div>
                                         </div>
                                     ) : book.cover_url ? (
-                                        <img
+                                        <Image
                                             src={book.cover_url}
                                             alt={book.title}
-                                            className="w-full h-full object-cover"
+                                            fill
+                                            className="object-cover transition-transform hover:scale-105 duration-500"
+                                            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
                                         />
                                     ) : (
                                         <div className="flex flex-col items-center justify-center text-muted-foreground/50 w-full h-full bg-secondary/30">

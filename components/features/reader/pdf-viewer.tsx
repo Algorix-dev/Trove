@@ -10,7 +10,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import { GamificationService } from "@/lib/gamification";
 
 // Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 interface PDFViewerProps {
     fileUrl: string;

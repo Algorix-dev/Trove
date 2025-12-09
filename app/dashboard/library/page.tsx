@@ -3,9 +3,8 @@ import { UploadModal } from "@/components/features/library/upload-modal"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
-// Force dynamic rendering to always fetch fresh data
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// Revalidate this page every 60 seconds
+export const revalidate = 60
 
 export default async function LibraryPage() {
     const supabase = await createClient()

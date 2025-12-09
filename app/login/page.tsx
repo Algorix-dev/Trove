@@ -35,8 +35,9 @@ export default function LoginPage() {
 
             if (error) throw error
 
-            router.push("/dashboard")
-            router.refresh()
+            toast.success("Signed in successfully!")
+            // Force hard reload to ensure session cookies are recognized by middleware
+            window.location.href = "/dashboard"
         } catch (err: any) {
             setError(err.message)
         } finally {

@@ -34,7 +34,7 @@ export default function SignupPage() {
         setSuccess(false)
 
         try {
-            const { error } = await supabase.auth.signUp({
+            const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
@@ -47,7 +47,15 @@ export default function SignupPage() {
 
             if (error) throw error
 
-            // Show success message instead of redirecting
+            // If session exists, user is logged in (Confirm Email is OFF)
+            if (data.session) {
+                toast.success("Account created successfully!")
+                // Force reload to set cookies and clear cache
+                window.location.href = "/dashboard"
+                return
+            }
+
+            // Otherwise, Confirm Email is ON
             setSuccess(true)
             setSignupEmail(email)
             setName("")

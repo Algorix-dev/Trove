@@ -52,6 +52,15 @@ export function SettingsForm() {
     const handleSaveProfile = async () => {
         if (!user) return
 
+        // Validate username
+        if (username) {
+            const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
+            if (!usernameRegex.test(username)) {
+                toast.error("Username must be 3-20 characters and contain only letters, numbers, or underscores.")
+                return
+            }
+        }
+
         setLoading(true)
         try {
             // Update profile in profiles table
@@ -64,7 +73,13 @@ export function SettingsForm() {
                 })
                 .eq('id', user.id)
 
-            if (profileError) throw profileError
+            if (profileError) {
+                if (profileError.code === '23505') { // Unique violation
+                    toast.error("Username is already taken.")
+                    return
+                }
+                throw profileError
+            }
 
             // Update email in auth if changed
             if (email !== user.email) {
