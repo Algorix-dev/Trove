@@ -29,26 +29,9 @@ export async function updateSession(request: NextRequest) {
         }
     )
 
-    // IMPORTANT: Avoid writing any logic between createServerClient and
-    // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-    // issues with users being randomly logged out.
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
-
-    // Protected routes pattern
-    const protectedPaths = ['/dashboard']
-    const isProtectedRoute = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path))
-
-    // Auth condition
-    if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup'))) {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-
-    if (!user && isProtectedRoute) {
-        return NextResponse.redirect(new URL('/login', request.url))
-    }
+    // Refresh the session to keep cookies fresh
+    // But don't redirect - let client-side AuthGuard handle auth
+    await supabase.auth.getUser()
 
     return supabaseResponse
 }
