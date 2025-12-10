@@ -2,11 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  /* Smooth theme transition */
-  transition: background-color 1.2s cubic-bezier(0.32, 0.72, 0, 1),
-    border-color 1.2s cubic-bezier(0.32, 0.72, 0, 1),
-    color 1.2s cubic-bezier(0.32, 0.72, 0, 1);
+body,
+.bg-background,
+.bg-card,
+.border-border,
+.text-foreground {
+  transition: background-color 0.7s ease-in-out, border-color 0.7s ease-in-out, color 0.7s ease-in-out;
 }
 
 @layer base {
@@ -35,7 +36,7 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 89.8%;
+    --border: 220 13% 90%;
     --input: 0 0% 89.8%;
     --ring: 0 0% 3.9%;
 
@@ -77,7 +78,7 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 14.9%;
+    --border: 217 19% 27%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
     --chart-1: 220 70% 50%;

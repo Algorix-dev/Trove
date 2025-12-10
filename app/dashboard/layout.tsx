@@ -18,7 +18,9 @@ export default function DashboardLayout({
                 <DashboardHeader />
                 <div className="p-8">
                     <AuthGuard>
-                        {children}
+                        <div className="animate-in fade-in zoom-in-95 duration-500">
+                            {children}
+                        </div>
                     </AuthGuard>
                 </div>
             </main>

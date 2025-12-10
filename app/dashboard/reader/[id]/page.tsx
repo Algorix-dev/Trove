@@ -36,12 +36,8 @@ export default async function ReaderPage({
         </div>
     }
 
-    // Get signed URL for the file
-    const { data } = await supabase.storage
-        .from('books')
-        .createSignedUrl(book.file_url, 3600) // 1 hour expiry
-
-    const fileUrl = data?.signedUrl || ""
+    // Use the stored public URL directly
+    const fileUrl = book.file_url
     const format = book.format || 'pdf'
 
     // Extract bookmark navigation params

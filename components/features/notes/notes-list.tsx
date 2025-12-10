@@ -30,6 +30,10 @@ export function NotesList() {
     useEffect(() => {
         if (!user) return
         fetchNotes()
+
+        const handleNoteCreated = () => fetchNotes()
+        window.addEventListener('note-created', handleNoteCreated)
+        return () => window.removeEventListener('note-created', handleNoteCreated)
     }, [user])
 
     const fetchNotes = async () => {

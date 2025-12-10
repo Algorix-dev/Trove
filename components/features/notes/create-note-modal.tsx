@@ -85,6 +85,7 @@ export function CreateNoteModal() {
             setHighlight("")
             setNote("")
             router.refresh()
+            window.dispatchEvent(new Event('note-created'))
             toast.success(matchedBook ? "Note added to " + matchedBook.title : "General note created (Book not found in library)")
         } catch (error) {
             console.error('Note creation error:', error)
