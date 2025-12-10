@@ -8,6 +8,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { createBrowserClient } from "@supabase/ssr";
 import { GamificationService } from "@/lib/gamification";
+import { format } from "date-fns";
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -107,7 +108,8 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light', onLo
                             book_id: bookId,
                             duration_minutes: 1,
                             // Use local date to avoid timezone issues with charts
-                            session_date: new Date().toLocaleDateString('en-CA')
+                            // Use local date to avoid timezone issues with charts
+                            session_date: format(new Date(), 'yyyy-MM-dd')
                         })
 
                     // Award XP

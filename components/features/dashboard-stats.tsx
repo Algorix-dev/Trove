@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Flame, Clock, BookOpen, TrendingUp } from "lucide-react"
 import { createBrowserClient } from "@supabase/ssr"
+import { format } from "date-fns"
 
 export function DashboardStats() {
     const [stats, setStats] = useState({
@@ -53,15 +54,13 @@ export function DashboardStats() {
 
             // Calculate books currently reading
             const readingNow = progressData.data?.filter(
-                p => p.progress_percentage > 0 && p.progress_percentage < 100
+                p => p.progress_percentage < 100
             ).length || 0
 
             // Calculate total and today's minutes
             const totalMinutes = sessionsData.data?.reduce((acc, session) => acc + session.duration_minutes, 0) || 0
 
-            // Fix: Use local date for comparison to match user's timezone
-            const now = new Date()
-            const todayLocal = now.toLocaleDateString('en-CA') // YYYY-MM-DD in local time
+            const todayLocal = format(new Date(), 'yyyy-MM-dd')
 
             const todayMinutes = sessionsData.data
                 ?.filter(session => session.session_date === todayLocal)

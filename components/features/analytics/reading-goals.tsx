@@ -39,6 +39,14 @@ export function ReadingGoals() {
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         )
 
+        // Fetch completed books count dynamically
+        const { count: completedCount } = await supabase
+            .from('reading_progress')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('progress_percentage', 100)
+
+        // Fetch goal settings
         const { data } = await supabase
             .from('reading_goals')
             .select('*')
@@ -47,7 +55,10 @@ export function ReadingGoals() {
             .single()
 
         if (data) {
-            setGoal(data)
+            setGoal({
+                ...data,
+                books_completed: completedCount || 0
+            })
             setNewTarget(data.target_books)
         } else {
             // Create default goal
@@ -61,7 +72,12 @@ export function ReadingGoals() {
                 .select()
                 .single()
 
-            if (newGoal) setGoal(newGoal)
+            if (newGoal) {
+                setGoal({
+                    ...newGoal,
+                    books_completed: completedCount || 0
+                })
+            }
         }
 
         setLoading(false)
