@@ -26,6 +26,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        // Check for existing session on mount
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            setUser(session?.user ?? null)
+            setLoading(false)
+        }
+
+        checkSession()
+
+        // Listen for auth changes
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_, session) => {
