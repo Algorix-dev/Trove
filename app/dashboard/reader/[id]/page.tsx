@@ -14,7 +14,7 @@ export default async function ReaderPage({
 }) {
     const { id } = await params
     const search = await searchParams
-    const supabase = await createClient()
+    const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
