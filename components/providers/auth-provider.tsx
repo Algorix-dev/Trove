@@ -17,30 +17,44 @@ const AuthContext = createContext<AuthContextType>({
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [supabase] = useState(() => createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    ))
+    const [supabase] = useState(() => 
+        createBrowserClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    get(name: string) {
+                        return document.cookie
+                            .split('; ')
+                            .find(row => row.startsWith(`${name}=`))
+                            ?.split('=')[1]
+                    },
+                    set(name: string, value: string, options: any) {
+                        document.cookie = `${name}=${value}; path=/; max-age=${options.maxAge || 31536000}; SameSite=Lax; ${options.domain ? `domain=${options.domain};` : ''}`
+                    },
+                    remove(name: string, options: any) {
+                        document.cookie = `${name}=; path=/; max-age=0`
+                    },
+                },
+            }
+        )
+    )
 
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        // Check for existing session on mount
-        const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
+        // Get initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null)
             setLoading(false)
-        }
-
-        checkSession()
+        })
 
         // Listen for auth changes
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_, session) => {
+        } = supabase.auth.onAuthStateChange((_event, session) => {
             setUser(session?.user ?? null)
-            setLoading(false)
         })
 
         return () => {
