@@ -173,7 +173,7 @@ export function UploadModal({ open: controlledOpen, onOpenChange }: UploadModalP
                 try {
                     const arrayBuffer = await file.arrayBuffer()
                     const pdfJS = await import('pdfjs-dist')
-                    pdfJS.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+                    pdfJS.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfJS.version}/build/pdf.worker.min.mjs`
 
                     const pdf = await pdfJS.getDocument({ data: arrayBuffer }).promise
                     totalPages = pdf.numPages

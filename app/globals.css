@@ -2,12 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-body,
-.bg-background,
-.bg-card,
-.border-border,
-.text-foreground {
-  transition: background-color 0.7s ease-in-out, border-color 0.7s ease-in-out, color 0.7s ease-in-out;
+* {
+  transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out, color 0.5s ease-in-out, fill 0.5s ease-in-out, stroke 0.5s ease-in-out;
 }
 
 @layer base {
