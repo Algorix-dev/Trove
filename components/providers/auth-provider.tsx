@@ -17,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+<<<<<<< HEAD
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
 
@@ -24,6 +25,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
+=======
+    const [supabase] = useState(() => createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    ))
+
+    const [user, setUser] = useState<User | null>(null)
+    const [loading, setLoading] = useState(true)
+>>>>>>> 45bc0a3 (Fix authentication loops and implement dashboard features)
 
     useEffect(() => {
         const {
