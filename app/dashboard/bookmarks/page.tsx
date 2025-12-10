@@ -1,12 +1,11 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+"use client"
+
 import { BookmarksList } from "@/components/features/bookmarks/bookmarks-list"
+import { useAuth } from "@/components/providers/auth-provider"
 
-export default async function BookmarksPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+export default function BookmarksPage() {
+    const { user } = useAuth()
 
-    // User is guaranteed to exist due to AuthGuard in layout
     if (!user) return null
 
     return (
