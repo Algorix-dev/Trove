@@ -9,9 +9,9 @@ export default async function LibraryPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
-        redirect("/login")
-    }
+    // User is guaranteed to exist due to AuthGuard in layout
+    if (!user) return null
+
 
     // Fetch books with reading progress
     const { data: booksData, error } = await supabase
