@@ -7,73 +7,58 @@ import { Input } from "@/components/ui/input"
 import { Users, MessageCircle, Search, BookOpen, Sparkles, Rocket, Brain, Palette } from "lucide-react"
 import { CommunityInviteModal } from "./community-invite-modal"
 import Link from "next/link"
+import { createBrowserClient } from "@supabase/ssr"
+import { useEffect } from "react"
 
-// Fixed community categories
-const communities = [
-    {
-        id: "fiction",
-        name: "Fiction Lovers",
-        description: "Dive into imaginary worlds, compelling characters, and unforgettable stories.",
-        icon: BookOpen,
-        color: "text-blue-500",
-        bgColor: "bg-blue-500/10",
-        members: 2456,
-        activeUsers: 145,
-        discordUrl: "https://discord.gg/your-fiction-channel" // Replace with actual Discord link
-    },
-    {
-        id: "non-fiction",
-        name: "Non-Fiction Hub",
-        description: "Real stories, biographies, history, and knowledge that expands your mind.",
-        icon: Brain,
-        color: "text-green-500",
-        bgColor: "bg-green-500/10",
-        members: 1823,
-        activeUsers: 98,
-        discordUrl: "https://discord.gg/your-nonfiction-channel"
-    },
-    {
-        id: "manga-anime",
-        name: "Manga & Anime",
-        description: "Japanese comics, light novels, and anime adaptations. All things otaku!",
-        icon: Sparkles,
-        color: "text-pink-500",
-        bgColor: "bg-pink-500/10",
-        members: 3421,
-        activeUsers: 234,
-        discordUrl: "https://discord.gg/your-manga-channel"
-    },
-    {
-        id: "scifi-fantasy",
-        name: "Sci-Fi & Fantasy",
-        description: "Epic adventures, magical realms, futuristic worlds, and everything speculative.",
-        icon: Rocket,
-        color: "text-purple-500",
-        bgColor: "bg-purple-500/10",
-        members: 2891,
-        activeUsers: 167,
-        discordUrl: "https://discord.gg/your-scifi-channel"
-    },
-    {
-        id: "self-development",
-        name: "Self-Development",
-        description: "Personal growth, productivity, mindfulness, and becoming your best self.",
-        icon: Palette,
-        color: "text-orange-500",
-        bgColor: "bg-orange-500/10",
-        members: 1567,
-        activeUsers: 89,
-        discordUrl: "https://discord.gg/your-selfdev-channel"
-    },
-]
+
 
 export function CommunityList() {
     const [searchQuery, setSearchQuery] = useState("")
+    const [communities, setCommunities] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchCommunities = async () => {
+            const supabase = createBrowserClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            )
+
+            const { data, error } = await supabase
+                .from('communities')
+                .select('*')
+                .order('member_count', { ascending: false })
+
+            if (data) {
+                setCommunities(data)
+            }
+            if (error) {
+                console.error("Error fetching communities:", error)
+            }
+            setLoading(false)
+        }
+
+        fetchCommunities()
+    }, [])
+
+    // Map string icon names to Lucide components
+    const getIcon = (iconName: string) => {
+        const icons: Record<string, any> = {
+            BookOpen, Brain, Sparkles, Rocket, Palette
+        }
+        return icons[iconName] || BookOpen
+    }
 
     const filteredCommunities = communities.filter(community =>
         community.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         community.description.toLowerCase().includes(searchQuery.toLowerCase())
     )
+
+    if (loading) {
+        return <div className="h-64 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+    }
 
     return (
         <div className="space-y-4">
@@ -92,12 +77,12 @@ export function CommunityList() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredCommunities.length > 0 ? (
                     filteredCommunities.map((community) => {
-                        const Icon = community.icon
+                        const Icon = getIcon(community.icon_name)
                         return (
                             <Card key={community.id} className="hover:shadow-lg transition-all hover:scale-[1.02]">
                                 <CardHeader>
                                     <div className="flex items-center gap-3 mb-2">
-                                        <div className={`p-3 rounded-lg ${community.bgColor}`}>
+                                        <div className={`p-3 rounded-lg ${community.bg_color}`}>
                                             <Icon className={`h-6 w-6 ${community.color}`} />
                                         </div>
                                     </div>
@@ -108,11 +93,11 @@ export function CommunityList() {
                                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                                         <div className="flex items-center gap-1">
                                             <Users className="h-4 w-4" />
-                                            <span>{community.members.toLocaleString()} members</span>
+                                            <span>{community.member_count.toLocaleString()} members</span>
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <MessageCircle className="h-4 w-4" />
-                                            <span>{community.activeUsers} active</span>
+                                            <span>{community.active_count} active</span>
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
@@ -120,7 +105,7 @@ export function CommunityList() {
                                             className="flex-1"
                                             asChild
                                         >
-                                            <Link href={community.discordUrl} target="_blank" rel="noopener noreferrer">
+                                            <Link href={community.discord_url || '#'} target="_blank" rel="noopener noreferrer">
                                                 Join Discussion
                                             </Link>
                                         </Button>

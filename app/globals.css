@@ -2,86 +2,103 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out, color 0.5s ease-in-out, fill 0.5s ease-in-out, stroke 0.5s ease-in-out;
-}
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    /* Main Background: Soft Cool Blue-White offering depth */
+    --background: 240 25% 98%;
 
+    /* Text: Deep Blue-Grey, softer than pure black */
+    --foreground: 240 10% 3.9%;
+
+    /* Cards: Pure White to pop against the colored background */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 240 10% 3.9%;
 
+    /* Popovers */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
+    --popover-foreground: 240 10% 3.9%;
 
-    --primary: 0 0% 9%;
+    /* Primary: Vibrant Indigo-Violet */
+    --primary: 255 70% 55%;
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
+    /* Secondary: Soft Lavender-Grey */
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 5.9% 10%;
 
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    /* Muted: Subtle Blue-Grey */
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    /* Accent: Vivid Purple/Pink for highlights */
+    --accent: 280 60% 60%;
+    --accent-foreground: 0 0% 98%;
 
+    /* Destructive */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 13% 90%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    /* Border: Subtle Blue-Grey mix */
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 255 70% 55%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+    /* Slightly more rounded for modern feel */
 
-    --chart-1: 12 76% 61%;
-
+    /* Chart Colors - Vibrant Spectrum */
+    --chart-1: 255 70% 55%;
+    /* Indigo */
     --chart-2: 173 58% 39%;
-
-    --chart-3: 197 37% 24%;
-
-    --chart-4: 43 74% 66%;
-
-    --chart-5: 27 87% 67%;
+    /* Teal */
+    --chart-3: 30 80% 55%;
+    /* Orange */
+    --chart-4: 280 65% 60%;
+    /* Purple */
+    --chart-5: 340 75% 55%;
+    /* Pink */
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
+    /* Main Background: Deep Rich Midnight Blue */
+    --background: 240 20% 6%;
+    --foreground: 240 10% 98%;
 
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
+    /* Cards: Slightly lighter midnight blue */
+    --card: 240 20% 8%;
+    --card-foreground: 240 10% 98%;
 
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 240 20% 8%;
+    --popover-foreground: 240 10% 98%;
 
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
+    /* Primary: Brighter Luminous Indigo */
+    --primary: 255 80% 65%;
+    --primary-foreground: 240 10% 0%;
+    /* Dark text on bright primary */
 
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 240 15% 15%;
+    --secondary-foreground: 240 10% 98%;
 
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted: 240 15% 15%;
+    --muted-foreground: 240 5% 65%;
 
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 280 70% 65%;
+    --accent-foreground: 240 10% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 217 19% 27%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
+    --border: 240 15% 20%;
+    /* Darker borders for contrast */
+    --input: 240 15% 20%;
+    --ring: 255 80% 65%;
+
+    /* Chart Colors Dark Mode */
+    --chart-1: 255 80% 65%;
     --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-3: 30 80% 65%;
+    --chart-4: 280 70% 65%;
+    --chart-5: 340 75% 65%;
   }
 }
 
@@ -91,6 +108,16 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground selection:bg-primary/20 selection:text-primary;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+/* Optimized global transitions with smooth easing */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
 }

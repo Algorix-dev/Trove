@@ -24,7 +24,7 @@ export function LibraryContent({ books }: LibraryContentProps) {
     // Listen for book uploads
     useEffect(() => {
         const handleBookUploaded = () => {
-            console.log("Book uploaded, refreshing library...")
+
             router.refresh()
         }
 
