@@ -56,7 +56,7 @@ export function ContinueReading() {
                     )
                 `)
                 .eq('user_id', user.id)
-                .gt('progress_percentage', 0)
+                // Removed .gt('progress_percentage', 0) to show books even at start
                 .lt('progress_percentage', 100)
                 .order('updated_at', { ascending: false })
                 .limit(1)

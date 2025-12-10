@@ -106,7 +106,8 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light', onLo
                             user_id: userId,
                             book_id: bookId,
                             duration_minutes: 1,
-                            session_date: new Date().toISOString().split('T')[0]
+                            // Use local date to avoid timezone issues with charts
+                            session_date: new Date().toLocaleDateString('en-CA')
                         })
 
                     // Award XP
