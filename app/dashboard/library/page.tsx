@@ -14,7 +14,7 @@ export default async function LibraryPage() {
     }
 
     // Fetch books with reading progress
-    const { data: booksData } = await supabase
+    const { data: booksData, error } = await supabase
         .from('books')
         .select(`
             id,
@@ -26,7 +26,6 @@ export default async function LibraryPage() {
             format,
             total_pages,
             created_at,
-            updated_at,
             reading_progress (
                 progress_percentage
             )
@@ -40,6 +39,16 @@ export default async function LibraryPage() {
         reading_progress: undefined, // Remove the nested object
         progress: book.reading_progress?.[0]?.progress_percentage || 0
     })) || []
+
+    console.log(`[LibraryPage] Fetched ${books.length} books for user ${user.id}`)
+    if (books.length > 0) {
+        console.log('[LibraryPage] First book:', books[0].title)
+    } else {
+        console.log('[LibraryPage] No books found. Query result:', booksData)
+        if (error) {
+            console.error('[LibraryPage] DB Error:', error.message, error.details, error.hint)
+        }
+    }
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">

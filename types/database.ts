@@ -30,7 +30,7 @@ export interface Book {
     format: 'pdf' | 'epub' | 'txt'
     total_pages: number
     created_at: string
-    updated_at: string
+    updated_at?: string
 }
 
 export interface ReadingProgress {
