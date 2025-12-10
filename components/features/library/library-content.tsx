@@ -1,36 +1,80 @@
 "use client"
 
-
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { BookGrid } from "./book-grid"
 import { LibrarySearch } from "./library-search"
 import { EmptyLibrary } from "./empty-library"
 import type { BookWithProgress } from "@/types/database"
+import { createBrowserClient } from "@supabase/ssr"
+import { useAuth } from "@/components/providers/auth-provider"
 
 interface LibraryContentProps {
     books: BookWithProgress[]
 }
 
-export function LibraryContent({ books }: LibraryContentProps) {
-    const [filteredBooks, setFilteredBooks] = useState<BookWithProgress[]>(books)
-    const router = useRouter()
+export function LibraryContent({ books: initialBooks }: LibraryContentProps) {
+    const { user } = useAuth()
+    const [books, setBooks] = useState<BookWithProgress[]>(initialBooks)
+    const [filteredBooks, setFilteredBooks] = useState<BookWithProgress[]>(initialBooks)
+    const [loading, setLoading] = useState(true)
 
-    // Update state when initial books change (e.g. after router.refresh())
     useEffect(() => {
-        setFilteredBooks(books)
-    }, [books])
+        if (!user) return
 
-    // Listen for book uploads
-    useEffect(() => {
+        const fetchBooks = async () => {
+            const supabase = createBrowserClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            )
+
+            const { data: booksData } = await supabase
+                .from('books')
+                .select(`
+                    id,
+                    user_id,
+                    title,
+                    author,
+                    cover_url,
+                    file_url,
+                    format,
+                    total_pages,
+                    created_at,
+                    reading_progress (
+                        progress_percentage
+                    )
+                `)
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+
+            const transformedBooks = booksData?.map(book => ({
+                ...book,
+                reading_progress: undefined,
+                progress: book.reading_progress?.[0]?.progress_percentage || 0
+            })) as BookWithProgress[] || []
+
+            setBooks(transformedBooks)
+            setFilteredBooks(transformedBooks)
+            setLoading(false)
+        }
+
+        fetchBooks()
+
+        // Listen for book uploads
         const handleBookUploaded = () => {
-
-            router.refresh()
+            fetchBooks()
         }
 
         window.addEventListener('book-uploaded', handleBookUploaded)
         return () => window.removeEventListener('book-uploaded', handleBookUploaded)
-    }, [router])
+    }, [user])
+
+    if (loading) {
+        return (
+            <div className="flex h-64 items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            </div>
+        )
+    }
 
     if (books.length === 0) {
         return <EmptyLibrary />
