@@ -36,8 +36,17 @@ export default async function ReaderPage({
         </div>
     }
 
-    // Use the stored public URL directly
-    const fileUrl = book.file_url
+    // Extract file path from public URL to create a signed URL
+    // Public URL format: .../storage/v1/object/public/books/[path]
+    const filePath = book.file_url.split('/books/').pop()
+    const decodedPath = filePath ? decodeURIComponent(filePath) : ""
+
+    // Get signed URL for the file (works for both private and public buckets)
+    const { data } = await supabase.storage
+        .from('books')
+        .createSignedUrl(decodedPath, 3600) // 1 hour expiry
+
+    const fileUrl = data?.signedUrl || book.file_url // Fallback to public URL if signing fails
     const format = book.format || 'pdf'
 
     // Extract bookmark navigation params

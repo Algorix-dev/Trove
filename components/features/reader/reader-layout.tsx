@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Settings, Bookmark } from "lucide-react"
 import Link from "next/link"
-import React, { useState, useEffect, ReactElement } from "react"
+import React, { useState, useEffect, ReactElement, useCallback } from "react"
 import { ReaderSettings } from "@/components/features/reader/reader-settings"
 import { createBrowserClient } from "@supabase/ssr"
 
@@ -29,9 +29,19 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     const [currentLocation, setCurrentLocation] = useState<LocationData>({})
 
     // Detect location updates
-    const handleLocationUpdate = (data: LocationData) => {
-        setCurrentLocation(prev => ({ ...prev, ...data }))
-    }
+    const handleLocationUpdate = useCallback((data: LocationData) => {
+        setCurrentLocation(prev => {
+            // Only update if values actually changed to prevent loops
+            if (
+                prev.currentPage === data.currentPage &&
+                prev.currentCFI === data.currentCFI &&
+                prev.progressPercentage === data.progressPercentage
+            ) {
+                return prev
+            }
+            return { ...prev, ...data }
+        })
+    }, [])
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
