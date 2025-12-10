@@ -3,8 +3,7 @@ import { UploadModal } from "@/components/features/library/upload-modal"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
-// Revalidate this page every 60 seconds
-export const revalidate = 60
+// Page is dynamic by default due to cookies usage in createClient
 
 export default async function LibraryPage() {
     const supabase = await createClient()

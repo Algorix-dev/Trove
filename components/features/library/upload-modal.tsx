@@ -172,8 +172,10 @@ export function UploadModal({ open: controlledOpen, onOpenChange }: UploadModalP
             if (fileExt === 'pdf') {
                 try {
                     const arrayBuffer = await file.arrayBuffer()
-                    const { getDocument } = await import('pdfjs-dist')
-                    const pdf = await getDocument({ data: arrayBuffer }).promise
+                    const pdfJS = await import('pdfjs-dist')
+                    pdfJS.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+
+                    const pdf = await pdfJS.getDocument({ data: arrayBuffer }).promise
                     totalPages = pdf.numPages
                 } catch (error) {
                     console.error('Failed to extract PDF page count:', error)
