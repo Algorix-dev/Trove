@@ -6,9 +6,8 @@ export default async function QuotesPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
-        redirect("/login")
-    }
+    // User is guaranteed to exist due to AuthGuard in layout
+    if (!user) return null
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">

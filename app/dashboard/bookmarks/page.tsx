@@ -6,9 +6,8 @@ export default async function BookmarksPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
-        redirect("/login")
-    }
+    // User is guaranteed to exist due to AuthGuard in layout
+    if (!user) return null
 
     return (
         <div className="container max-w-6xl mx-auto p-6 space-y-6">
