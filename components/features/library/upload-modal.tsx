@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Upload, Loader2, FileText, Image as ImageIcon } from "lucide-react"
-import { createBrowserClient } from "@supabase/ssr"
+import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { useAuth } from "@/components/providers/auth-provider"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -54,10 +54,7 @@ export function UploadModal({ open: controlledOpen, onOpenChange }: UploadModalP
     const open = controlledOpen !== undefined ? controlledOpen : internalOpen
     const setOpen = onOpenChange || setInternalOpen
 
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createBrowserSupabaseClient()
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {

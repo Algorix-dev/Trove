@@ -9,11 +9,11 @@ import { DailyGoalCelebration } from "@/components/features/gamification/daily-g
 import { LevelUpCelebration } from "@/components/features/gamification/level-up-celebration"
 import { ReadingStreakCalendar } from "@/components/features/analytics/reading-streak-calendar"
 import { ReadingGoals } from "@/components/features/analytics/reading-goals"
-import { createClient } from "@/lib/supabase/server"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
 export default async function DashboardPage() {
-    const supabase = createClient()
+    const supabase = createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (!user) {

@@ -1,5 +1,5 @@
 import { ReaderLayout } from "@/components/features/reader/reader-layout"
-import { createClient } from "@/lib/supabase/server"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { EmptyState } from "@/components/ui/empty-state"
 import { BookOpen } from "lucide-react"
@@ -27,7 +27,7 @@ export default async function ReaderPage({
 }) {
     const { id } = await params
     const search = await searchParams
-    const supabase = createClient()
+    const supabase = createServerSupabaseClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {

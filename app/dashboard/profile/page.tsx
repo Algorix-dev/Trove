@@ -1,10 +1,10 @@
 import { ProfileHeader } from "@/components/features/profile/profile-header"
 import { ProfileTabs } from "@/components/features/profile/profile-tabs"
-import { createClient } from "@/lib/supabase/server"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
 export default async function ProfilePage() {
-    const supabase = createClient()
+    const supabase = createServerSupabaseClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {

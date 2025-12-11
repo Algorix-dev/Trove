@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Loader2, Bell, Mail } from "lucide-react"
-import { createBrowserClient } from "@supabase/ssr"
+import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { useAuth } from "@/components/providers/auth-provider"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -23,10 +23,7 @@ export function SettingsForm() {
     const { user } = useAuth()
     const router = useRouter()
 
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createBrowserSupabaseClient()
 
     useEffect(() => {
         if (user) {

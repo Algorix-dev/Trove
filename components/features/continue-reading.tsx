@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { PlayCircle, BookOpen } from "lucide-react"
 import { useEffect, useState } from "react"
-import { createBrowserClient } from "@supabase/ssr"
+import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import Link from "next/link"
 
 interface ContinueReadingBook {
@@ -33,10 +33,7 @@ export function ContinueReading() {
 
     useEffect(() => {
         const fetchLastReadBook = async () => {
-            const supabase = createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            )
+            const supabase = createBrowserSupabaseClient()
 
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
