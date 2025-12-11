@@ -14,7 +14,7 @@ interface LocationData {
 }
 
 interface ReaderLayoutProps {
-    children: ReactElement;
+    children: React.ReactNode;
     title: string;
     bookId: string;
     userId: string;

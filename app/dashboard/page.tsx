@@ -16,14 +16,7 @@ export default async function DashboardPage() {
     const supabase = createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    console.log("Dashboard Auth Check:", {
-        hasUser: !!user,
-        userId: user?.id,
-        error: authError?.message
-    })
-
     if (!user) {
-        console.log("Redirecting to login due to missing user")
         redirect("/login")
     }
 

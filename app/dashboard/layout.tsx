@@ -1,8 +1,5 @@
-"use client"
-
 import { DashboardSidebar } from "@/components/features/dashboard-sidebar"
 import { DashboardHeader } from "@/components/features/dashboard-header"
-import { AuthGuard } from "@/components/features/auth-guard"
 
 export default function DashboardLayout({
     children,
@@ -17,11 +14,9 @@ export default function DashboardLayout({
             <main className="md:pl-72">
                 <DashboardHeader />
                 <div className="p-8">
-                    <AuthGuard>
-                        <div className="animate-in fade-in zoom-in-95 duration-500">
-                            {children}
-                        </div>
-                    </AuthGuard>
+                    <div className="animate-in fade-in zoom-in-95 duration-500">
+                        {children}
+                    </div>
                 </div>
             </main>
         </div>

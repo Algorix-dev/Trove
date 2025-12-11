@@ -4,6 +4,8 @@ import { EpubViewer } from "@/components/features/reader/epub-viewer"
 import { TxtViewer } from "@/components/features/reader/txt-viewer"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { EmptyState } from "@/components/ui/empty-state"
+import { BookOpen } from "lucide-react"
 
 export default async function ReaderPage({
     params,
@@ -28,12 +30,17 @@ export default async function ReaderPage({
         .single()
 
     if (!book) {
-        return <div className="flex items-center justify-center min-h-screen">
-            <div className="text-center">
-                <h1 className="text-2xl font-bold mb-2">Book not found</h1>
-                <p className="text-muted-foreground">The book you're looking for doesn't exist or you don't have access to it.</p>
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <EmptyState
+                    icon={BookOpen}
+                    title="Book not found"
+                    description="The book you're looking for doesn't exist or you don't have access to it."
+                    actionLabel="Return to Library"
+                    actionHref="/dashboard"
+                />
             </div>
-        </div>
+        )
     }
 
     // Extract file path from public URL to create a signed URL
