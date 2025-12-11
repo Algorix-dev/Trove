@@ -1,11 +1,22 @@
 import { ReaderLayout } from "@/components/features/reader/reader-layout"
-import { PDFViewer } from "@/components/features/reader/pdf-viewer"
-import { EpubViewer } from "@/components/features/reader/epub-viewer"
-import { TxtViewer } from "@/components/features/reader/txt-viewer"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { EmptyState } from "@/components/ui/empty-state"
 import { BookOpen } from "lucide-react"
+import dynamic from "next/dynamic"
+
+const PDFViewer = dynamic(
+    () => import("@/components/features/reader/pdf-viewer").then(mod => mod.PDFViewer),
+    { ssr: false }
+)
+const EpubViewer = dynamic(
+    () => import("@/components/features/reader/epub-viewer").then(mod => mod.EpubViewer),
+    { ssr: false }
+)
+const TxtViewer = dynamic(
+    () => import("@/components/features/reader/txt-viewer").then(mod => mod.TxtViewer),
+    { ssr: false }
+)
 
 export default async function ReaderPage({
     params,
