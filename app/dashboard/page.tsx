@@ -12,6 +12,8 @@ import { ReadingGoals } from "@/components/features/analytics/reading-goals"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage() {
     const supabase = createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()

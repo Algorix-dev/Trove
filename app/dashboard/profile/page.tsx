@@ -3,6 +3,8 @@ import { ProfileTabs } from "@/components/features/profile/profile-tabs"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
+export const dynamic = 'force-dynamic'
+
 export default async function ProfilePage() {
     const supabase = createServerSupabaseClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -31,7 +33,7 @@ export default async function ProfilePage() {
         .select('duration_minutes')
         .eq('user_id', user.id)
 
-    const totalMinutes = sessions?.reduce((acc, session) => acc + session.duration_minutes, 0) || 0
+    const totalMinutes = sessions?.reduce((acc: number, session: any) => acc + session.duration_minutes, 0) || 0
 
     const stats = {
         booksRead: booksRead || 0,

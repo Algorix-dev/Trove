@@ -1,5 +1,7 @@
-import { DashboardSidebar } from "@/components/features/dashboard-sidebar"
 import { DashboardHeader } from "@/components/features/dashboard-header"
+import { DashboardSidebar } from "@/components/features/dashboard-sidebar"
+
+export const dynamic = 'force-dynamic'
 
 export default function DashboardLayout({
     children,
