@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserSupabaseClient } from '@/lib/supabase/client'
 import confetti from 'canvas-confetti'
 import { Trophy } from 'lucide-react'
 
@@ -20,10 +20,7 @@ export function DailyGoalCelebration() {
                 return
             }
 
-            const supabase = createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            )
+            const supabase = createBrowserSupabaseClient()
 
             // Get user's daily goal
             const { data: profile } = await supabase

@@ -1,4 +1,4 @@
-// /middleware.ts
+// middleware.ts
 export const dynamic = "force-dynamic";
 
 import { type NextRequest, NextResponse } from "next/server";
@@ -24,7 +24,7 @@ export async function middleware(request: NextRequest) {
         }
     );
 
-    // refresh session (keeps cookies alive)
+    // keep session fresh (no redirects here)
     await supabase.auth.getSession();
 
     return response;
@@ -32,7 +32,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
-        // exclude static assets and auth callback so callback can set cookies
         "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
     ],
 };

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserSupabaseClient } from '@/lib/supabase/client'
 import confetti from 'canvas-confetti'
 import { Sparkles } from 'lucide-react'
 
@@ -14,10 +14,7 @@ export function LevelUpCelebration() {
         if (!user) return
 
         const checkLevelUp = async () => {
-            const supabase = createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            )
+            const supabase = createBrowserSupabaseClient()
 
             const { data: profile } = await supabase
                 .from('profiles')

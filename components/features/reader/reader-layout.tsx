@@ -5,7 +5,7 @@ import { ArrowLeft, Settings, Bookmark } from "lucide-react"
 import Link from "next/link"
 import React, { useState, useEffect, ReactElement, useCallback } from "react"
 import { ReaderSettings } from "@/components/features/reader/reader-settings"
-import { createBrowserClient } from "@supabase/ssr"
+import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 
 interface LocationData {
     currentPage?: number;
@@ -43,10 +43,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         })
     }, [])
 
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createBrowserSupabaseClient();
 
     // Load bookmark status
     useEffect(() => {

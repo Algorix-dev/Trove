@@ -1,23 +1,39 @@
-"use client"
-
+// app/dashboard/quotes/page.tsx
 import { QuotesList } from "@/components/features/quotes/quotes-list"
-import { useAuth } from "@/components/providers/auth-provider"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 
-export default function QuotesPage() {
-    const { user } = useAuth()
+export default async function QuotesPage() {
+    const supabase = createServerSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect("/login")
 
-    if (!user) return null
+    const { data: rawQuotes } = await supabase
+        .from("book_quotes")
+        .select(`
+      id,
+      quote_text,
+      page_number,
+      page_ref,
+      chapter,
+      note,
+      is_favorite,
+      created_at,
+      books ( id, title, author )
+    `)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
 
-    return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight">Saved Quotes</h2>
-                <p className="text-muted-foreground">
-                    Your collection of memorable passages and insights
-                </p>
-            </div>
+    const quotes = (rawQuotes || []).map((q: any) => ({
+        id: q.id,
+        quote_text: q.quote_text ?? "",
+        page_number: q.page_number ?? q.page_ref ?? null,
+        chapter: q.chapter ?? null,
+        note: q.note ?? null,
+        is_favorite: !!q.is_favorite,
+        created_at: q.created_at,
+        books: Array.isArray(q.books) ? q.books[0] ?? null : q.books ?? null
+    }))
 
-            <QuotesList userId={user.id} />
-        </div>
-    )
+    return <QuotesList userId={user.id} quotes={quotes} />
 }

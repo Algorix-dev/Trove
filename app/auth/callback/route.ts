@@ -20,7 +20,6 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}/login`);
     }
 
-    // Prepare response so Supabase can attach cookies into it
     const response = NextResponse.redirect(`${origin}/dashboard`);
     const cookieStore = cookies();
 

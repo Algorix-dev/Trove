@@ -4,61 +4,28 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Search, BookOpen } from "lucide-react"
 import { CreateNoteModal } from "./create-note-modal"
-import { createBrowserClient } from "@supabase/ssr"
-import { useAuth } from "@/components/providers/auth-provider"
+import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { useEffect, useState } from "react"
-
-
 import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { GamificationService } from "@/lib/gamification"
 import { DeleteConfirmDialog } from "@/components/features/delete-confirm-dialog"
-
 import type { Note } from "@/types/database"
 
-export function NotesList() {
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-
-    const [notes, setNotes] = useState<Note[]>([])
-    const [loading, setLoading] = useState(true)
-    const { user } = useAuth()
+export function NotesList({ userId, notes: initialNotes }: { userId: string, notes: Note[] }) {
+    const supabase = createBrowserSupabaseClient()
+    const [notes, setNotes] = useState<Note[]>(initialNotes ?? [])
+    const [loading, setLoading] = useState(false)
+    const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null)
 
     useEffect(() => {
-        if (!user) return
-        fetchNotes()
-
-        const handleNoteCreated = () => fetchNotes()
-        window.addEventListener('note-created', handleNoteCreated)
-        return () => window.removeEventListener('note-created', handleNoteCreated)
-    }, [user])
-
-    const fetchNotes = async () => {
-        if (!user) return
-        const { data } = await supabase
-            .from('notes')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-
-        if (data) {
-            setNotes(data)
-        }
-        setLoading(false)
-    }
-
-    const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null)
+        setNotes(initialNotes ?? [])
+    }, [initialNotes])
 
     const handleDeleteClick = (noteId: string) => {
         const dontAsk = localStorage.getItem("trove-delete-note-dont-ask")
-        if (dontAsk === "true") {
-            performDelete(noteId)
-        } else {
-            setDeleteNoteId(noteId)
-        }
+        if (dontAsk === "true") performDelete(noteId)
+        else setDeleteNoteId(noteId)
     }
 
     const performDelete = async (noteId: string) => {
@@ -79,11 +46,7 @@ export function NotesList() {
         }
     }
 
-    if (loading) {
-        return <div className="text-center py-10">Loading notes...</div>
-    }
-
-    if (notes.length === 0) {
+    if (!notes || notes.length === 0) {
         return (
             <div className="space-y-6">
                 <div className="flex items-center justify-between gap-4">
@@ -115,12 +78,7 @@ export function NotesList() {
             <div className="grid gap-4">
                 {notes.map((note) => (
                     <Card key={note.id} className="group relative hover:border-primary/50 transition-colors">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleDeleteClick(note.id)}
-                        >
+                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDeleteClick(note.id)}>
                             <Trash2 className="h-3 w-3 text-destructive" />
                         </Button>
                         <CardHeader className="pb-2">
@@ -129,9 +87,7 @@ export function NotesList() {
                                     <BookOpen className="h-4 w-4" />
                                     {note.book_id ? "Book Note" : "General Note"}
                                 </div>
-                                <span className="text-xs text-muted-foreground">
-                                    {new Date(note.created_at).toLocaleDateString()}
-                                </span>
+                                <span className="text-xs text-muted-foreground">{new Date(note.created_at).toLocaleDateString()}</span>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-3">
@@ -140,6 +96,7 @@ export function NotesList() {
                     </Card>
                 ))}
             </div>
+
             {deleteNoteId && (
                 <DeleteConfirmDialog
                     open={!!deleteNoteId}

@@ -1,3 +1,4 @@
+// app/dashboard/page.tsx
 import { DashboardStats } from "@/components/features/dashboard-stats"
 import { DashboardCharts } from "@/components/features/dashboard-charts"
 import { ContinueReading } from "@/components/features/continue-reading"
@@ -28,7 +29,6 @@ export default async function DashboardPage() {
         .eq('id', user.id)
         .single()
 
-    // Fetch levels for progress calculation
     const { data: levels } = await supabase
         .from('levels')
         .select('*')
@@ -40,10 +40,9 @@ export default async function DashboardPage() {
     const levelInfo = levels?.find(l => l.level === currentLevel)
     const nextLevelInfo = levels?.find(l => l.level === currentLevel + 1)
 
-    const nextLevelXP = nextLevelInfo?.min_xp || (levelInfo?.min_xp || 0) + 1000 // Fallback if max level
+    const nextLevelXP = nextLevelInfo?.min_xp || (levelInfo?.min_xp || 0) + 1000
     const levelTitle = levelInfo?.title || "Reader"
 
-    // Use username if available, otherwise full name, otherwise "Reader"
     const name = profile?.username || profile?.full_name?.split(' ')[0] || user.user_metadata?.full_name?.split(' ')[0] || "Reader"
     const hour = new Date().getHours()
     let greeting = "Good Morning"

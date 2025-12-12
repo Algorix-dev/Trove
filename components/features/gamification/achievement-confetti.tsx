@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Confetti from "react-confetti"
 import { useWindowSize } from "@/hooks/use-window-size"
-import { createBrowserClient } from "@supabase/ssr"
+import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { Trophy } from "lucide-react"
 import Link from "next/link"
@@ -20,10 +20,7 @@ export function AchievementConfetti({ duration = 5000 }: AchievementConfettiProp
     // Check for unnotified achievements
     useEffect(() => {
         const checkAchievements = async () => {
-            const supabase = createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            )
+            const supabase = createBrowserSupabaseClient()
 
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return

@@ -8,59 +8,43 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Loader2, Bell, Mail } from "lucide-react"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
-import { useAuth } from "@/components/providers/auth-provider"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
-export function SettingsForm() {
-    const [fullName, setFullName] = useState("")
-    const [username, setUsername] = useState("")
-    const [email, setEmail] = useState("")
-    const [dailyGoal, setDailyGoal] = useState(30)
+export function SettingsForm({ profile }: { profile: any | null }) {
+    const [fullName, setFullName] = useState(profile?.full_name || "")
+    const [username, setUsername] = useState(profile?.username || "")
+    const [email, setEmail] = useState(profile?.email || "")
+    const [dailyGoal, setDailyGoal] = useState(profile?.daily_goal_minutes ?? 30)
     const [loading, setLoading] = useState(false)
     const [emailNotifications, setEmailNotifications] = useState(true)
     const [inAppNotifications, setInAppNotifications] = useState(true)
-    const { user } = useAuth()
     const router = useRouter()
-
     const supabase = createBrowserSupabaseClient()
 
     useEffect(() => {
-        if (user) {
-            setEmail(user.email || "")
-            // Fetch profile data
-            const fetchProfile = async () => {
-                const { data } = await supabase
-                    .from('profiles')
-                    .select('full_name, username, daily_goal_minutes')
-                    .eq('id', user.id)
-                    .single()
-
-                if (data) {
-                    setFullName(data.full_name || user.user_metadata?.full_name || "")
-                    setUsername(data.username || "")
-                    setDailyGoal(data.daily_goal_minutes || 30)
-                }
-            }
-            fetchProfile()
+        if (profile) {
+            setFullName(profile.full_name || "")
+            setUsername(profile.username || "")
+            setEmail(profile.email || "")
+            setDailyGoal(profile.daily_goal_minutes || 30)
         }
-    }, [user])
+    }, [profile])
 
     const handleSaveProfile = async () => {
-        if (!user) return
-
-        // Validate username
-        if (username) {
-            const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
-            if (!usernameRegex.test(username)) {
-                toast.error("Username must be 3-20 characters and contain only letters, numbers, or underscores.")
-                return
-            }
-        }
-
         setLoading(true)
         try {
-            // Update profile in profiles table
+            // Validate username
+            if (username) {
+                const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
+                if (!usernameRegex.test(username)) {
+                    toast.error("Username must be 3-20 characters and contain only letters, numbers, or underscores.")
+                    setLoading(false)
+                    return
+                }
+            }
+
+            // Update profiles table (server RLS requires authenticated user)
             const { error: profileError } = await supabase
                 .from('profiles')
                 .update({
@@ -68,21 +52,20 @@ export function SettingsForm() {
                     username: username || null,
                     daily_goal_minutes: dailyGoal
                 })
-                .eq('id', user.id)
+                .eq('id', profile?.id)
 
             if (profileError) {
-                if (profileError.code === '23505') { // Unique violation
+                if ((profileError as any).code === '23505') {
                     toast.error("Username is already taken.")
+                    setLoading(false)
                     return
                 }
                 throw profileError
             }
 
-            // Update email in auth if changed
-            if (email !== user.email) {
-                const { error: authError } = await supabase.auth.updateUser({
-                    email: email
-                })
+            // Update email in auth if changed (requires valid session)
+            if (email !== profile?.email) {
+                const { error: authError } = await supabase.auth.updateUser({ email })
                 if (authError) throw authError
             }
 
@@ -90,7 +73,7 @@ export function SettingsForm() {
             toast.success("Profile updated successfully!")
         } catch (error: any) {
             console.error(error)
-            toast.error(error.message)
+            toast.error(error.message || "Failed to update profile")
         } finally {
             setLoading(false)
         }
@@ -106,58 +89,28 @@ export function SettingsForm() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="username">Username</Label>
-                        <Input
-                            id="username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="Enter a unique username"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            This will be displayed on your dashboard greeting.
-                        </p>
+                        <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter a unique username" />
+                        <p className="text-xs text-muted-foreground">This will be displayed on your dashboard greeting.</p>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
-                        <Input
-                            id="name"
-                            value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
-                            placeholder="Enter your full name"
-                        />
+                        <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Enter your full name" />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Enter your email"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Changing your email will require verification
-                        </p>
+                        <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" />
+                        <p className="text-xs text-muted-foreground">Changing your email will require verification</p>
                     </div>
                 </CardContent>
                 <CardFooter>
                     <Button onClick={handleSaveProfile} disabled={loading}>
-                        {loading ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Saving...
-                            </>
-                        ) : (
-                            "Save Changes"
-                        )}
+                        {loading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>) : ("Save Changes")}
                     </Button>
                 </CardFooter>
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Reading Goals</CardTitle>
-                    <CardDescription>Set your daily reading targets.</CardDescription>
-                </CardHeader>
+                <CardHeader><CardTitle>Reading Goals</CardTitle><CardDescription>Set your daily reading targets.</CardDescription></CardHeader>
                 <CardContent className="space-y-6">
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
@@ -166,60 +119,30 @@ export function SettingsForm() {
                         </div>
                         <div className="flex items-center gap-4">
                             <span className="text-xs text-muted-foreground">15m</span>
-                            <input
-                                type="range"
-                                min="15"
-                                max="120"
-                                step="5"
-                                value={dailyGoal}
-                                onChange={(e) => setDailyGoal(parseInt(e.target.value))}
-                                className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
-                            />
+                            <input type="range" min="15" max="120" step="5" value={dailyGoal} onChange={(e) => setDailyGoal(parseInt(e.target.value))} className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer" />
                             <span className="text-xs text-muted-foreground">120m</span>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            Aim to read for at least {dailyGoal} minutes every day to build your streak.
-                        </p>
+                        <p className="text-xs text-muted-foreground">Aim to read for at least {dailyGoal} minutes every day to build your streak.</p>
                     </div>
                 </CardContent>
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Notification Preferences</CardTitle>
-                    <CardDescription>Manage how you receive updates and reminders.</CardDescription>
-                </CardHeader>
+                <CardHeader><CardTitle>Notification Preferences</CardTitle><CardDescription>Manage how you receive updates and reminders.</CardDescription></CardHeader>
                 <CardContent className="space-y-6">
                     <div className="flex items-center justify-between">
                         <div className="space-y-0.5 flex-1">
-                            <div className="flex items-center gap-2">
-                                <Bell className="h-4 w-4 text-muted-foreground" />
-                                <Label>In-App Notifications</Label>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                                Get notified about streaks, achievements, and reading milestones
-                            </p>
+                            <div className="flex items-center gap-2"><Bell className="h-4 w-4 text-muted-foreground" /><Label>In-App Notifications</Label></div>
+                            <p className="text-sm text-muted-foreground">Get notified about streaks, achievements, and reading milestones</p>
                         </div>
-                        <Switch
-                            checked={inAppNotifications}
-                            onCheckedChange={setInAppNotifications}
-                        />
+                        <Switch checked={inAppNotifications} onCheckedChange={setInAppNotifications} />
                     </div>
                     <div className="flex items-center justify-between">
                         <div className="space-y-0.5 flex-1">
-                            <div className="flex items-center gap-2">
-                                <Mail className="h-4 w-4 text-muted-foreground" />
-                                <Label>Email Updates (Coming Soon)</Label>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                                Receive weekly reading summaries and motivational messages
-                            </p>
+                            <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /><Label>Email Updates (Coming Soon)</Label></div>
+                            <p className="text-sm text-muted-foreground">Receive weekly reading summaries and motivational messages</p>
                         </div>
-                        <Switch
-                            checked={emailNotifications}
-                            onCheckedChange={setEmailNotifications}
-                            disabled
-                        />
+                        <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} disabled />
                     </div>
                 </CardContent>
             </Card>

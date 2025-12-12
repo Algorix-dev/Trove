@@ -1,0 +1,1310 @@
+TROVE - FEATURE COMPONENTS CODE DUMP
+Generated: 12/12/2025 22:51:36
+================================================================
+
+
+================================================================
+FILE: components/features/library/library-content.tsx
+================================================================
+
+"use client"
+
+import { useState, useEffect } from "react"
+import { BookGrid } from "./book-grid"
+import { LibrarySearch } from "./library-search"
+import { EmptyLibrary } from "./empty-library"
+import type { BookWithProgress } from "@/types/database"
+import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { useAuth } from "@/components/providers/auth-provider"
+
+interface LibraryContentProps {
+    books: BookWithProgress[]
+}
+
+export function LibraryContent({ books: initialBooks }: LibraryContentProps) {
+    const { user } = useAuth()
+    const [books, setBooks] = useState<BookWithProgress[]>(initialBooks)
+    const [filteredBooks, setFilteredBooks] = useState<BookWithProgress[]>(initialBooks)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        if (!user) return
+
+        const fetchBooks = async () => {
+            const supabase = createBrowserSupabaseClient()
+
+            const { data: booksData } = await supabase
+                .from('books')
+                .select(`
+                    id,
+                    user_id,
+                    title,
+                    author,
+                    cover_url,
+                    file_url,
+                    format,
+                    total_pages,
+                    created_at,
+                    reading_progress (
+                        progress_percentage
+                    )
+                `)
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+
+            const transformedBooks = booksData?.map(book => ({
+                ...book,
+                reading_progress: undefined,
+                progress: book.reading_progress?.[0]?.progress_percentage || 0
+            })) as BookWithProgress[] || []
+
+            setBooks(transformedBooks)
+            setFilteredBooks(transformedBooks)
+            setLoading(false)
+        }
+
+        fetchBooks()
+
+        // Listen for book uploads
+        const handleBookUploaded = () => {
+            fetchBooks()
+        }
+
+        window.addEventListener('book-uploaded', handleBookUploaded)
+        return () => window.removeEventListener('book-uploaded', handleBookUploaded)
+    }, [user])
+
+    if (loading) {
+        return (
+            <div className="flex h-64 items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            </div>
+        )
+    }
+
+    if (books.length === 0) {
+        return <EmptyLibrary />
+    }
+
+    return (
+        <div className="space-y-6">
+            <LibrarySearch
+                books={books}
+                onFilteredChange={(filtered) => setFilteredBooks(filtered as BookWithProgress[])}
+            />
+            {filteredBooks.length === 0 ? (
+                <div className="text-center py-12 border border-dashed rounded-lg">
+                    <p className="text-lg text-muted-foreground mb-2">No books match your search</p>
+                    <p className="text-sm text-muted-foreground">Try adjusting your filters</p>
+                </div>
+            ) : (
+                <BookGrid books={filteredBooks} />
+            )}
+        </div>
+    )
+}
+
+================================================================
+FILE: components/features/bookmarks/bookmarks-list.tsx
+================================================================
+
+"use client"
+
+import { useEffect, useState } from "react"
+import { createBrowserClient } from "@supabase/ssr"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Bookmark, Trash2, BookOpen, Clock } from "lucide-react"
+import Link from "next/link"
+import { toast } from "sonner"
+
+interface BookmarkData {
+    id: string
+    book_id: string
+    page_number: number | null
+    epub_cfi: string | null
+    progress_percentage: number | null
+    created_at: string
+    note: string | null
+    books: {
+        id: string
+        title: string
+        author: string
+        cover_url: string
+        format: string
+    }
+}
+
+interface GroupedBookmarks {
+    [bookId: string]: {
+        book: BookmarkData['books']
+        bookmarks: BookmarkData[]
+    }
+}
+
+export function BookmarksList({ userId }: { userId: string }) {
+    const [bookmarks, setBookmarks] = useState<BookmarkData[]>([])
+    const [loading, setLoading] = useState(true)
+
+    const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    useEffect(() => {
+        fetchBookmarks()
+    }, [userId])
+
+    const fetchBookmarks = async () => {
+        const { data, error } = await supabase
+            .from('bookmarks')
+            .select(`
+                id,
+                book_id,
+                page_number,
+                epub_cfi,
+                progress_percentage,
+                created_at,
+                note,
+                books (
+                    id,
+                    title,
+                    author,
+                    cover_url,
+                    format
+                )
+            `)
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+
+        if (error) {
+            console.error('Error fetching bookmarks:', error)
+            toast.error("Failed to load bookmarks")
+        } else {
+            setBookmarks(data as any as BookmarkData[])
+        }
+        setLoading(false)
+    }
+
+    const deleteBookmark = async (bookmarkId: string) => {
+        const { error } = await supabase
+            .from('bookmarks')
+            .delete()
+            .eq('id', bookmarkId)
+
+        if (error) {
+            toast.error("Failed to delete bookmark")
+        } else {
+            toast.success("Bookmark removed")
+            setBookmarks(bookmarks.filter(b => b.id !== bookmarkId))
+        }
+    }
+
+    // Group bookmarks by book
+    const groupedBookmarks: GroupedBookmarks = bookmarks.reduce((acc, bookmark) => {
+        const bookId = bookmark.book_id
+        if (!acc[bookId]) {
+            acc[bookId] = {
+                book: bookmark.books,
+                bookmarks: []
+            }
+        }
+        acc[bookId].bookmarks.push(bookmark)
+        return acc
+    }, {} as GroupedBookmarks)
+
+    const formatLocation = (bookmark: BookmarkData) => {
+        if (bookmark.page_number) {
+            return `Page ${bookmark.page_number}`
+        }
+        if (bookmark.progress_percentage !== null) {
+            return `${bookmark.progress_percentage}% complete`
+        }
+        return 'Unknown location'
+    }
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString)
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        })
+    }
+
+    const buildReaderUrl = (bookmark: BookmarkData) => {
+        const baseUrl = `/dashboard/reader/${bookmark.book_id}`
+        const params = new URLSearchParams()
+
+        if (bookmark.page_number) {
+            params.set('page', bookmark.page_number.toString())
+        } else if (bookmark.epub_cfi) {
+            params.set('cfi', bookmark.epub_cfi)
+        } else if (bookmark.progress_percentage) {
+            params.set('progress', (bookmark.progress_percentage / 100).toString())
+        }
+
+        return params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        )
+    }
+
+    if (bookmarks.length === 0) {
+        return (
+            <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                    <Bookmark className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No bookmarks yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                        Bookmark pages while reading to quickly return to them later
+                    </p>
+                    <Link href="/dashboard/library">
+                        <Button>
+                            <BookOpen className="h-4 w-4 mr-2" />
+                            Browse Library
+                        </Button>
+                    </Link>
+                </CardContent>
+            </Card>
+        )
+    }
+
+    return (
+        <div className="space-y-6">
+            {Object.entries(groupedBookmarks).map(([bookId, { book, bookmarks: bookBookmarks }]) => (
+                <Card key={bookId}>
+                    <CardContent className="p-6">
+                        {/* Book Header */}
+                        <div className="flex gap-4 mb-4 pb-4 border-b">
+                            <div className="w-16 h-24 rounded overflow-hidden flex-shrink-0 bg-gradient-to-br from-purple-500 to-pink-500">
+                                {book.cover_url && !book.cover_url.startsWith('gradient:') ? (
+                                    <img
+                                        src={book.cover_url}
+                                        alt={book.title}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <BookOpen className="h-8 w-8 text-white opacity-80" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-lg line-clamp-2">{book.title}</h3>
+                                <p className="text-sm text-muted-foreground truncate">{book.author}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs bg-secondary px-2 py-1 rounded uppercase">
+                                        {book.format}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {bookBookmarks.length} bookmark{bookBookmarks.length !== 1 ? 's' : ''}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Bookmarks List */}
+                        <div className="space-y-3">
+                            {bookBookmarks.map((bookmark) => (
+                                <div
+                                    key={bookmark.id}
+                                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                                >
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Bookmark className="h-4 w-4 text-primary flex-shrink-0" />
+                                            <span className="font-medium text-sm">
+                                                {formatLocation(bookmark)}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <Clock className="h-3 w-3" />
+                                            <span>Saved {formatDate(bookmark.created_at)}</span>
+                                        </div>
+                                        {bookmark.note && (
+                                            <p className="text-sm text-muted-foreground mt-2 italic">
+                                                "{bookmark.note}"
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2 ml-4">
+                                        <Link href={buildReaderUrl(bookmark)}>
+                                            <Button size="sm" variant="default">
+                                                <BookOpen className="h-4 w-4 mr-2" />
+                                                Read
+                                            </Button>
+                                        </Link>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => deleteBookmark(bookmark.id)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    )
+}
+
+================================================================
+FILE: components/features/quotes/quotes-list.tsx
+================================================================
+
+"use client"
+
+import { useEffect, useState } from "react"
+import { createBrowserClient } from "@supabase/ssr"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Quote, Star, Trash2, BookOpen } from "lucide-react"
+import { toast } from "sonner"
+import Link from "next/link"
+
+interface BookQuote {
+    id: string
+    quote_text: string
+    page_number: number | null
+    chapter: string | null
+    note: string | null
+    is_favorite: boolean
+    created_at: string
+    books: {
+        id: string
+        title: string
+        author: string
+    }
+}
+
+export function QuotesList({ userId }: { userId: string }) {
+    const [quotes, setQuotes] = useState<BookQuote[]>([])
+    const [loading, setLoading] = useState(true)
+    const [filter, setFilter] = useState<'all' | 'favorites'>('all')
+
+    const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    useEffect(() => {
+        fetchQuotes()
+    }, [userId])
+
+    const fetchQuotes = async () => {
+        const { data } = await supabase
+            .from('book_quotes')
+            .select(`
+                id,
+                quote_text,
+                page_number,
+                chapter,
+                note,
+                is_favorite,
+                created_at,
+                books (
+                    id,
+                    title,
+                    author
+                )
+            `)
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+
+        if (data) {
+            setQuotes(data as any)
+        }
+        setLoading(false)
+    }
+
+    const toggleFavorite = async (quoteId: string, currentFavorite: boolean) => {
+        const { error } = await supabase
+            .from('book_quotes')
+            .update({ is_favorite: !currentFavorite })
+            .eq('id', quoteId)
+
+        if (error) {
+            toast.error("Failed to update favorite")
+        } else {
+            setQuotes(quotes.map(q =>
+                q.id === quoteId ? { ...q, is_favorite: !currentFavorite } : q
+            ))
+            toast.success(currentFavorite ? "Removed from favorites" : "Added to favorites")
+        }
+    }
+
+    const deleteQuote = async (quoteId: string) => {
+        const { error } = await supabase
+            .from('book_quotes')
+            .delete()
+            .eq('id', quoteId)
+
+        if (error) {
+            toast.error("Failed to delete quote")
+        } else {
+            setQuotes(quotes.filter(q => q.id !== quoteId))
+            toast.success("Quote deleted")
+        }
+    }
+
+    const filteredQuotes = filter === 'favorites'
+        ? quotes.filter(q => q.is_favorite)
+        : quotes
+
+    if (loading) {
+        return (
+            <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                    <div key={i} className="border rounded-lg p-6 animate-pulse">
+                        <div className="h-4 bg-muted rounded w-3/4 mb-4" />
+                        <div className="h-20 bg-muted rounded mb-4" />
+                        <div className="h-3 bg-muted rounded w-1/2" />
+                    </div>
+                ))}
+            </div>
+        )
+    }
+
+    if (quotes.length === 0) {
+        return (
+            <Card className="p-12 text-center border-dashed">
+                <Quote className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-xl font-semibold mb-2">No Quotes Yet</h3>
+                <p className="text-muted-foreground mb-6">
+                    Start saving your favorite quotes while reading
+                </p>
+                <Button asChild>
+                    <Link href="/dashboard/library">
+                        <BookOpen className="h-4 w-4 mr-2" />
+                        Go to Library
+                    </Link>
+                </Button>
+            </Card>
+        )
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* Filter Tabs */}
+            <div className="flex gap-2 border-b">
+                <button
+                    onClick={() => setFilter('all')}
+                    className={`px-4 py-2 font-medium transition-colors border-b-2 ${filter === 'all'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                        }`}
+                >
+                    All Quotes ({quotes.length})
+                </button>
+                <button
+                    onClick={() => setFilter('favorites')}
+                    className={`px-4 py-2 font-medium transition-colors border-b-2 flex items-center gap-2 ${filter === 'favorites'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                        }`}
+                >
+                    <Star className="h-4 w-4" />
+                    Favorites ({quotes.filter(q => q.is_favorite).length})
+                </button>
+            </div>
+
+            {/* Quotes List */}
+            <div className="space-y-4">
+                {filteredQuotes.map((quote) => (
+                    <Card key={quote.id} className="p-6 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                            <div className="flex-1">
+                                <Link
+                                    href={`/dashboard/reader/${quote.books.id}`}
+                                    className="font-semibold hover:underline"
+                                >
+                                    {quote.books.title}
+                                </Link>
+                                <p className="text-sm text-muted-foreground">
+                                    by {quote.books.author}
+                                </p>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => toggleFavorite(quote.id, quote.is_favorite)}
+                                >
+                                    <Star
+                                        className={`h-4 w-4 ${quote.is_favorite
+                                            ? 'fill-yellow-500 text-yellow-500'
+                                            : 'text-muted-foreground'
+                                            }`}
+                                    />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => deleteQuote(quote.id)}
+                                >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </div>
+                        </div>
+
+                        <blockquote className="border-l-4 border-primary pl-4 my-4 italic text-lg">
+                            "{quote.quote_text}"
+                        </blockquote>
+
+                        {(quote.page_number || quote.chapter) && (
+                            <div className="flex gap-4 text-sm text-muted-foreground mb-2">
+                                {quote.page_number && <span>Page {quote.page_number}</span>}
+                                {quote.chapter && <span>{quote.chapter}</span>}
+                            </div>
+                        )}
+
+                        {quote.note && (
+                            <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                                <p className="text-sm text-muted-foreground">
+                                    <strong>Note:</strong> {quote.note}
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="mt-4 text-xs text-muted-foreground">
+                            Saved {new Date(quote.created_at).toLocaleDateString()}
+                        </div>
+                    </Card>
+                ))}
+            </div>
+
+            {filteredQuotes.length === 0 && filter === 'favorites' && (
+                <div className="text-center py-12 text-muted-foreground">
+                    <Star className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No favorite quotes yet. Star quotes to save them as favorites!</p>
+                </div>
+            )}
+        </div>
+    )
+}
+
+================================================================
+FILE: components/features/notes/notes-list.tsx
+================================================================
+
+"use client"
+
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Search, BookOpen } from "lucide-react"
+import { CreateNoteModal } from "./create-note-modal"
+import { createBrowserClient } from "@supabase/ssr"
+import { useAuth } from "@/components/providers/auth-provider"
+import { useEffect, useState } from "react"
+
+
+import { Button } from "@/components/ui/button"
+import { Trash2 } from "lucide-react"
+import { toast } from "sonner"
+import { GamificationService } from "@/lib/gamification"
+import { DeleteConfirmDialog } from "@/components/features/delete-confirm-dialog"
+
+import type { Note } from "@/types/database"
+
+export function NotesList() {
+    const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    const [notes, setNotes] = useState<Note[]>([])
+    const [loading, setLoading] = useState(true)
+    const { user } = useAuth()
+
+    useEffect(() => {
+        if (!user) return
+        fetchNotes()
+
+        const handleNoteCreated = () => fetchNotes()
+        window.addEventListener('note-created', handleNoteCreated)
+        return () => window.removeEventListener('note-created', handleNoteCreated)
+    }, [user])
+
+    const fetchNotes = async () => {
+        if (!user) return
+        const { data } = await supabase
+            .from('notes')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+
+        if (data) {
+            setNotes(data)
+        }
+        setLoading(false)
+    }
+
+    const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null)
+
+    const handleDeleteClick = (noteId: string) => {
+        const dontAsk = localStorage.getItem("trove-delete-note-dont-ask")
+        if (dontAsk === "true") {
+            performDelete(noteId)
+        } else {
+            setDeleteNoteId(noteId)
+        }
+    }
+
+    const performDelete = async (noteId: string) => {
+        try {
+            const { error, count } = await supabase
+                .from('notes')
+                .delete({ count: 'exact' })
+                .eq('id', noteId)
+
+            if (error) throw error
+            if (count === 0) throw new Error("Could not delete note. You might not have permission.")
+
+            setNotes(prev => prev.filter(n => n.id !== noteId))
+            toast.success("Note deleted")
+        } catch (error) {
+            console.error('Delete error:', error)
+            toast.error("Failed to delete note")
+        }
+    }
+
+    if (loading) {
+        return <div className="text-center py-10">Loading notes...</div>
+    }
+
+    if (notes.length === 0) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="relative max-w-md flex-1">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input type="search" placeholder="Search notes..." className="pl-8" />
+                    </div>
+                    <CreateNoteModal />
+                </div>
+                <div className="text-center py-12 border rounded-lg bg-muted/20 border-dashed">
+                    <BookOpen className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                    <h3 className="font-medium text-lg">No notes yet</h3>
+                    <p className="text-sm text-muted-foreground mb-4">Create your first note to get started!</p>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between gap-4">
+                <div className="relative max-w-md flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input type="search" placeholder="Search notes..." className="pl-8" />
+                </div>
+                <CreateNoteModal />
+            </div>
+
+            <div className="grid gap-4">
+                {notes.map((note) => (
+                    <Card key={note.id} className="group relative hover:border-primary/50 transition-colors">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleDeleteClick(note.id)}
+                        >
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                        <CardHeader className="pb-2">
+                            <div className="flex justify-between items-start">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <BookOpen className="h-4 w-4" />
+                                    {note.book_id ? "Book Note" : "General Note"}
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                    {new Date(note.created_at).toLocaleDateString()}
+                                </span>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <p className="text-sm">{note.content}</p>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+            {deleteNoteId && (
+                <DeleteConfirmDialog
+                    open={!!deleteNoteId}
+                    onOpenChange={(open: boolean) => !open && setDeleteNoteId(null)}
+                    onConfirm={() => deleteNoteId && performDelete(deleteNoteId)}
+                    title="Delete Note?"
+                    description="Are you sure you want to delete this note? This action cannot be undone."
+                    storageKey="trove-delete-note-dont-ask"
+                />
+            )}
+        </div>
+    )
+}
+
+================================================================
+FILE: components/features/analytics/analytics-charts.tsx
+================================================================
+
+"use client"
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, LineChart, Line } from "recharts"
+import { createBrowserClient } from "@supabase/ssr"
+import { useEffect, useState } from "react"
+import { format, subDays } from "date-fns"
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+
+export function AnalyticsCharts() {
+    const [dailyData, setDailyData] = useState<{ name: string; minutes: number }[]>([])
+    const [formatData, setFormatData] = useState<{ name: string; value: number }[]>([])
+    const [trendData, setTrendData] = useState<{ name: string; minutes: number }[]>([])
+    const [loading, setLoading] = useState(true)
+
+    const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
+            // 1. Fetch Daily Data (Last 7 days)
+            const today = new Date()
+            const lastWeek = subDays(today, 6)
+            
+            const { data: sessions } = await supabase
+                .from('reading_sessions')
+                .select('duration_minutes, session_date')
+                .eq('user_id', user.id)
+                .gte('session_date', format(lastWeek, 'yyyy-MM-dd'))
+                .lte('session_date', format(today, 'yyyy-MM-dd'))
+
+            const chartData = []
+            for (let i = 6; i >= 0; i--) {
+                const date = subDays(today, i)
+                const dateStr = format(date, 'yyyy-MM-dd')
+                const dayName = format(date, 'EEE')
+                
+                const minutes = sessions
+                    ?.filter((s: any) => s.session_date === dateStr)
+                    .reduce((acc: number, s: any) => acc + s.duration_minutes, 0) || 0
+
+                chartData.push({ name: dayName, minutes })
+            }
+            setDailyData(chartData)
+
+            // 2. Fetch Format Data (All books)
+            const { data: books } = await supabase
+                .from('books')
+                .select('format')
+                .eq('user_id', user.id)
+
+            const formatCounts: Record<string, number> = {}
+            books?.forEach((book: any) => {
+                const fmt = (book.format || 'pdf').toUpperCase()
+                formatCounts[fmt] = (formatCounts[fmt] || 0) + 1
+            })
+
+            const formatChartData = Object.entries(formatCounts).map(([name, value]) => ({ name, value }))
+            // If no books, provide placeholder to avoid empty chart
+            if (formatChartData.length === 0) {
+                formatChartData.push({ name: "No Books", value: 1 })
+            }
+            setFormatData(formatChartData)
+
+            // 3. Fetch Monthly Trend (Last 4 weeks)
+            const lastMonth = subDays(today, 28)
+            const { data: monthSessions } = await supabase
+                .from('reading_sessions')
+                .select('duration_minutes, session_date')
+                .eq('user_id', user.id)
+                .gte('session_date', format(lastMonth, 'yyyy-MM-dd'))
+            
+            // Correct logic for labels
+            setTrendData([
+                { name: "3 Weeks Ago", minutes: getWeeklyMinutes(monthSessions, 3) },
+                { name: "2 Weeks Ago", minutes: getWeeklyMinutes(monthSessions, 2) },
+                { name: "Last Week", minutes: getWeeklyMinutes(monthSessions, 1) },
+                { name: "This Week", minutes: getWeeklyMinutes(monthSessions, 0) },
+            ])
+
+            setLoading(false)
+        }
+
+        fetchData()
+    }, [])
+    
+    // Helper for weekly aggregation
+    const getWeeklyMinutes = (sessions: any[] | null, weeksAgo: number) => {
+        const today = new Date()
+        const endDay = subDays(today, weeksAgo * 7)
+        const startDay = subDays(endDay, 6)
+        const startStr = format(startDay, 'yyyy-MM-dd')
+        const endStr = format(endDay, 'yyyy-MM-dd')
+        
+        return sessions
+            ?.filter((s: any) => s.session_date >= startStr && s.session_date <= endStr)
+            .reduce((acc: number, s: any) => acc + s.duration_minutes, 0) || 0
+    }
+
+    if (loading) {
+        return <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 animate-pulse">
+             <Card className="h-[300px] bg-muted/20" />
+             <Card className="h-[300px] bg-muted/20" />
+             <Card className="h-[300px] bg-muted/20 col-span-2" />
+        </div>
+    }
+
+    return (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Daily Reading Time</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={dailyData}>
+                            <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}m`} />
+                            <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                            <Bar dataKey="minutes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Reading Formats</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                            <Pie
+                                data={formatData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                paddingAngle={5}
+                                dataKey="value"
+                            >
+                                {formatData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                        </PieChart>
+                    </ResponsiveContainer>
+                    <div className="flex justify-center gap-4 text-sm text-muted-foreground mt-4">
+                        {formatData.map((entry, index) => (
+                            <div key={entry.name} className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                                {entry.name}
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="col-span-1 md:col-span-2">
+                <CardHeader>
+                    <CardTitle>Monthly Trend</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={trendData}>
+                            <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}m`} />
+                            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                            <Line type="monotone" dataKey="minutes" stroke="hsl(var(--primary))" strokeWidth={2} activeDot={{ r: 8 }} />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </CardContent>
+            </Card>
+        </div>
+    )
+}
+
+================================================================
+FILE: components/features/community/community-list.tsx
+================================================================
+
+"use client"
+
+import { useState } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Users, MessageCircle, Search, BookOpen, Sparkles, Rocket, Brain, Palette } from "lucide-react"
+import { CommunityInviteModal } from "./community-invite-modal"
+import Link from "next/link"
+import { createBrowserClient } from "@supabase/ssr"
+import { useEffect } from "react"
+
+
+
+export function CommunityList() {
+    const [searchQuery, setSearchQuery] = useState("")
+    const [communities, setCommunities] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchCommunities = async () => {
+            const supabase = createBrowserClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            )
+
+            const { data, error } = await supabase
+                .from('communities')
+                .select('*')
+                .order('member_count', { ascending: false })
+
+            if (data) {
+                setCommunities(data)
+            }
+            if (error) {
+                console.error("Error fetching communities:", error)
+            }
+            setLoading(false)
+        }
+
+        fetchCommunities()
+    }, [])
+
+    // Map string icon names to Lucide components
+    const getIcon = (iconName: string) => {
+        const icons: Record<string, any> = {
+            BookOpen, Brain, Sparkles, Rocket, Palette
+        }
+        return icons[iconName] || BookOpen
+    }
+
+    const filteredCommunities = communities.filter(community =>
+        community.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        community.description.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+    if (loading) {
+        return <div className="h-64 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+    }
+
+    return (
+        <div className="space-y-4">
+            {/* Search Bar */}
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Search communities..."
+                    className="pl-10"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
+            {/* Communities Grid */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {filteredCommunities.length > 0 ? (
+                    filteredCommunities.map((community) => {
+                        const Icon = getIcon(community.icon_name)
+                        return (
+                            <Card key={community.id} className="hover:shadow-lg transition-all hover:scale-[1.02]">
+                                <CardHeader>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className={`p-3 rounded-lg ${community.bg_color}`}>
+                                            <Icon className={`h-6 w-6 ${community.color}`} />
+                                        </div>
+                                    </div>
+                                    <CardTitle>{community.name}</CardTitle>
+                                    <CardDescription>{community.description}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-1">
+                                            <Users className="h-4 w-4" />
+                                            <span>{community.member_count.toLocaleString()} members</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <MessageCircle className="h-4 w-4" />
+                                            <span>{community.active_count} active</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            className="flex-1"
+                                            asChild
+                                        >
+                                            <Link href={community.discord_url || '#'} target="_blank" rel="noopener noreferrer">
+                                                Join Discussion
+                                            </Link>
+                                        </Button>
+                                        <CommunityInviteModal
+                                            communityId={community.id}
+                                            communityName={community.name}
+                                        />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )
+                    })
+                ) : (
+                    <div className="col-span-full text-center py-12">
+                        <p className="text-muted-foreground">No communities found matching "{searchQuery}"</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
+
+================================================================
+FILE: components/features/settings/settings-form.tsx
+================================================================
+
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Loader2, Bell, Mail } from "lucide-react"
+import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { useAuth } from "@/components/providers/auth-provider"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+
+export function SettingsForm() {
+    const [fullName, setFullName] = useState("")
+    const [username, setUsername] = useState("")
+    const [email, setEmail] = useState("")
+    const [dailyGoal, setDailyGoal] = useState(30)
+    const [loading, setLoading] = useState(false)
+    const [emailNotifications, setEmailNotifications] = useState(true)
+    const [inAppNotifications, setInAppNotifications] = useState(true)
+    const { user } = useAuth()
+    const router = useRouter()
+
+    const supabase = createBrowserSupabaseClient()
+
+    useEffect(() => {
+        if (user) {
+            setEmail(user.email || "")
+            // Fetch profile data
+            const fetchProfile = async () => {
+                const { data } = await supabase
+                    .from('profiles')
+                    .select('full_name, username, daily_goal_minutes')
+                    .eq('id', user.id)
+                    .single()
+
+                if (data) {
+                    setFullName(data.full_name || user.user_metadata?.full_name || "")
+                    setUsername(data.username || "")
+                    setDailyGoal(data.daily_goal_minutes || 30)
+                }
+            }
+            fetchProfile()
+        }
+    }, [user])
+
+    const handleSaveProfile = async () => {
+        if (!user) return
+
+        // Validate username
+        if (username) {
+            const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
+            if (!usernameRegex.test(username)) {
+                toast.error("Username must be 3-20 characters and contain only letters, numbers, or underscores.")
+                return
+            }
+        }
+
+        setLoading(true)
+        try {
+            // Update profile in profiles table
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .update({
+                    full_name: fullName,
+                    username: username || null,
+                    daily_goal_minutes: dailyGoal
+                })
+                .eq('id', user.id)
+
+            if (profileError) {
+                if (profileError.code === '23505') { // Unique violation
+                    toast.error("Username is already taken.")
+                    return
+                }
+                throw profileError
+            }
+
+            // Update email in auth if changed
+            if (email !== user.email) {
+                const { error: authError } = await supabase.auth.updateUser({
+                    email: email
+                })
+                if (authError) throw authError
+            }
+
+            router.refresh()
+            toast.success("Profile updated successfully!")
+        } catch (error: any) {
+            console.error(error)
+            toast.error(error.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Profile Information</CardTitle>
+                    <CardDescription>Update your personal details.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="username">Username</Label>
+                        <Input
+                            id="username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="Enter a unique username"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            This will be displayed on your dashboard greeting.
+                        </p>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Full Name</Label>
+                        <Input
+                            id="name"
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            placeholder="Enter your full name"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Enter your email"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Changing your email will require verification
+                        </p>
+                    </div>
+                </CardContent>
+                <CardFooter>
+                    <Button onClick={handleSaveProfile} disabled={loading}>
+                        {loading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            "Save Changes"
+                        )}
+                    </Button>
+                </CardFooter>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Reading Goals</CardTitle>
+                    <CardDescription>Set your daily reading targets.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <Label>Daily Goal</Label>
+                            <span className="font-medium">{dailyGoal} minutes</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <span className="text-xs text-muted-foreground">15m</span>
+                            <input
+                                type="range"
+                                min="15"
+                                max="120"
+                                step="5"
+                                value={dailyGoal}
+                                onChange={(e) => setDailyGoal(parseInt(e.target.value))}
+                                className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+                            />
+                            <span className="text-xs text-muted-foreground">120m</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Aim to read for at least {dailyGoal} minutes every day to build your streak.
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Notification Preferences</CardTitle>
+                    <CardDescription>Manage how you receive updates and reminders.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5 flex-1">
+                            <div className="flex items-center gap-2">
+                                <Bell className="h-4 w-4 text-muted-foreground" />
+                                <Label>In-App Notifications</Label>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                                Get notified about streaks, achievements, and reading milestones
+                            </p>
+                        </div>
+                        <Switch
+                            checked={inAppNotifications}
+                            onCheckedChange={setInAppNotifications}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5 flex-1">
+                            <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <Label>Email Updates (Coming Soon)</Label>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                                Receive weekly reading summaries and motivational messages
+                            </p>
+                        </div>
+                        <Switch
+                            checked={emailNotifications}
+                            onCheckedChange={setEmailNotifications}
+                            disabled
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    )
+}
