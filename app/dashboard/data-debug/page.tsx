@@ -144,6 +144,33 @@ export default function DataDebugPage() {
                 )}
             </section>
 
+            <section className="space-y-4 border border-yellow-800 p-4 rounded bg-yellow-950/20">
+                <h2 className="text-xl text-white font-bold">5. Cookie Transmission Test</h2>
+                <div className="space-y-2">
+                    <p className="text-gray-400">If the server can't see the big auth cookie, let's try a small one.</p>
+                    <div className="flex gap-2">
+                        <Button
+                            onClick={() => {
+                                document.cookie = "trove_test=hello_server; path=/; max-age=3600; SameSite=Lax;"
+                                setRawCookies(document.cookie)
+                                alert("Test Cookie Set! Now check Server Debug.")
+                            }}
+                            className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        >
+                            Set 'trove_test' Cookie
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                window.location.href = "/dashboard/server-debug"
+                            }}
+                            className="bg-gray-700 hover:bg-gray-600 text-white"
+                        >
+                            Go to Server Debug
+                        </Button>
+                    </div>
+                </div>
+            </section>
+
             <section className="space-y-2 border border-gray-800 p-4 rounded">
                 <h2 className="text-xl text-white">1. Auth User</h2>
                 <pre className="bg-gray-900 p-2 rounded overflow-auto">
