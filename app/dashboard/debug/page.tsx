@@ -1,5 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
+import { ClientDebug } from "./client-debug"
 
 export const dynamic = 'force-dynamic'
 
@@ -78,6 +80,8 @@ export default async function DebugPage() {
                     </pre>
                 )}
             </section>
+
+            <ClientDebug />
         </div>
     )
 }
