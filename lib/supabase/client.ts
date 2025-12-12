@@ -7,8 +7,9 @@ export function createBrowserSupabaseClient() {
         {
             cookieOptions: {
                 name: 'trove-session',
+                // @ts-ignore
                 chunk: true,
-                // Force smaller chunks to avoid Vercel 4KB header limits
+                // @ts-ignore
                 chunkSize: 3000,
                 maxAge: 60 * 60 * 24 * 7, // 1 week
                 domain: '',
