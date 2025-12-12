@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { createBrowserClient } from "@supabase/ssr";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { GamificationService } from "@/lib/gamification";
 import { format } from "date-fns";
 
@@ -28,10 +28,7 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light', onLo
     const [scale, setScale] = useState<number>(1.0);
     const [loading, setLoading] = useState(true);
 
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createBrowserSupabaseClient()
 
     // Load bookmark or saved progress on mount
     useEffect(() => {

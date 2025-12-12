@@ -5,7 +5,7 @@ import { BookGrid } from "./book-grid"
 import { LibrarySearch } from "./library-search"
 import { EmptyLibrary } from "./empty-library"
 import type { BookWithProgress } from "@/types/database"
-import { createBrowserClient } from "@supabase/ssr"
+import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { useAuth } from "@/components/providers/auth-provider"
 
 interface LibraryContentProps {
@@ -22,10 +22,7 @@ export function LibraryContent({ books: initialBooks }: LibraryContentProps) {
         if (!user) return
 
         const fetchBooks = async () => {
-            const supabase = createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            )
+            const supabase = createBrowserSupabaseClient()
 
             const { data: booksData } = await supabase
                 .from('books')

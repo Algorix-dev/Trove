@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { GamificationService } from "@/lib/gamification"
-import { createBrowserClient } from "@supabase/ssr"
+import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 
 interface TxtViewerProps {
     url: string
@@ -47,10 +47,7 @@ export function TxtViewer({ url, initialLocation, onLocationChange, readerTheme 
                 const minutesRead = Math.round((Date.now() - sessionStart) / 60000)
 
                 if (minutesRead >= 1) {
-                    const supabase = createBrowserClient(
-                        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-                    )
+                    const supabase = createBrowserSupabaseClient()
 
                     // Create reading session record
                     await supabase
@@ -124,10 +121,7 @@ export function TxtViewer({ url, initialLocation, onLocationChange, readerTheme 
 
     const saveProgress = async (progressValue: number) => {
         // Debounce could be good here but keeping it simple first
-        const supabase = createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
+        const supabase = createBrowserSupabaseClient()
 
         // Only save if progress changed significantly?
         // Or assume component state updates are frequent. 
