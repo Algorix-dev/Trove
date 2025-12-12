@@ -1,27 +1,28 @@
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
+// app/auth/callback/route.ts
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
 export async function GET(request: Request) {
-    const requestUrl = new URL(request.url)
-    const code = requestUrl.searchParams.get('code')
-    const error = requestUrl.searchParams.get('error')
-    const errorDescription = requestUrl.searchParams.get('error_description')
-    const origin = requestUrl.origin
+    const requestUrl = new URL(request.url);
+    const code = requestUrl.searchParams.get("code");
+    const error = requestUrl.searchParams.get("error");
+    const errorDescription = requestUrl.searchParams.get("error_description");
+    const origin = requestUrl.origin;
 
     if (error) {
         return NextResponse.redirect(
-            `${origin}/login?error=${encodeURIComponent(errorDescription || 'Authentication failed')}`
-        )
+            `${origin}/login?error=${encodeURIComponent(errorDescription || "Authentication failed")}`
+        );
     }
 
     if (!code) {
-        return NextResponse.redirect(`${origin}/login`)
+        return NextResponse.redirect(`${origin}/login`);
     }
 
-    // Create a Response object so Supabase can attach cookies to it
-    let response = NextResponse.redirect(`${origin}/dashboard`)
-    const cookieStore = cookies()
+    // Prepare response so Supabase can attach cookies into it
+    const response = NextResponse.redirect(`${origin}/dashboard`);
+    const cookieStore = cookies();
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,24 +30,24 @@ export async function GET(request: Request) {
         {
             cookies: {
                 getAll() {
-                    return cookieStore.getAll()
+                    return cookieStore.getAll();
                 },
                 setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        response.cookies.set(name, value, options)
-                    )
+                    cookiesToSet.forEach(({ name, value, options }) => {
+                        response.cookies.set(name, value, options);
+                    });
                 },
             },
         }
-    )
+    );
 
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
     if (exchangeError) {
         return NextResponse.redirect(
-            `${origin}/login?error=${encodeURIComponent('Failed to complete authentication')}`
-        )
+            `${origin}/login?error=${encodeURIComponent("Failed to complete authentication")}`
+        );
     }
 
-    return response
+    return response;
 }
