@@ -41,7 +41,7 @@ export default async function DebugPage() {
                                 <span className="font-bold text-white">{c.name}</span>
                                 <br />
                                 <span className="text-xs opacity-70">
-                                    Size: {c.value.length} chars | Secure: {String(c.secure)} | HttpOnly: {String(c.httpOnly)}
+                                    Size: {c.value.length} chars
                                 </span>
                             </li>
                         ))}
