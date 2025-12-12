@@ -9,8 +9,11 @@ export default function DataDebugPage() {
     const [tableCounts, setTableCounts] = useState<any>({})
     const [booksSample, setBooksSample] = useState<any[]>([])
     const [error, setError] = useState<string | null>(null)
+    const [rawCookies, setRawCookies] = useState<string>("")
 
     useEffect(() => {
+        setRawCookies(document.cookie)
+
         const runDiagnostics = async () => {
             try {
                 const supabase = createBrowserSupabaseClient()
@@ -72,6 +75,13 @@ export default function DataDebugPage() {
                 <strong>Status:</strong> {status} <br />
                 {error && <span className="text-red-500">Error: {error}</span>}
             </div>
+
+            <section className="space-y-2 border border-gray-800 p-4 rounded">
+                <h2 className="text-xl text-white">0. Raw Cookies (Client-Side)</h2>
+                <div className="bg-gray-900 p-2 rounded break-all text-xs text-gray-400">
+                    {rawCookies || "EMPTY / NONE DETECTED"}
+                </div>
+            </section>
 
             <section className="space-y-2 border border-gray-800 p-4 rounded">
                 <h2 className="text-xl text-white">1. Auth User</h2>
