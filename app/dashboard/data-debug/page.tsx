@@ -56,10 +56,13 @@ export default function DataDebugPage() {
                 })
 
                 // 3. Fetch Actual Data
+                // 3. Fetch Actual Data
+                // Try selecting EVERYTHING to verify columns
                 const { data: books, error: fetchError } = await supabase
                     .from('books')
-                    .select('id, title, user_id')
-                    .limit(5)
+                    .select('*')
+
+                console.log("Books Fetch Result:", { books, fetchError })
 
                 if (fetchError) throw fetchError
                 setBooksSample(books || [])
@@ -169,8 +172,10 @@ export default function DataDebugPage() {
                 ) : (
                     <ul className="list-disc pl-5">
                         {booksSample.map(b => (
-                            <li key={b.id}>
-                                <span className="text-white">{b.title}</span> (User: {b.user_id})
+                            <li key={b.id || Math.random()}>
+                                <pre className="text-xs text-gray-300 overflow-auto max-w-sm">
+                                    {JSON.stringify(b, null, 2)}
+                                </pre>
                             </li>
                         ))}
                     </ul>
