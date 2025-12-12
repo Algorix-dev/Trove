@@ -91,25 +91,23 @@ export default function DataDebugPage() {
                 </div>
             </section>
 
-            </section>
-
             <section className="space-y-4 border border-blue-800 p-4 rounded bg-blue-950/20">
                 <h2 className="text-xl text-white font-bold">4. Manual Login Test</h2>
                 <div className="flex flex-col gap-2 max-w-sm">
-                    <Input 
-                        placeholder="Email" 
-                        value={email} 
-                        onChange={e => setEmail(e.target.value)} 
+                    <Input
+                        placeholder="Email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
                         className="bg-neutral-800 border-neutral-700 text-white"
                     />
-                    <Input 
-                        type="password" 
-                        placeholder="Password" 
-                        value={password} 
-                        onChange={e => setPassword(e.target.value)} 
+                    <Input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
                         className="bg-neutral-800 border-neutral-700 text-white"
                     />
-                    <Button 
+                    <Button
                         onClick={async () => {
                             try {
                                 setLoginResult("Logging in...")
@@ -119,10 +117,10 @@ export default function DataDebugPage() {
                                     password
                                 })
                                 setLoginResult({ success: !error, error, user: data.user?.id })
-                                
+
                                 // Update Cookies View immediately
                                 setRawCookies(document.cookie)
-                                
+
                                 // Re-run diagnostics
                                 if (!error) {
                                     window.location.reload()
