@@ -5,9 +5,7 @@ import { createServerClient } from '@supabase/ssr'
 export async function middleware(req: NextRequest) {
     const res = NextResponse.next()
 
-    // DEBUG: Log incoming cookies
-    console.log('[Middleware] Incoming Cookies:', req.cookies.getAll().map(c => c.name))
-
+    // Create a server client wired to middleware cookies
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,7 +16,6 @@ export async function middleware(req: NextRequest) {
                 },
                 setAll(cookiesToSet) {
                     cookiesToSet.forEach(({ name, value, options }) => {
-                        console.log('[Middleware] Setting Cookie:', name)
                         res.cookies.set(name, value, options)
                     })
                 },
@@ -27,8 +24,7 @@ export async function middleware(req: NextRequest) {
     )
 
     // Refresh session
-    const { data: { user }, error } = await supabase.auth.getUser()
-    console.log('[Middleware] User Found:', !!user, error?.message || 'No Error')
+    await supabase.auth.getUser()
 
     return res
 }
