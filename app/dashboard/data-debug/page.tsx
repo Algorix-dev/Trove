@@ -142,6 +142,24 @@ export default function DataDebugPage() {
                         {JSON.stringify(loginResult, null, 2)}
                     </pre>
                 )}
+                <Button
+                    variant="destructive"
+                    className="mt-2 text-xs w-full"
+                    onClick={() => {
+                        const cookies = document.cookie.split(";");
+                        for (let i = 0; i < cookies.length; i++) {
+                            const cookie = cookies[i];
+                            const eqPos = cookie.indexOf("=");
+                            const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+                            document.cookie = name.trim() + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                            document.cookie = name.trim() + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.vercel.app";
+                            document.cookie = name.trim() + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
+                        }
+                        window.location.reload();
+                    }}
+                >
+                    Clear All Cookies (Reset)
+                </Button>
             </section>
 
             <section className="space-y-4 border border-yellow-800 p-4 rounded bg-yellow-950/20">
