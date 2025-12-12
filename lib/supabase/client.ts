@@ -10,7 +10,7 @@ export function createBrowserSupabaseClient() {
                 // @ts-ignore
                 chunk: true,
                 // @ts-ignore
-                chunkSize: 3000,
+                chunkSize: 1000,
                 maxAge: 60 * 60 * 24 * 7, // 1 week
                 domain: '',
                 path: '/',
