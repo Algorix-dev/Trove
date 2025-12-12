@@ -2,11 +2,18 @@
 
 import { useEffect, useState } from "react"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 export function ClientDebug() {
     const [cookies, setCookies] = useState<string>("")
     const [localStorageItems, setLocalStorageItems] = useState<Record<string, string>>({})
     const [sessionStatus, setSessionStatus] = useState<string>("Checking...")
+
+    // Login Test State
+    const [testEmail, setTestEmail] = useState("")
+    const [testPassword, setTestPassword] = useState("")
+    const [testResult, setTestResult] = useState<any>(null)
 
     useEffect(() => {
         // 1. Read Cookies
@@ -58,6 +65,49 @@ export function ClientDebug() {
                 <div className="bg-black p-2 rounded font-mono">
                     {sessionStatus}
                 </div>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-blue-900">
+                <h3 className="font-bold text-white">Manual Login Tester</h3>
+                <div className="grid gap-2 max-w-sm">
+                    <Input
+                        placeholder="Email"
+                        value={testEmail}
+                        onChange={e => setTestEmail(e.target.value)}
+                        className="bg-neutral-800 border-neutral-700"
+                    />
+                    <Input
+                        type="password"
+                        placeholder="Password"
+                        value={testPassword}
+                        onChange={e => setTestPassword(e.target.value)}
+                        className="bg-neutral-800 border-neutral-700"
+                    />
+                    <Button
+                        onClick={async () => {
+                            setTestResult("Logging in...")
+                            const supabase = createBrowserSupabaseClient()
+                            const { data, error } = await supabase.auth.signInWithPassword({
+                                email: testEmail,
+                                password: testPassword
+                            })
+                            setTestResult({ data, error })
+
+                            // Refresh cookie view
+                            setCookies(document.cookie)
+                            const { data: sess } = await supabase.auth.getSession()
+                            setSessionStatus(sess.session ? "ACTIVE ✅ (Just Logged In)" : "NULL ❌")
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700"
+                    >
+                        Test Sign In
+                    </Button>
+                </div>
+                {testResult && (
+                    <pre className="p-2 bg-black rounded text-xs overflow-auto">
+                        {JSON.stringify(testResult, null, 2)}
+                    </pre>
+                )}
             </div>
         </section>
     )
