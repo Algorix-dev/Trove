@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+
 export default function DataDebugPage() {
     const [status, setStatus] = useState("Loading...")
     const [userData, setUserData] = useState<any>(null)
@@ -10,6 +13,11 @@ export default function DataDebugPage() {
     const [booksSample, setBooksSample] = useState<any[]>([])
     const [error, setError] = useState<string | null>(null)
     const [rawCookies, setRawCookies] = useState<string>("")
+
+    // Login State
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
+    const [loginResult, setLoginResult] = useState<any>(null)
 
     useEffect(() => {
         setRawCookies(document.cookie)
@@ -83,6 +91,58 @@ export default function DataDebugPage() {
                 </div>
             </section>
 
+            </section>
+
+            <section className="space-y-4 border border-blue-800 p-4 rounded bg-blue-950/20">
+                <h2 className="text-xl text-white font-bold">4. Manual Login Test</h2>
+                <div className="flex flex-col gap-2 max-w-sm">
+                    <Input 
+                        placeholder="Email" 
+                        value={email} 
+                        onChange={e => setEmail(e.target.value)} 
+                        className="bg-neutral-800 border-neutral-700 text-white"
+                    />
+                    <Input 
+                        type="password" 
+                        placeholder="Password" 
+                        value={password} 
+                        onChange={e => setPassword(e.target.value)} 
+                        className="bg-neutral-800 border-neutral-700 text-white"
+                    />
+                    <Button 
+                        onClick={async () => {
+                            try {
+                                setLoginResult("Logging in...")
+                                const supabase = createBrowserSupabaseClient()
+                                const { data, error } = await supabase.auth.signInWithPassword({
+                                    email,
+                                    password
+                                })
+                                setLoginResult({ success: !error, error, user: data.user?.id })
+                                
+                                // Update Cookies View immediately
+                                setRawCookies(document.cookie)
+                                
+                                // Re-run diagnostics
+                                if (!error) {
+                                    window.location.reload()
+                                }
+                            } catch (e: any) {
+                                setLoginResult({ error: e.message })
+                            }
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                        Force Login & Reload
+                    </Button>
+                </div>
+                {loginResult && (
+                    <pre className="bg-black p-2 rounded text-xs text-blue-300">
+                        {JSON.stringify(loginResult, null, 2)}
+                    </pre>
+                )}
+            </section>
+
             <section className="space-y-2 border border-gray-800 p-4 rounded">
                 <h2 className="text-xl text-white">1. Auth User</h2>
                 <pre className="bg-gray-900 p-2 rounded overflow-auto">
@@ -118,6 +178,6 @@ export default function DataDebugPage() {
                     </ul>
                 )}
             </section>
-        </div>
+        </div >
     )
 }
