@@ -1,5 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 
 export const dynamic = 'force-dynamic'
 
@@ -10,9 +10,21 @@ export default async function ServerDebugPage() {
     const supabase = createServerSupabaseClient()
     const { data: { user }, error } = await supabase.auth.getUser()
 
+    const headerStore = headers()
+    const middlewareCookies = headerStore.get('x-middleware-cookies') || "MISSING HEADER"
+    const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ? "Set (Starts with " + process.env.NEXT_PUBLIC_SUPABASE_URL.substring(0, 8) + ")" : "MISSING!"
+
     return (
         <div className="p-8 bg-black min-h-screen text-green-400 font-mono text-sm space-y-6">
             <h1 className="text-2xl text-white font-bold">SERVER-SIDE DEBUG</h1>
+
+            <section className="space-y-2 border border-purple-800 p-4 rounded bg-purple-950/20">
+                <h2 className="text-xl text-white">0. Environment & Middleware Probe</h2>
+                <div className="bg-gray-900 p-4 rounded space-y-2">
+                    <div><strong>Supabase URL (Env):</strong> {envUrl}</div>
+                    <div className="break-all"><strong>Cookies Seen by Middleware:</strong> <br />{middlewareCookies}</div>
+                </div>
+            </section>
 
             <section className="space-y-2 border border-blue-800 p-4 rounded bg-blue-950/20">
                 <h2 className="text-xl text-white">1. Server Auth Status</h2>

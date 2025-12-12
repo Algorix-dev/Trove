@@ -4,8 +4,15 @@ import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(request: NextRequest) {
     try {
+        const cookieNames = request.cookies.getAll().map(c => c.name).join(',')
+
         let supabaseResponse = NextResponse.next({
-            request,
+            request: {
+                headers: new Headers({
+                    ...Object.fromEntries(request.headers),
+                    'x-middleware-cookies': cookieNames
+                })
+            }
         })
 
         const supabase = createServerClient(
