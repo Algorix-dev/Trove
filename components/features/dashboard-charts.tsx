@@ -10,25 +10,45 @@ import type { ReadingSession } from "@/types/database"
 export function DashboardCharts() {
     const [data, setData] = useState<{ name: string; minutes: number }[]>([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
         const fetchData = async () => {
             const supabase = createBrowserSupabaseClient()
 
             try {
-                const { data: { user } } = await supabase.auth.getUser()
-                if (!user) return
+                setLoading(true)
+                setError(null)
+
+                const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+                if (authError) {
+                    console.error('Auth error in dashboard charts:', authError)
+                    setError('Authentication error')
+                    return
+                }
+
+                if (!user) {
+                    setError('Not authenticated')
+                    return
+                }
 
                 // Get last 7 days range
                 const today = new Date()
                 const lastWeek = subDays(today, 6) // Last 7 days including today
 
-                const { data: sessions } = await supabase
+                const { data: sessions, error: sessionsError } = await supabase
                     .from('reading_sessions')
                     .select('*')
                     .eq('user_id', user.id)
                     .gte('session_date', format(lastWeek, 'yyyy-MM-dd'))
                     .lte('session_date', format(today, 'yyyy-MM-dd'))
+
+                if (sessionsError) {
+                    console.error('Error fetching sessions:', sessionsError)
+                    setError('Failed to load reading data')
+                    return
+                }
 
                 // Initialize chart data with 0s for last 7 days
                 const chartData = []
@@ -50,6 +70,9 @@ export function DashboardCharts() {
                 }
 
                 setData(chartData)
+            } catch (err) {
+                console.error('Unexpected error in dashboard charts:', err)
+                setError('An unexpected error occurred')
             } finally {
                 setLoading(false)
             }

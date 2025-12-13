@@ -17,13 +17,27 @@ export function DashboardStats() {
         readingNow: 0
     })
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
         const fetchStats = async () => {
             const supabase = createBrowserSupabaseClient()
             try {
-                const { data: { user } } = await supabase.auth.getUser()
-                if (!user) return
+                setLoading(true)
+                setError(null)
+
+                const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+                if (authError) {
+                    console.error('Auth error in dashboard stats:', authError)
+                    setError('Authentication error')
+                    return
+                }
+
+                if (!user) {
+                    setError('Not authenticated')
+                    return
+                }
 
                 // Fetch all data in parallel for better performance
                 const [profileData, progressData, sessionsData] = await Promise.all([
@@ -47,6 +61,11 @@ export function DashboardStats() {
                         .eq('user_id', user.id)
                 ])
 
+                // Check for errors in parallel requests
+                if (profileData.error) console.error('Profile error:', profileData.error)
+                if (progressData.error) console.error('Progress error:', progressData.error)
+                if (sessionsData.error) console.error('Sessions error:', sessionsData.error)
+
                 // Calculate books read
                 const booksRead = progressData.data?.filter((p: ReadingProgress) => p.progress_percentage === 100)
 
@@ -69,7 +88,7 @@ export function DashboardStats() {
                         (acc: number, session: ReadingSession) =>
                             acc + session.duration_minutes,
                         0
-                    )
+                    ) || 0
 
 
                 setStats({
@@ -80,6 +99,9 @@ export function DashboardStats() {
                     todayMinutes,
                     readingNow: readingNow?.length || 0
                 })
+            } catch (err) {
+                console.error('Unexpected error in dashboard stats:', err)
+                setError('Failed to load statistics')
             } finally {
                 setLoading(false)
             }
