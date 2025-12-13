@@ -25,9 +25,21 @@ export default async function DashboardPage() {
     const allCookies = cookieStore.getAll()
     const cookieDebug = JSON.stringify(allCookies, null, 2)
 
+    // DEBUG: Check Environment
+    const envDebug = {
+        url: process.env.NEXT_PUBLIC_SUPABASE_URL ? "Set" : "Missing",
+        anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "Set (Len: " + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length + ")" : "Missing",
+        nodeEnv: process.env.NODE_ENV
+    }
+    const envDebugString = JSON.stringify(envDebug, null, 2)
+
     if (!user) {
         return (
             <div className="p-8 space-y-4">
+                <div className="bg-yellow-100 p-4 border border-yellow-500 rounded text-xs font-mono whitespace-pre-wrap break-all">
+                    SERVER ENVIRONMENT:
+                    {envDebugString}
+                </div>
                 <div className="bg-red-100 p-4 border border-red-500 rounded text-xs font-mono whitespace-pre-wrap break-all">
                     SERVER COOKIES RECEIVED (USER IS NULL):
                     {cookieDebug}
