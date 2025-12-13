@@ -16,6 +16,9 @@ export function createServerSupabaseClient() {
                     // ❗ DO NOTHING — SERVER COMPONENTS CANNOT SET COOKIES
                 },
             },
+            cookieOptions: {
+                name: "sb-oywgbszdxsklkvwifvqq-auth-token"
+            }
         }
     )
 }
