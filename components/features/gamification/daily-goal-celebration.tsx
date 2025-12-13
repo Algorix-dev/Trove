@@ -69,7 +69,7 @@ export function DailyGoalCelebration() {
                 .eq('user_id', user.id)
                 .eq('session_date', today)
 
-            const todayMinutes = sessions?.reduce((sum, s) => sum + s.duration_minutes, 0) || 0
+            const todayMinutes = sessions?.reduce((sum: number, s: { duration_minutes: number }) => sum + s.duration_minutes, 0) || 0
 
             const dailyGoal = profile.daily_goal_minutes ?? 0
 
