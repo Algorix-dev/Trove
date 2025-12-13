@@ -19,15 +19,25 @@ export default async function DashboardPage() {
     const supabase = createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    // if (!user) {
-    //    redirect("/login")
-    // }
-
     // DEBUG: Render Cookies
     const { cookies } = await import("next/headers")
     const cookieStore = cookies()
     const allCookies = cookieStore.getAll()
     const cookieDebug = JSON.stringify(allCookies, null, 2)
+
+    if (!user) {
+        return (
+            <div className="p-8 space-y-4">
+                <div className="bg-red-100 p-4 border border-red-500 rounded text-xs font-mono whitespace-pre-wrap break-all">
+                    SERVER COOKIES RECEIVED (USER IS NULL):
+                    {cookieDebug}
+                </div>
+                <h1 className="text-2xl font-bold">Not Authenticated on Server</h1>
+                <p>This page is in DEBUG mode. Redirect disabled.</p>
+                <a href="/login" className="text-blue-500 hover:underline">Go to Login</a>
+            </div>
+        )
+    }
 
     const { data: profile } = await supabase
         .from('profiles')
