@@ -19,6 +19,8 @@ export default async function DashboardPage() {
     const supabase = createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
     // DEBUG: Render Cookies
     const { cookies } = await import("next/headers")
     const cookieStore = cookies()
@@ -27,9 +29,14 @@ export default async function DashboardPage() {
 
     // DEBUG: Check Environment
     const envDebug = {
-        url: process.env.NEXT_PUBLIC_SUPABASE_URL ? "Set" : "Missing",
+        url: process.env.NEXT_PUBLIC_SUPABASE_URL,
         anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "Set (Len: " + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length + ")" : "Missing",
-        nodeEnv: process.env.NODE_ENV
+        nodeEnv: process.env.NODE_ENV,
+        sessionFound: !!session,
+        sessionUser: session?.user?.id || "None",
+        userFound: !!user,
+        userError: authError?.message || "None",
+        sessionError: sessionError?.message || "None"
     }
     const envDebugString = JSON.stringify(envDebug, null, 2)
 
