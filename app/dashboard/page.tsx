@@ -17,7 +17,7 @@ import { AISuggestion } from "@/components/features/ai/ai-suggestion"
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (!user) {
