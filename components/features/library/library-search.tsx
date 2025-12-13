@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select"
 import { Search, SlidersHorizontal, X, Upload } from "lucide-react"
 import type { Book } from "@/types/database"
-import { UploadBookDialog } from "./upload-book-dialog"
+import { UploadModal } from "./upload-modal"
 
 interface LibrarySearchProps {
     books: Book[]
@@ -105,12 +105,7 @@ export function LibrarySearch({ books, onFilteredChange }: LibrarySearchProps) {
                         </Button>
                     )}
                 </div>
-                <UploadBookDialog>
-                    <Button variant="default">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Upload Book
-                    </Button>
-                </UploadBookDialog>
+                <UploadModal />
                 <Button
                     variant={showFilters ? "default" : "outline"}
                     size="icon"
