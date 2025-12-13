@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -36,7 +36,7 @@ export function BookmarksList({
 }) {
     const [bookmarks, setBookmarks] = useState<BookmarkData[]>(initialBookmarks ?? [])
     const [loading, setLoading] = useState(false)
-    const supabase = createBrowserSupabaseClient()
+    const supabase = useMemo(() => createBrowserSupabaseClient(), [])
 
     useEffect(() => {
         setBookmarks(initialBookmarks ?? [])

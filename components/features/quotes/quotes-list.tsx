@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -28,7 +28,7 @@ interface BookQuote {
 export function QuotesList({ userId, quotes: initialQuotes }: { userId: string; quotes: BookQuote[] }) {
     const [quotes, setQuotes] = useState<BookQuote[]>(initialQuotes ?? [])
     const [filter, setFilter] = useState<"all" | "favorites">("all")
-    const supabase = createBrowserSupabaseClient()
+    const supabase = useMemo(() => createBrowserSupabaseClient(), [])
 
     useEffect(() => {
         setQuotes(initialQuotes ?? [])

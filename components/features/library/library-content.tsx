@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { BookGrid } from "./book-grid"
 import { LibrarySearch } from "./library-search"
 import { EmptyLibrary } from "./empty-library"
@@ -18,6 +18,8 @@ export function LibraryContent({ books: initialBooks }: LibraryContentProps) {
     const [filteredBooks, setFilteredBooks] = useState<BookWithProgress[]>(initialBooks || [])
     const [loading, setLoading] = useState(false)
 
+    const supabase = useMemo(() => createBrowserSupabaseClient(), [])
+
     // Allow client refresh after uploads (keeps server-first default)
     useEffect(() => {
         const handleBookUploaded = () => {
@@ -26,7 +28,6 @@ export function LibraryContent({ books: initialBooks }: LibraryContentProps) {
             (async () => {
                 setLoading(true)
                 try {
-                    const supabase = createBrowserSupabaseClient()
                     const { data: booksData } = await supabase
                         .from('books')
                         .select(`

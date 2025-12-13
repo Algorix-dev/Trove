@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Search, BookOpen } from "lucide-react"
 import { CreateNoteModal } from "./create-note-modal"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
@@ -14,7 +14,7 @@ import { DeleteConfirmDialog } from "@/components/features/delete-confirm-dialog
 import type { Note } from "@/types/database"
 
 export function NotesList({ userId, notes: initialNotes }: { userId: string, notes: Note[] }) {
-    const supabase = createBrowserSupabaseClient()
+    const supabase = useMemo(() => createBrowserSupabaseClient(), [])
     const [notes, setNotes] = useState<Note[]>(initialNotes ?? [])
     const [loading, setLoading] = useState(false)
     const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null)
