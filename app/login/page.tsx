@@ -33,10 +33,14 @@ export default function LoginPage() {
 
             if (error) throw error
 
+            console.log("LOGIN SUCCESS: Session received", data)
+            console.log("COOKIES BEFORE NAV:", document.cookie)
+
             toast.success("Signed in successfully!")
             // Force hard reload to ensure session cookies are recognized by middleware
             window.location.href = "/dashboard"
         } catch (err: any) {
+            console.error("LOGIN ERROR:", err)
             setError(err.message)
         } finally {
             setLoading(false)
