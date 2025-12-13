@@ -10,9 +10,8 @@ export async function middleware(req: NextRequest) {
         {
             cookies: {
                 getAll: () => req.cookies.getAll(),
-                setAll: (cookies) => {
-                    cookies.forEach(({ name, value, options }) => {
-                        req.cookies.set(name, value)
+                setAll: (cookiesToSet) => {
+                    cookiesToSet.forEach(({ name, value, options }) => {
                         res.cookies.set(name, value, options)
                     })
                 },
@@ -20,10 +19,12 @@ export async function middleware(req: NextRequest) {
         }
     )
 
+    // This call is REQUIRED to refresh the session cookie
     await supabase.auth.getSession()
+
     return res
 }
 
 export const config = {
-    matcher: ["/((?!_next|favicon.ico).*)"],
+    matcher: ["/dashboard/:path*"],
 }
