@@ -57,7 +57,7 @@ export function ContinueReading() {
                 .lt('progress_percentage', 100)
                 .order('updated_at', { ascending: false })
                 .limit(1)
-                .single()
+                .maybeSingle()
 
             if (data && data.books) {
                 const bookData = Array.isArray(data.books) ? data.books[0] : data.books

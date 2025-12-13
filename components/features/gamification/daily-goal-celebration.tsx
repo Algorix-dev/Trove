@@ -57,7 +57,7 @@ export function DailyGoalCelebration() {
                 .from('profiles')
                 .select('daily_goal_minutes')
                 .eq('id', user.id)
-                .single()
+                .maybeSingle()
 
             if (!profile) return
 

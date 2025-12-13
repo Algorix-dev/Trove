@@ -32,7 +32,7 @@ export function DashboardStats() {
                     .from('profiles')
                     .select('current_streak, daily_goal_minutes')
                     .eq('id', user.id)
-                    .single(),
+                    .maybeSingle(),
 
                 // Fetch reading progress stats
                 supabase
