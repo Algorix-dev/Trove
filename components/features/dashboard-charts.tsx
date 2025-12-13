@@ -15,41 +15,44 @@ export function DashboardCharts() {
         const fetchData = async () => {
             const supabase = createBrowserSupabaseClient()
 
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
+            try {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (!user) return
 
-            // Get last 7 days range
-            const today = new Date()
-            const lastWeek = subDays(today, 6) // Last 7 days including today
+                // Get last 7 days range
+                const today = new Date()
+                const lastWeek = subDays(today, 6) // Last 7 days including today
 
-            const { data: sessions } = await supabase
-                .from('reading_sessions')
-                .select('*')
-                .eq('user_id', user.id)
-                .gte('session_date', format(lastWeek, 'yyyy-MM-dd'))
-                .lte('session_date', format(today, 'yyyy-MM-dd'))
+                const { data: sessions } = await supabase
+                    .from('reading_sessions')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .gte('session_date', format(lastWeek, 'yyyy-MM-dd'))
+                    .lte('session_date', format(today, 'yyyy-MM-dd'))
 
-            // Initialize chart data with 0s for last 7 days
-            const chartData = []
-            for (let i = 6; i >= 0; i--) {
-                const date = subDays(today, i)
-                const dateStr = format(date, 'yyyy-MM-dd')
-                const dayName = format(date, 'EEE') // Mon, Tue, etc.
+                // Initialize chart data with 0s for last 7 days
+                const chartData = []
+                for (let i = 6; i >= 0; i--) {
+                    const date = subDays(today, i)
+                    const dateStr = format(date, 'yyyy-MM-dd')
+                    const dayName = format(date, 'EEE') // Mon, Tue, etc.
 
-                // Sum minutes for this day
-                const minutes = (sessions as ReadingSession[])
-                    ?.filter((s: ReadingSession) => s.session_date === dateStr)
-                    .reduce((acc, s) => acc + s.duration_minutes, 0) || 0
+                    // Sum minutes for this day
+                    const minutes = (sessions as ReadingSession[])
+                        ?.filter((s: ReadingSession) => s.session_date === dateStr)
+                        .reduce((acc, s) => acc + s.duration_minutes, 0) || 0
 
 
-                chartData.push({
-                    name: dayName,
-                    minutes: minutes
-                })
+                    chartData.push({
+                        name: dayName,
+                        minutes: minutes
+                    })
+                }
+
+                setData(chartData)
+            } finally {
+                setLoading(false)
             }
-
-            setData(chartData)
-            setLoading(false)
         }
 
         fetchData()

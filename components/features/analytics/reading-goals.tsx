@@ -32,52 +32,56 @@ export function ReadingGoals() {
     }, [user])
 
     const fetchGoal = async () => {
-        if (!user) return
-
-        const supabase = createBrowserSupabaseClient()
-
-        // Fetch completed books count dynamically
-        const { count: completedCount } = await supabase
-            .from('reading_progress')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .eq('progress_percentage', 100)
-
-        // Fetch goal settings
-        const { data } = await supabase
-            .from('reading_goals')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('year', currentYear)
-            .single()
-
-        if (data) {
-            setGoal({
-                ...data,
-                books_completed: completedCount || 0
-            })
-            setNewTarget(data.target_books)
-        } else {
-            // Create default goal
-            const { data: newGoal } = await supabase
-                .from('reading_goals')
-                .insert({
-                    user_id: user.id,
-                    year: currentYear,
-                    target_books: 12
-                })
-                .select()
-                .single()
-
-            if (newGoal) {
-                setGoal({
-                    ...newGoal,
-                    books_completed: completedCount || 0
-                })
-            }
+        if (!user) {
+            setLoading(false)
+            return
         }
 
-        setLoading(false)
+        const supabase = createBrowserSupabaseClient()
+        try {
+            // Fetch completed books count dynamically
+            const { count: completedCount } = await supabase
+                .from('reading_progress')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('progress_percentage', 100)
+
+            // Fetch goal settings
+            const { data } = await supabase
+                .from('reading_goals')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('year', currentYear)
+                .maybeSingle()
+
+            if (data) {
+                setGoal({
+                    ...data,
+                    books_completed: completedCount || 0
+                })
+                setNewTarget(data.target_books)
+            } else {
+                // Create default goal
+                const { data: newGoal } = await supabase
+                    .from('reading_goals')
+                    .insert({
+                        user_id: user.id,
+                        year: currentYear,
+                        target_books: 12
+                    })
+                    .select()
+                    .single()
+
+                if (newGoal) {
+                    setGoal({
+                        ...newGoal,
+                        books_completed: completedCount || 0
+                    })
+                }
+            }
+        } finally {
+            setLoading(false)
+        }
     }
 
     const updateGoal = async () => {

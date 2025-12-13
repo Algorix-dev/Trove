@@ -19,42 +19,49 @@ export function ReadingStreakCalendar() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        if (!user) return
-
         const fetchReadingData = async () => {
             const supabase = createBrowserSupabaseClient()
+            try {
+                // Get last 365 days of reading sessions
+                const oneYearAgo = new Date()
+                oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
 
-            // Get last 365 days of reading sessions
-            const oneYearAgo = new Date()
-            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+                // Need user for query
+                if (!user) return
 
-            const { data } = await supabase
-                .from('reading_sessions')
-                .select('*')
-                .eq('user_id', user.id)
-                .gte('session_date', format(oneYearAgo, 'yyyy-MM-dd'))
-                .order('session_date', { ascending: true })
+                const { data } = await supabase
+                    .from('reading_sessions')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .gte('session_date', format(oneYearAgo, 'yyyy-MM-dd'))
+                    .order('session_date', { ascending: true })
 
-            if (data) {
-                // Aggregate minutes by date
-                const dateMap = new Map<string, number>()
-                data.forEach((session: ReadingSession) => {
+                if (data) {
+                    // Aggregate minutes by date
+                    const dateMap = new Map<string, number>()
+                    data.forEach((session: ReadingSession) => {
 
-                    const existing = dateMap.get(session.session_date) || 0
-                    dateMap.set(session.session_date, existing + session.duration_minutes)
-                })
+                        const existing = dateMap.get(session.session_date) || 0
+                        dateMap.set(session.session_date, existing + session.duration_minutes)
+                    })
 
-                setReadingData(
-                    Array.from(dateMap.entries()).map(([date, minutes]) => ({
-                        date,
-                        minutes
-                    }))
-                )
+                    setReadingData(
+                        Array.from(dateMap.entries()).map(([date, minutes]) => ({
+                            date,
+                            minutes
+                        }))
+                    )
+                }
+            } finally {
+                setLoading(false)
             }
-            setLoading(false)
         }
 
-        fetchReadingData()
+        if (user) {
+            fetchReadingData()
+        } else {
+            setLoading(false)
+        }
     }, [user])
 
     // Generate calendar grid

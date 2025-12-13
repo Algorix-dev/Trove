@@ -3,6 +3,8 @@ import { LibraryContent } from "@/components/features/library/library-content"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
+export const dynamic = 'force-dynamic'
+
 export default async function LibraryPage() {
     const supabase = createServerSupabaseClient()
     const { data: { user } } = await supabase.auth.getUser()
