@@ -6,6 +6,11 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recha
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { format, subDays, startOfDay, endOfDay } from "date-fns"
 
+type ReadingSession = {
+    session_date: string
+    duration_minutes: number
+}
+
 export function DashboardCharts() {
     const [data, setData] = useState<{ name: string; minutes: number }[]>([])
     const [loading, setLoading] = useState(true)
@@ -36,9 +41,10 @@ export function DashboardCharts() {
                 const dayName = format(date, 'EEE') // Mon, Tue, etc.
 
                 // Sum minutes for this day
-                const minutes = sessions
-                    ?.filter(s => s.session_date === dateStr)
+                const minutes = (sessions as ReadingSession[])
+                    ?.filter((s: ReadingSession) => s.session_date === dateStr)
                     .reduce((acc, s) => acc + s.duration_minutes, 0) || 0
+
 
                 chartData.push({
                     name: dayName,

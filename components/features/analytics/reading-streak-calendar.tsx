@@ -5,15 +5,14 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { useAuth } from "@/components/providers/auth-provider"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Flame } from "lucide-react"
+type ReadingSession = {
+    session_date: string
+    duration_minutes: number
+}
 
 interface ReadingDay {
     date: string
     minutes: number
-}
-
-interface ReadingSession {
-    session_date: string
-    duration_minutes: number
 }
 
 export function ReadingStreakCalendar() {
@@ -42,6 +41,7 @@ export function ReadingStreakCalendar() {
                 // Aggregate minutes by date
                 const dateMap = new Map<string, number>()
                 data.forEach((session: ReadingSession) => {
+
                     const existing = dateMap.get(session.session_date) || 0
                     dateMap.set(session.session_date, existing + session.duration_minutes)
                 })
