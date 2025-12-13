@@ -27,7 +27,7 @@ export function createServerSupabaseClient() {
         // Ignore parsing errors, fall back to standard library check
     }
 
-    return createServerClient(
+    const client = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
@@ -42,11 +42,26 @@ export function createServerSupabaseClient() {
             cookieOptions: {
                 name: "sb-oywgbszdxsklkvwifvqq-auth-token"
             },
-            global: accessToken ? {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`
-                }
-            } : undefined
         }
     )
+
+    // WORKAROUND: Intercept getUser to inject manual token if needed
+    const originalGetUser = client.auth.getUser.bind(client.auth)
+    client.auth.getUser = async (jwt?: string) => {
+        // If JWT provided, use it
+        if (jwt) return originalGetUser(jwt)
+
+        // Try standard extraction
+        const result = await originalGetUser()
+        if (result.data.user) return result
+
+        // If failed but we manually parsed a token, try that
+        if (accessToken) {
+            return originalGetUser(accessToken)
+        }
+
+        return result
+    }
+
+    return client
 }
