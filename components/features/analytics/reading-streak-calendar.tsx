@@ -5,6 +5,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { useAuth } from "@/components/providers/auth-provider"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Flame } from "lucide-react"
+import { format } from "date-fns"
 import type { ReadingSession } from "@/types/database"
 
 interface ReadingDay {
@@ -31,7 +32,7 @@ export function ReadingStreakCalendar() {
                 .from('reading_sessions')
                 .select('*')
                 .eq('user_id', user.id)
-                .gte('session_date', oneYearAgo.toISOString().split('T')[0])
+                .gte('session_date', format(oneYearAgo, 'yyyy-MM-dd'))
                 .order('session_date', { ascending: true })
 
             if (data) {
@@ -73,7 +74,7 @@ export function ReadingStreakCalendar() {
             const currentDate = new Date(firstDay)
             currentDate.setDate(firstDay.getDate() + i)
 
-            const dateStr = currentDate.toISOString().split('T')[0]
+            const dateStr = format(currentDate, 'yyyy-MM-dd')
             const dayData = readingData.find(d => d.date === dateStr)
 
             currentWeek.push({
@@ -116,10 +117,19 @@ export function ReadingStreakCalendar() {
 
         let streak = 0
         const today = new Date()
+        const todayStr = format(today, 'yyyy-MM-dd')
+
+        // Start from today unless no reading recorded today, then check yesterday
+        // allowing streak to persist across day boundary until end of day
         let currentDate = new Date(today)
+        const hasToday = readingData.some(d => d.date === todayStr && d.minutes > 0)
+
+        if (!hasToday) {
+            currentDate.setDate(currentDate.getDate() - 1)
+        }
 
         while (true) {
-            const dateStr = currentDate.toISOString().split('T')[0]
+            const dateStr = format(currentDate, 'yyyy-MM-dd')
             const hasReading = readingData.some(d => d.date === dateStr && d.minutes > 0)
 
             if (!hasReading) break

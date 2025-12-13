@@ -52,7 +52,7 @@ export function DashboardStats() {
 
 
             // Calculate books currently reading
-            const readingNow = progressData.data?.filter((p: ReadingProgress) => p.progress_percentage === 100)
+            const readingNow = progressData.data?.filter((p: ReadingProgress) => p.progress_percentage < 100)
 
 
             // Calculate total and today's minutes
