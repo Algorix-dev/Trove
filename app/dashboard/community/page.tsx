@@ -1,7 +1,8 @@
 // app/dashboard/community/page.tsx
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { MessageCircle, Users, TrendingUp, BookOpen, ExternalLink } from "lucide-react"
+import { MessageCircle, Users, TrendingUp, BookOpen, ExternalLink, ShoppingBag } from "lucide-react"
+import Link from "next/link"
 
 export default function CommunityPage() {
     return (
@@ -10,6 +11,27 @@ export default function CommunityPage() {
                 <h1 className="text-3xl font-bold tracking-tight">Community</h1>
                 <p className="text-muted-foreground">Connect with fellow readers and share your journey</p>
             </div>
+
+            {/* Marketplace Banner */}
+            <Card className="p-6 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
+                <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-full bg-green-500 flex items-center justify-center">
+                        <ShoppingBag className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                        <h2 className="text-2xl font-bold mb-2">Book Marketplace</h2>
+                        <p className="text-muted-foreground mb-4">
+                            Buy and sell books with fellow readers! List your books, browse listings, and connect with buyers/sellers through Discord.
+                        </p>
+                        <Button className="bg-green-500 hover:bg-green-600" asChild>
+                            <Link href="/dashboard/marketplace">
+                                <ShoppingBag className="h-4 w-4 mr-2" />
+                                Visit Marketplace
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
+            </Card>
 
             {/* Discord Community */}
             <Card className="p-6 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-indigo-500/20">
