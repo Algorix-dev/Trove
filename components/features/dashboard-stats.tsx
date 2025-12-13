@@ -5,6 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Flame, Clock, BookOpen, TrendingUp } from "lucide-react"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { format } from "date-fns"
+type ReadingProgress = {
+    id: string
+    user_id: string
+    book_id: string
+    progress_percentage: number
+}
+type ReadingSession = {
+    id: string
+    session_date: string
+    duration_minutes: number
+}
 
 export function DashboardStats() {
     const [stats, setStats] = useState({
@@ -47,21 +58,29 @@ export function DashboardStats() {
             ])
 
             // Calculate books read
-            const booksRead = progressData.data?.filter(p => p.progress_percentage === 100).length || 0
+            const booksRead = progressData.data?.filter((p: ReadingProgress) => p.progress_percentage === 100)
+
 
             // Calculate books currently reading
-            const readingNow = progressData.data?.filter(
-                p => p.progress_percentage < 100
-            ).length || 0
+            const readingNow = progressData.data?.filter((p: ReadingProgress) => p.progress_percentage === 100)
+
 
             // Calculate total and today's minutes
-            const totalMinutes = sessionsData.data?.reduce((acc, session) => acc + session.duration_minutes, 0) || 0
+            const totalMinutes = sessionsData.data?.reduce((acc: number, session: ReadingSession) => {
 
+            })
             const todayLocal = format(new Date(), 'yyyy-MM-dd')
 
+
             const todayMinutes = sessionsData.data
-                ?.filter(session => session.session_date === todayLocal)
-                .reduce((acc, session) => acc + session.duration_minutes, 0) || 0
+                ?.filter((session: ReadingSession) => session.session_date === todayLocal)
+
+                .reduce(
+                    (acc: number, session: ReadingSession) =>
+                        acc + session.duration_minutes,
+                    0
+                )
+
 
             setStats({
                 streak: profileData.data?.current_streak || 0,
