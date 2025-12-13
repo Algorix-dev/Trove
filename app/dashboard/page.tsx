@@ -19,9 +19,15 @@ export default async function DashboardPage() {
     const supabase = createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
-        redirect("/login")
-    }
+    // if (!user) {
+    //    redirect("/login")
+    // }
+
+    // DEBUG: Render Cookies
+    const { cookies } = await import("next/headers")
+    const cookieStore = cookies()
+    const allCookies = cookieStore.getAll()
+    const cookieDebug = JSON.stringify(allCookies, null, 2)
 
     const { data: profile } = await supabase
         .from('profiles')
@@ -53,6 +59,10 @@ export default async function DashboardPage() {
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
+                    <div className="bg-red-100 p-4 border border-red-500 rounded text-xs font-mono whitespace-pre-wrap break-all mb-4">
+                        SERVER COOKIES RECEIVED:
+                        {cookieDebug}
+                    </div>
                     <h2 className="text-3xl font-bold tracking-tight">{greeting}, {name}</h2>
                     <p className="text-muted-foreground">Ready to continue your reading journey?</p>
                 </div>
