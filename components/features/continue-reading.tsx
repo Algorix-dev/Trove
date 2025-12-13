@@ -33,6 +33,7 @@ export function ContinueReading() {
 
     useEffect(() => {
         const fetchLastReadBook = async () => {
+            const supabase = createBrowserSupabaseClient()
             try {
                 const { data: { user } } = await supabase.auth.getUser()
                 if (!user) return
