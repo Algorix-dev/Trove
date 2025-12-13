@@ -85,7 +85,7 @@ export function AnalyticsCharts({ readingProgress, userId }: { readingProgress?:
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId])
 
-    const getWeeklyMinutes = (sessions: any[] | null, weeksAgo: number) => {
+    function getWeeklyMinutes(sessions: any[] | null, weeksAgo: number) {
         const today = new Date()
         const endDay = subDays(today, weeksAgo * 7)
         const startDay = subDays(endDay, 6)

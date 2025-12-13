@@ -8,6 +8,14 @@ import { Bookmark, Trash2, BookOpen, Clock } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 
+interface BookRelation {
+    id: string
+    title: string
+    author: string
+    cover_url?: string | null
+    format?: string | null
+}
+
 interface BookmarkData {
     id: string
     book_id: string
@@ -16,80 +24,76 @@ interface BookmarkData {
     progress_percentage: number | null
     created_at: string
     note: string | null
-    books: {
-        id: string
-        title: string
-        author: string
-        cover_url: string
-        format: string
-    }
+    books: BookRelation | null
 }
 
-export function BookmarksList({ userId, bookmarks: initialBookmarks }: { userId: string, bookmarks: BookmarkData[] }) {
+export function BookmarksList({
+    userId,
+    bookmarks: initialBookmarks,
+}: {
+    userId: string
+    bookmarks: BookmarkData[]
+}) {
     const [bookmarks, setBookmarks] = useState<BookmarkData[]>(initialBookmarks ?? [])
     const [loading, setLoading] = useState(false)
     const supabase = createBrowserSupabaseClient()
 
     useEffect(() => {
-        // initialBookmarks passed from server; keep that
         setBookmarks(initialBookmarks ?? [])
     }, [initialBookmarks])
 
     const deleteBookmark = async (bookmarkId: string) => {
         setLoading(true)
         try {
-            const { error } = await supabase
-                .from('bookmarks')
-                .delete()
-                .eq('id', bookmarkId)
-
+            const { error } = await supabase.from("bookmarks").delete().eq("id", bookmarkId)
             if (error) {
                 toast.error("Failed to delete bookmark")
             } else {
                 toast.success("Bookmark removed")
-                setBookmarks(prev => prev.filter(b => b.id !== bookmarkId))
+                setBookmarks((prev) => prev.filter((b) => b.id !== bookmarkId))
             }
         } finally {
             setLoading(false)
         }
     }
 
-    // Define the grouped bookmarks type
-    type GroupedBookmarks = Record<string, {
-        book: BookmarkData['books']
-        bookmarks: BookmarkData[]
-    }>
+    type GroupedBookmarks = Record<
+        string,
+        {
+            book: BookRelation | null
+            bookmarks: BookmarkData[]
+        }
+    >
 
-    // group with strong typing
     const groupedBookmarks = bookmarks.reduce<GroupedBookmarks>((acc, bookmark) => {
         const bookId = bookmark.book_id
         if (!acc[bookId]) {
             acc[bookId] = {
                 book: bookmark.books ?? null,
-                bookmarks: []
+                bookmarks: [],
             }
         }
         acc[bookId].bookmarks.push(bookmark)
         return acc
-    }, {})
+    }, {} as GroupedBookmarks)
 
     const formatLocation = (bookmark: BookmarkData) => {
-        if (bookmark.page_number) return `Page ${bookmark.page_number}`
-        if (bookmark.progress_percentage !== null) return `${bookmark.progress_percentage}% complete`
-        return 'Unknown location'
+        if (bookmark.page_number != null) return `Page ${bookmark.page_number}`
+        if (bookmark.progress_percentage != null) return `${bookmark.progress_percentage}% complete`
+        return "Unknown location"
     }
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString)
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
     }
 
     const buildReaderUrl = (bookmark: BookmarkData) => {
         const baseUrl = `/dashboard/reader/${bookmark.book_id}`
         const params = new URLSearchParams()
-        if (bookmark.page_number) params.set('page', bookmark.page_number.toString())
-        else if (bookmark.epub_cfi) params.set('cfi', bookmark.epub_cfi)
-        else if (bookmark.progress_percentage) params.set('progress', (bookmark.progress_percentage / 100).toString())
+        if (bookmark.page_number != null) params.set("page", bookmark.page_number.toString())
+        else if (bookmark.epub_cfi) params.set("cfi", bookmark.epub_cfi)
+        else if (bookmark.progress_percentage != null) params.set("progress", (bookmark.progress_percentage / 100).toString())
         return params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl
     }
 
@@ -115,16 +119,20 @@ export function BookmarksList({ userId, bookmarks: initialBookmarks }: { userId:
                     <CardContent className="p-6">
                         <div className="flex gap-4 mb-4 pb-4 border-b">
                             <div className="w-16 h-24 rounded overflow-hidden flex-shrink-0 bg-gradient-to-br from-purple-500 to-pink-500">
-                                {book.cover_url && !book.cover_url.startsWith('gradient:') ? (
+                                {book && book.cover_url && !book.cover_url.startsWith("gradient:") ? (
                                     <img src={book.cover_url} alt={book.title} className="w-full h-full object-cover" />
-                                ) : <div className="w-full h-full flex items-center justify-center"><BookOpen className="h-8 w-8 text-white opacity-80" /></div>}
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <BookOpen className="h-8 w-8 text-white opacity-80" />
+                                    </div>
+                                )}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-lg line-clamp-2">{book.title}</h3>
-                                <p className="text-sm text-muted-foreground truncate">{book.author}</p>
+                                <h3 className="font-semibold text-lg line-clamp-2">{book?.title ?? "Unknown Title"}</h3>
+                                <p className="text-sm text-muted-foreground truncate">{book?.author ?? "Unknown Author"}</p>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xs bg-secondary px-2 py-1 rounded uppercase">{book.format}</span>
-                                    <span className="text-xs text-muted-foreground">{bookBookmarks.length} bookmark{bookBookmarks.length !== 1 ? 's' : ''}</span>
+                                    <span className="text-xs bg-secondary px-2 py-1 rounded uppercase">{book?.format ?? "PDF"}</span>
+                                    <span className="text-xs text-muted-foreground">{bookBookmarks.length} bookmark{bookBookmarks.length !== 1 ? "s" : ""}</span>
                                 </div>
                             </div>
                         </div>

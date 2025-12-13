@@ -6,6 +6,7 @@ import { Search, BookOpen } from "lucide-react"
 import { CreateNoteModal } from "./create-note-modal"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { useEffect, useState } from "react"
+
 import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -31,17 +32,17 @@ export function NotesList({ userId, notes: initialNotes }: { userId: string, not
     const performDelete = async (noteId: string) => {
         try {
             const { error, count } = await supabase
-                .from('notes')
-                .delete({ count: 'exact' })
-                .eq('id', noteId)
+                .from("notes")
+                .delete({ count: "exact" })
+                .eq("id", noteId)
 
             if (error) throw error
             if (count === 0) throw new Error("Could not delete note. You might not have permission.")
 
             setNotes(prev => prev.filter(n => n.id !== noteId))
             toast.success("Note deleted")
-        } catch (error) {
-            console.error('Delete error:', error)
+        } catch (err) {
+            console.error("Delete error:", err)
             toast.error("Failed to delete note")
         }
     }
@@ -78,7 +79,12 @@ export function NotesList({ userId, notes: initialNotes }: { userId: string, not
             <div className="grid gap-4">
                 {notes.map((note) => (
                     <Card key={note.id} className="group relative hover:border-primary/50 transition-colors">
-                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDeleteClick(note.id)}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleDeleteClick(note.id)}
+                        >
                             <Trash2 className="h-3 w-3 text-destructive" />
                         </Button>
                         <CardHeader className="pb-2">
@@ -87,7 +93,9 @@ export function NotesList({ userId, notes: initialNotes }: { userId: string, not
                                     <BookOpen className="h-4 w-4" />
                                     {note.book_id ? "Book Note" : "General Note"}
                                 </div>
-                                <span className="text-xs text-muted-foreground">{new Date(note.created_at).toLocaleDateString()}</span>
+                                <span className="text-xs text-muted-foreground">
+                                    {new Date(note.created_at).toLocaleDateString()}
+                                </span>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-3">
