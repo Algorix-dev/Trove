@@ -19,63 +19,8 @@ export default async function DashboardPage() {
     const supabase = createServerSupabaseClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-    // DEBUG: Render Cookies
-    const { cookies } = await import("next/headers")
-    const cookieStore = cookies()
-    const allCookies = cookieStore.getAll()
-    const cookieDebug = JSON.stringify(allCookies, null, 2)
-
-    // DEBUG: Manual Parse
-    let manualUser = "Parse Failed"
-    try {
-        const name = "sb-oywgbszdxsklkvwifvqq-auth-token"
-        const chunks = allCookies
-            .filter(c => c.name.startsWith(name))
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map(c => c.value)
-
-        const combined = chunks.join("")
-        const cleaned = combined.replace("base64-", "")
-        const decoded = Buffer.from(cleaned, 'base64').toString('utf-8')
-        const session = JSON.parse(decoded)
-        manualUser = session.user?.email || "No Email in Session"
-    } catch (e: any) {
-        manualUser = "Error: " + e.message
-    }
-
-    // DEBUG: Check Environment
-    const envDebug = {
-        manualUser,
-        clientToken: (supabase as any).debugToken || "Missing from Client",
-        url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-        anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "Set (Len: " + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length + ")" : "Missing",
-        nodeEnv: process.env.NODE_ENV,
-        sessionFound: !!session,
-        sessionUser: session?.user?.id || "None",
-        userFound: !!user,
-        userError: authError?.message || "None",
-        sessionError: sessionError?.message || "None"
-    }
-    const envDebugString = JSON.stringify(envDebug, null, 2)
-
     if (!user) {
-        return (
-            <div className="p-8 space-y-4">
-                <div className="bg-yellow-100 p-4 border border-yellow-500 rounded text-xs font-mono whitespace-pre-wrap break-all">
-                    SERVER ENVIRONMENT:
-                    {envDebugString}
-                </div>
-                <div className="bg-red-100 p-4 border border-red-500 rounded text-xs font-mono whitespace-pre-wrap break-all">
-                    SERVER COOKIES RECEIVED (USER IS NULL):
-                    {cookieDebug}
-                </div>
-                <h1 className="text-2xl font-bold">Not Authenticated on Server</h1>
-                <p>This page is in DEBUG mode. Redirect disabled.</p>
-                <a href="/login" className="text-blue-500 hover:underline">Go to Login</a>
-            </div>
-        )
+        redirect("/login")
     }
 
     const { data: profile } = await supabase
@@ -108,10 +53,6 @@ export default async function DashboardPage() {
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <div className="bg-red-100 p-4 border border-red-500 rounded text-xs font-mono whitespace-pre-wrap break-all mb-4">
-                        SERVER COOKIES RECEIVED:
-                        {cookieDebug}
-                    </div>
                     <h2 className="text-3xl font-bold tracking-tight">{greeting}, {name}</h2>
                     <p className="text-muted-foreground">Ready to continue your reading journey?</p>
                 </div>

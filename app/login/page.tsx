@@ -33,16 +33,9 @@ export default function LoginPage() {
 
             if (error) throw error
 
-            console.log("LOGIN SUCCESS: Session received", data)
-            console.log("COOKIES BEFORE NAV:", document.cookie)
-
-            // PAUSE EXECUTION SO USER CAN SEE LOGS
-            alert(`DEBUG: Login Success! \nCheck Console logs now.\nCookies: ${document.cookie.substring(0, 50)}...`)
-
             toast.success("Signed in successfully!")
             router.push("/dashboard")
         } catch (err: any) {
-            console.error("LOGIN ERROR:", err)
             setError(err.message)
         } finally {
             setLoading(false)
