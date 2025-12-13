@@ -11,6 +11,11 @@ interface ReadingDay {
     minutes: number
 }
 
+interface ReadingSession {
+    session_date: string
+    duration_minutes: number
+}
+
 export function ReadingStreakCalendar() {
     const { user } = useAuth()
     const [readingData, setReadingData] = useState<ReadingDay[]>([])
@@ -36,7 +41,7 @@ export function ReadingStreakCalendar() {
             if (data) {
                 // Aggregate minutes by date
                 const dateMap = new Map<string, number>()
-                data.forEach(session => {
+                data.forEach((session: ReadingSession) => {
                     const existing = dateMap.get(session.session_date) || 0
                     dateMap.set(session.session_date, existing + session.duration_minutes)
                 })
