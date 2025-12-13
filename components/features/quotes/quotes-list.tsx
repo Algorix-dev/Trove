@@ -7,23 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Quote, Star, Trash2, BookOpen } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
-
-interface BookRelation {
-    id: string
-    title: string
-    author: string
-}
-
-interface BookQuote {
-    id: string
-    quote_text: string
-    page_number: number | null
-    chapter: string | null
-    note: string | null
-    is_favorite: boolean
-    created_at: string
-    books: BookRelation | null
-}
+import type { BookQuote } from "@/types/database"
 
 export function QuotesList({ userId, quotes: initialQuotes }: { userId: string; quotes: BookQuote[] }) {
     const [quotes, setQuotes] = useState<BookQuote[]>(initialQuotes ?? [])

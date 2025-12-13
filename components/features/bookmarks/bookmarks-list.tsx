@@ -7,25 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Bookmark, Trash2, BookOpen, Clock } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import type { BookmarkWithBook as BookmarkData } from "@/types/database"
 
-interface BookRelation {
-    id: string
-    title: string
-    author: string
-    cover_url?: string | null
-    format?: string | null
-}
-
-interface BookmarkData {
-    id: string
-    book_id: string
-    page_number: number | null
-    epub_cfi: string | null
-    progress_percentage: number | null
-    created_at: string
-    note: string | null
-    books: BookRelation | null
-}
+type BookRelation = Exclude<BookmarkData['books'], null>
 
 export function BookmarksList({
     userId,

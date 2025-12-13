@@ -5,11 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { format, subDays, startOfDay, endOfDay } from "date-fns"
-
-type ReadingSession = {
-    session_date: string
-    duration_minutes: number
-}
+import type { ReadingSession } from "@/types/database"
 
 export function DashboardCharts() {
     const [data, setData] = useState<{ name: string; minutes: number }[]>([])
@@ -28,7 +24,7 @@ export function DashboardCharts() {
 
             const { data: sessions } = await supabase
                 .from('reading_sessions')
-                .select('duration_minutes, session_date')
+                .select('*')
                 .eq('user_id', user.id)
                 .gte('session_date', format(lastWeek, 'yyyy-MM-dd'))
                 .lte('session_date', format(today, 'yyyy-MM-dd'))

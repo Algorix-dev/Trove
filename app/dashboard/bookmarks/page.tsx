@@ -35,10 +35,12 @@ export default async function BookmarksPage() {
 
     const bookmarks = (rawBookmarks || []).map((b: any) => ({
         id: b.id,
+        user_id: b.user_id ?? user.id,
         book_id: b.book_id,
         page_number: b.page_number ?? null,
         epub_cfi: b.epub_cfi ?? null,
         progress_percentage: b.progress_percentage ?? null,
+        title: b.title ?? null,
         created_at: b.created_at,
         note: b.note ?? null,
         // Normalize relation: sometimes Supabase returns array for relation; ensure object

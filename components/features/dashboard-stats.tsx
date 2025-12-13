@@ -5,17 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Flame, Clock, BookOpen, TrendingUp } from "lucide-react"
 import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { format } from "date-fns"
-type ReadingProgress = {
-    id: string
-    user_id: string
-    book_id: string
-    progress_percentage: number
-}
-type ReadingSession = {
-    id: string
-    session_date: string
-    duration_minutes: number
-}
+import type { ReadingProgress, ReadingSession } from "@/types/database"
 
 export function DashboardStats() {
     const [stats, setStats] = useState({
@@ -47,13 +37,13 @@ export function DashboardStats() {
                 // Fetch reading progress stats
                 supabase
                     .from('reading_progress')
-                    .select('progress_percentage', { count: 'exact' })
+                    .select('*', { count: 'exact' })
                     .eq('user_id', user.id),
 
                 // Fetch all reading sessions
                 supabase
                     .from('reading_sessions')
-                    .select('duration_minutes, session_date')
+                    .select('*')
                     .eq('user_id', user.id)
             ])
 
@@ -67,8 +57,8 @@ export function DashboardStats() {
 
             // Calculate total and today's minutes
             const totalMinutes = sessionsData.data?.reduce((acc: number, session: ReadingSession) => {
-
-            })
+                return acc + session.duration_minutes
+            }, 0) || 0
             const todayLocal = format(new Date(), 'yyyy-MM-dd')
 
 

@@ -5,10 +5,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/client"
 import { useAuth } from "@/components/providers/auth-provider"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Flame } from "lucide-react"
-type ReadingSession = {
-    session_date: string
-    duration_minutes: number
-}
+import type { ReadingSession } from "@/types/database"
 
 interface ReadingDay {
     date: string
@@ -32,7 +29,7 @@ export function ReadingStreakCalendar() {
 
             const { data } = await supabase
                 .from('reading_sessions')
-                .select('session_date, duration_minutes')
+                .select('*')
                 .eq('user_id', user.id)
                 .gte('session_date', oneYearAgo.toISOString().split('T')[0])
                 .order('session_date', { ascending: true })
