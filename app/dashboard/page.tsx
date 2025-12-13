@@ -12,6 +12,7 @@ import { ReadingStreakCalendar } from "@/components/features/analytics/reading-s
 import { ReadingGoals } from "@/components/features/analytics/reading-goals"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { AISuggestion } from "@/components/features/ai/ai-suggestion"
 
 export const dynamic = 'force-dynamic'
 
@@ -65,6 +66,8 @@ export default async function DashboardPage() {
             </div>
 
             <DashboardStats />
+
+            <AISuggestion />
 
             <div className="grid gap-6 md:grid-cols-2">
                 <LevelProgress
