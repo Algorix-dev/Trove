@@ -25,5 +25,5 @@ export default async function NotesPage() {
         created_at: n.created_at,
     }))
 
-    return <NotesList userId={user.id} notes={notes} />
+    return <NotesList bookId="all" />
 }
