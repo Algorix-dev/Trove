@@ -71,8 +71,10 @@ export function DailyGoalCelebration() {
 
             const todayMinutes = sessions?.reduce((sum, s) => sum + s.duration_minutes, 0) || 0
 
+            const dailyGoal = profile.daily_goal_minutes ?? 0
+
             // Check if goal is reached
-            if (todayMinutes >= profile.daily_goal_minutes && !celebrated) {
+            if (todayMinutes >= dailyGoal && !celebrated) {
                 celebrate()
                 sessionStorage.setItem(todayKey, 'true')
                 setCelebrated(true)
