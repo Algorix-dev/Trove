@@ -48,6 +48,7 @@ export default async function DashboardPage() {
     // DEBUG: Check Environment
     const envDebug = {
         manualUser,
+        clientToken: (supabase as any).debugToken || "Missing from Client",
         url: process.env.NEXT_PUBLIC_SUPABASE_URL,
         anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "Set (Len: " + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length + ")" : "Missing",
         nodeEnv: process.env.NODE_ENV,

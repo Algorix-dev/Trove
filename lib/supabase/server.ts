@@ -63,5 +63,8 @@ export function createServerSupabaseClient() {
         return result
     }
 
+        // DEBUG: Expose token
+        ; (client as any).debugToken = accessToken ? (accessToken.substring(0, 5) + "...") : "Undefined"
+
     return client
 }
