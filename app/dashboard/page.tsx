@@ -27,8 +27,27 @@ export default async function DashboardPage() {
     const allCookies = cookieStore.getAll()
     const cookieDebug = JSON.stringify(allCookies, null, 2)
 
+    // DEBUG: Manual Parse
+    let manualUser = "Parse Failed"
+    try {
+        const name = "sb-oywgbszdxsklkvwifvqq-auth-token"
+        const chunks = allCookies
+            .filter(c => c.name.startsWith(name))
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(c => c.value)
+
+        const combined = chunks.join("")
+        const cleaned = combined.replace("base64-", "")
+        const decoded = Buffer.from(cleaned, 'base64').toString('utf-8')
+        const session = JSON.parse(decoded)
+        manualUser = session.user?.email || "No Email in Session"
+    } catch (e: any) {
+        manualUser = "Error: " + e.message
+    }
+
     // DEBUG: Check Environment
     const envDebug = {
+        manualUser,
         url: process.env.NEXT_PUBLIC_SUPABASE_URL,
         anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "Set (Len: " + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length + ")" : "Missing",
         nodeEnv: process.env.NODE_ENV,
