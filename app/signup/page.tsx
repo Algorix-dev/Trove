@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { BookOpen, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { createBrowserClient } from "@supabase/ssr"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -22,7 +22,10 @@ export default function SignupPage() {
     const [signupEmail, setSignupEmail] = useState("")
     const router = useRouter()
 
-    const supabase = createBrowserSupabaseClient()
+    const supabase = createBrowserClient(
+        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+        process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+    )
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -31,7 +34,7 @@ export default function SignupPage() {
         setSuccess(false)
 
         try {
-            const { data, error } = await supabase.auth.signUp({
+            const { error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
@@ -44,15 +47,7 @@ export default function SignupPage() {
 
             if (error) throw error
 
-            // If session exists, user is logged in (Confirm Email is OFF)
-            if (data.session) {
-                toast.success("Account created successfully!")
-                // Force reload to set cookies and clear cache
-                window.location.href = "/dashboard"
-                return
-            }
-
-            // Otherwise, Confirm Email is ON
+            // Show success message instead of redirecting
             setSuccess(true)
             setSignupEmail(email)
             setName("")

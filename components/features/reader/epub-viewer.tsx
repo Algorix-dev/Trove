@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import Epub from "epubjs"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { createBrowserClient } from "@supabase/ssr"
 import { GamificationService } from "@/lib/gamification"
 
 interface EpubViewerProps {
@@ -27,7 +27,10 @@ export function EpubViewer({ url, initialLocation, onLocationChange, readerTheme
     const [progress, setProgress] = useState(0)
 
     const saveProgress = async (cfi: string, progressValue: number) => {
-        const supabase = createBrowserSupabaseClient()
+        const supabase = createBrowserClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
 
         await supabase
             .from('reading_progress')
@@ -151,7 +154,10 @@ export function EpubViewer({ url, initialLocation, onLocationChange, readerTheme
                 const minutesRead = Math.round((Date.now() - sessionStart) / 60000)
 
                 if (minutesRead >= 1) {
-                    const supabase = createBrowserSupabaseClient()
+                    const supabase = createBrowserClient(
+                        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                    )
 
                     // Create reading session record
                     await supabase

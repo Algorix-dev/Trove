@@ -1,51 +1,25 @@
-// app/dashboard/bookmarks/page.tsx (server component)
-import { BookmarksList } from "@/components/features/bookmarks/bookmarks-list"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { BookmarksList } from "@/components/features/bookmarks/bookmarks-list"
 
 export default async function BookmarksPage() {
-    const supabase = createServerSupabaseClient()
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) redirect("/login")
+    if (!user) {
+        redirect("/login")
+    }
 
-    // Fetch bookmarks with book relation
-    const { data: rawBookmarks } = await supabase
-        .from("bookmarks")
-        .select(`
-      id,
-      book_id,
-      page_number,
-      epub_cfi,
-      progress_percentage,
-      created_at,
-      note,
-      books (
-        id,
-        title,
-        author,
-        cover_url,
-        format
-      )
-    `)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
+    return (
+        <div className="container max-w-6xl mx-auto p-6 space-y-6">
+            <div className="space-y-2">
+                <h1 className="text-3xl font-bold">Bookmarks</h1>
+                <p className="text-muted-foreground">
+                    Quick access to your saved reading positions
+                </p>
+            </div>
 
-    const bookmarks = (rawBookmarks || []).map((b: any) => ({
-        id: b.id,
-        user_id: b.user_id ?? user.id,
-        book_id: b.book_id,
-        page_number: b.page_number ?? null,
-        epub_cfi: b.epub_cfi ?? null,
-        progress_percentage: b.progress_percentage ?? null,
-        title: b.title ?? null,
-        created_at: b.created_at,
-        note: b.note ?? null,
-        // Normalize relation: sometimes Supabase returns array for relation; ensure object
-        books: Array.isArray(b.books) ? b.books[0] ?? null : b.books ?? null,
-    }))
-
-    return <BookmarksList userId={user.id} bookmarks={bookmarks} />
+            <BookmarksList userId={user.id} />
+        </div>
+    )
 }

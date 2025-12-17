@@ -1,30 +1,13 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@supabase/ssr"
+import { type NextRequest, NextResponse } from 'next/server'
+import { updateSession } from '@/lib/supabase/middleware'
 
-export async function middleware(req: NextRequest) {
-    const res = NextResponse.next()
-
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll: () => req.cookies.getAll(),
-                setAll: (cookies) => {
-                    cookies.forEach(({ name, value, options }) => {
-                        res.cookies.set(name, value, options)
-                    })
-                },
-            },
-        }
-    )
-
-    // IMPORTANT: must be awaited
-    await supabase.auth.getSession()
-
-    return res
+export async function middleware(request: NextRequest) {
+    // Update Supabase session and refresh auth token if needed
+    return await updateSession(request)
 }
 
 export const config = {
-    matcher: ["/((?!_next|favicon.ico).*)"],
+    matcher: [
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    ],
 }

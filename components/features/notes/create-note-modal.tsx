@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Loader2 } from "lucide-react"
-import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { createBrowserClient } from "@supabase/ssr"
 import { useAuth } from "@/components/providers/auth-provider"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -39,7 +39,10 @@ export function CreateNoteModal() {
     const { user } = useAuth()
     const router = useRouter()
 
-    const supabase = createBrowserSupabaseClient()
+    const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
 
     const [libraryBooks, setLibraryBooks] = useState<Pick<Book, 'id' | 'title'>[]>([])
 
@@ -82,7 +85,6 @@ export function CreateNoteModal() {
             setHighlight("")
             setNote("")
             router.refresh()
-            window.dispatchEvent(new Event('note-created'))
             toast.success(matchedBook ? "Note added to " + matchedBook.title : "General note created (Book not found in library)")
         } catch (error) {
             console.error('Note creation error:', error)

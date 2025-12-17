@@ -1,7 +1,5 @@
-import { DashboardHeader } from "@/components/features/dashboard-header"
 import { DashboardSidebar } from "@/components/features/dashboard-sidebar"
-
-export const dynamic = 'force-dynamic'
+import { DashboardHeader } from "@/components/features/dashboard-header"
 
 export default function DashboardLayout({
     children,
@@ -16,9 +14,7 @@ export default function DashboardLayout({
             <main className="md:pl-72">
                 <DashboardHeader />
                 <div className="p-8">
-                    <div className="animate-in fade-in zoom-in-95 duration-500">
-                        {children}
-                    </div>
+                    {children}
                 </div>
             </main>
         </div>

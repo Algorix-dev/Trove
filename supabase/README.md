@@ -1,70 +1,75 @@
 # Trove Database Setup
 
-This directory contains SQL scripts for setting up your Trove database.
+This directory contains the SQL script for setting up your Trove database.
 
-## Files
+## 🚀 Quick Setup
 
-### For Existing Database (USE THIS!)
+### For Fresh Database (Recommended)
 
-- **`migration_update.sql`** - **✨ USE THIS if you already have a Trove database!** Safely adds missing fields and tables without errors.
+1. **Go to your Supabase Dashboard** → SQL Editor
+2. **Click "New Query"**
+3. **Open `setup_database.sql`** in this directory
+4. **Copy the entire contents**
+5. **Paste into Supabase SQL Editor**
+6. **Click "Run"** (or press Ctrl+Enter)
 
-### For Fresh Database Setup
+That's it! This single file creates:
+- ✅ All tables (profiles, books, reading_progress, notes, bookmarks, etc.)
+- ✅ Row Level Security (RLS) policies
+- ✅ Indexes for performance
+- ✅ Gamification tables (levels, achievements, XP)
+- ✅ Triggers and functions
+- ✅ Seed data (initial levels and achievements)
 
-- **`complete_schema.sql`** - Complete database schema with all tables, policies, and seed data. Only use for brand new projects.
+## 📦 Next Steps
 
-### Reference Files
+After running the SQL script:
 
-- **`schema.sql`** - Base schema (updated with latest fields)
-- **`schema_updates.sql`** - Incremental updates for existing databases
-- **`gamification_schema.sql`** - Gamification tables and structures
-- **`gamification_triggers.sql`** - Triggers for gamification features
+1. **Create Storage Bucket:**
+   - Go to Supabase Dashboard → Storage
+   - Create a bucket named `books` (private)
+   - **Important:** Storage policies must be created via Dashboard UI (not SQL)
+   - See `STORAGE_POLICIES_GUIDE.md` for detailed policy setup instructions
 
-## Setup Instructions
+2. **Configure Environment Variables:**
+   - Create `.env.local` in your project root
+   - Add your Supabase credentials
 
-### For Existing Database (Most Common)
+## 📋 Files in This Directory
 
-If you already have Trove running with a database:
+- **`master_setup.sql`** - Complete database setup (run this!)
+- **`STORAGE_POLICIES_GUIDE.md`** - Guide for setting up storage policies
+- **`README.md`** - This file
 
-1. Go to your Supabase Dashboard → SQL Editor
-2. Copy and paste the contents of **`migration_update.sql`**
-3. Run the query
-4. Your database is updated! ✅
+## ✅ Verification
 
-This script safely adds:
-- Missing columns (like `username`, `total_xp`, `epub_cfi`)
-- New tables (like `reading_sessions`, gamification tables)
-- Updated constraints (TXT format support)
-- Indexes for performance
+After running the script, verify in Supabase Dashboard → Table Editor:
 
-### For Fresh Database Setup
+You should see these tables:
+- `profiles`
+- `books`
+- `notes`
+- `reading_sessions`
+- `levels`
+- `achievements`
+- `user_achievements`
+- `xp_history`
+- `marketplace_listings`
+- `communities`
+- `community_posts`
 
-If you're setting up Trove for the first time on a brand new Supabase project:
+## 🆘 Troubleshooting
 
-1. Go to your Supabase Dashboard → SQL Editor
-2. Copy and paste the contents of **`complete_schema.sql`**
-3. Run the query
-4. Your database is ready!
+**Error: "relation already exists"**
+- Some tables might already exist. The script uses `CREATE TABLE IF NOT EXISTS` so it should be safe to run again.
 
-### Existing Database Migration
+**Error: "permission denied"**
+- Make sure you're running the script in the SQL Editor with proper permissions.
 
-If you already have a database and need to add missing features:
+**Missing tables after running**
+- Check the SQL Editor output for any errors
+- Verify you copied the entire file contents
 
-1. Run `schema_updates.sql` to add missing columns
-2. Run `gamification_schema.sql` if you need gamification features
-3. Run `gamification_triggers.sql` for gamification automation
+---
 
-## Storage Buckets
-
-Don't forget to create these storage buckets in your Supabase Dashboard:
-
-1. **`books`** (private) - For storing PDF, EPUB, and TXT files
-   - Enable RLS
-   - Policy: Users can upload to their own folder (`{user_id}/*`)
-   - Policy: Users can read from their own folder
-
-## Notes
-
-- All tables use Row Level Security (RLS) for data protection
-- Indexes are created for optimal query performance
-- The schema supports PDF, EPUB, and TXT formats
-- Gamification features include levels, achievements, and XP tracking
+**That's it!** Your database is ready. 🎉

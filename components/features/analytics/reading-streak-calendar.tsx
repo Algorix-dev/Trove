@@ -1,12 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { createBrowserClient } from "@supabase/ssr"
 import { useAuth } from "@/components/providers/auth-provider"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Flame } from "lucide-react"
-import { format } from "date-fns"
-import type { ReadingSession } from "@/types/database"
 
 interface ReadingDay {
     date: string
@@ -19,49 +17,44 @@ export function ReadingStreakCalendar() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        if (!user) return
+
         const fetchReadingData = async () => {
-            const supabase = createBrowserSupabaseClient()
-            try {
-                // Get last 365 days of reading sessions
-                const oneYearAgo = new Date()
-                oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+            const supabase = createBrowserClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            )
 
-                // Need user for query
-                if (!user) return
+            // Get last 365 days of reading sessions
+            const oneYearAgo = new Date()
+            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
 
-                const { data } = await supabase
-                    .from('reading_sessions')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .gte('session_date', format(oneYearAgo, 'yyyy-MM-dd'))
-                    .order('session_date', { ascending: true })
+            const { data } = await supabase
+                .from('reading_sessions')
+                .select('session_date, duration_minutes')
+                .eq('user_id', user.id)
+                .gte('session_date', oneYearAgo.toISOString().split('T')[0])
+                .order('session_date', { ascending: true })
 
-                if (data) {
-                    // Aggregate minutes by date
-                    const dateMap = new Map<string, number>()
-                    data.forEach((session: ReadingSession) => {
+            if (data) {
+                // Aggregate minutes by date
+                const dateMap = new Map<string, number>()
+                data.forEach(session => {
+                    const existing = dateMap.get(session.session_date) || 0
+                    dateMap.set(session.session_date, existing + session.duration_minutes)
+                })
 
-                        const existing = dateMap.get(session.session_date) || 0
-                        dateMap.set(session.session_date, existing + session.duration_minutes)
-                    })
-
-                    setReadingData(
-                        Array.from(dateMap.entries()).map(([date, minutes]) => ({
-                            date,
-                            minutes
-                        }))
-                    )
-                }
-            } finally {
-                setLoading(false)
+                setReadingData(
+                    Array.from(dateMap.entries()).map(([date, minutes]) => ({
+                        date,
+                        minutes
+                    }))
+                )
             }
-        }
-
-        if (user) {
-            fetchReadingData()
-        } else {
             setLoading(false)
         }
+
+        fetchReadingData()
     }, [user])
 
     // Generate calendar grid
@@ -81,7 +74,7 @@ export function ReadingStreakCalendar() {
             const currentDate = new Date(firstDay)
             currentDate.setDate(firstDay.getDate() + i)
 
-            const dateStr = format(currentDate, 'yyyy-MM-dd')
+            const dateStr = currentDate.toISOString().split('T')[0]
             const dayData = readingData.find(d => d.date === dateStr)
 
             currentWeek.push({
@@ -124,19 +117,10 @@ export function ReadingStreakCalendar() {
 
         let streak = 0
         const today = new Date()
-        const todayStr = format(today, 'yyyy-MM-dd')
-
-        // Start from today unless no reading recorded today, then check yesterday
-        // allowing streak to persist across day boundary until end of day
-        let currentDate = new Date(today)
-        const hasToday = readingData.some(d => d.date === todayStr && d.minutes > 0)
-
-        if (!hasToday) {
-            currentDate.setDate(currentDate.getDate() - 1)
-        }
+        const currentDate = new Date(today)
 
         while (true) {
-            const dateStr = format(currentDate, 'yyyy-MM-dd')
+            const dateStr = currentDate.toISOString().split('T')[0]
             const hasReading = readingData.some(d => d.date === dateStr && d.minutes > 0)
 
             if (!hasReading) break

@@ -1,8 +1,9 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react"
-import { createBrowserSupabaseClient } from "@/lib/supabase/client"
-import { type User, type Session, type AuthChangeEvent } from "@supabase/supabase-js"
+import { createBrowserClient } from "@supabase/ssr"
+import { type User } from "@supabase/supabase-js"
+import { useRouter } from "next/navigation"
 
 type AuthContextType = {
     user: User | null
@@ -17,36 +18,55 @@ const AuthContext = createContext<AuthContextType>({
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [supabase] = useState(() =>
-        createBrowserSupabaseClient()
-    )
-
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
+    const router = useRouter()
+
+    const supabase = createBrowserClient(
+        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+        process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+    )
 
     useEffect(() => {
         // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
-            setUser(session?.user ?? null)
-            setLoading(false)
-        })
+        const initializeAuth = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                setUser(session?.user ?? null)
+                setLoading(false)
+            } catch (error) {
+                console.error('Error getting session:', error)
+                setLoading(false)
+            }
+        }
+
+        initializeAuth()
 
         // Listen for auth changes
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+        } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('Auth state changed:', event, session?.user?.email)
             setUser(session?.user ?? null)
             setLoading(false)
+
+            // Refresh the page on sign in/out to update server components
+            if (event === 'SIGNED_IN') {
+                router.refresh()
+            }
+            if (event === 'SIGNED_OUT') {
+                router.push('/login')
+            }
         })
 
         return () => {
             subscription.unsubscribe()
         }
-    }, [supabase])
+    }, [supabase, router])
 
     const signOut = async () => {
         await supabase.auth.signOut()
-        setUser(null)
+        router.push('/login')
     }
 
     return (

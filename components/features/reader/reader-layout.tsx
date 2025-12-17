@@ -5,22 +5,21 @@ import { ArrowLeft, Settings, Bookmark } from "lucide-react"
 import Link from "next/link"
 import React, { useState, useEffect, ReactElement, useCallback } from "react"
 import { ReaderSettings } from "@/components/features/reader/reader-settings"
-import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { createBrowserClient } from "@supabase/ssr"
+import { toast } from "sonner"
 
 interface LocationData {
-    currentPage?: number;
-    currentCFI?: string;
-    progressPercentage?: number;
+    currentPage?: number
+    currentCFI?: string
+    progressPercentage?: number
 }
 
 interface ReaderLayoutProps {
-    children: React.ReactNode;
-    title: string;
-    bookId: string;
-    userId: string;
+    children: ReactElement
+    title: string
+    bookId: string
+    userId: string
 }
-
-import { toast } from "sonner"
 
 export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutProps) {
     const [showSettings, setShowSettings] = useState(false)
@@ -28,90 +27,125 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     const [readerTheme, setReaderTheme] = useState<'light' | 'dark' | 'sepia'>('light')
     const [currentLocation, setCurrentLocation] = useState<LocationData>({})
 
-    // Detect location updates
-    const handleLocationUpdate = useCallback((data: LocationData) => {
-        setCurrentLocation(prev => {
-            // Only update if values actually changed to prevent loops
-            if (
-                prev.currentPage === data.currentPage &&
-                prev.currentCFI === data.currentCFI &&
-                prev.progressPercentage === data.progressPercentage
-            ) {
-                return prev
-            }
-            return { ...prev, ...data }
-        })
-    }, [])
-
-    const supabase = createBrowserSupabaseClient();
+    const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
 
     // Load bookmark status
-    useEffect(() => {
-        const loadBookmark = async () => {
-            const { data } = await supabase
+    const loadBookmark = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
                 .from('bookmarks')
                 .select('id')
                 .eq('book_id', bookId)
                 .eq('user_id', userId)
-                .single();
+                .single()
 
-            setIsBookmarked(!!data);
-        };
-        loadBookmark();
-    }, [bookId, userId]);
+            if (error) {
+                console.error('Error loading bookmark:', error)
+                return
+            }
+
+            setIsBookmarked(!!data)
+        } catch (error) {
+            console.error('Failed to load bookmark:', error)
+            toast.error('Failed to load bookmark status')
+        }
+    }, [bookId, userId, supabase])
+
+    useEffect(() => {
+        loadBookmark()
+    }, [loadBookmark])
 
     const handleBookmark = async () => {
-        if (isBookmarked) {
-            // Remove bookmark
-            const { error } = await supabase
-                .from('bookmarks')
-                .delete()
-                .eq('book_id', bookId)
-                .eq('user_id', userId);
+        try {
+            if (isBookmarked) {
+                const { error } = await supabase
+                    .from('bookmarks')
+                    .delete()
+                    .eq('book_id', bookId)
+                    .eq('user_id', userId)
 
-            if (!error) {
-                setIsBookmarked(false);
+                if (error) throw error
+                
+                setIsBookmarked(false)
                 toast.success("Bookmark removed")
-            }
-        } else {
-            // Add bookmark with location context
-            const { error } = await supabase
-                .from('bookmarks')
-                .insert({
-                    book_id: bookId,
-                    user_id: userId,
-                    page_number: currentLocation.currentPage,
-                    epub_cfi: currentLocation.currentCFI,
-                    progress_percentage: currentLocation.progressPercentage,
-                    created_at: new Date().toISOString()
-                });
-
-            if (!error) {
-                setIsBookmarked(true);
-                toast.success("Bookmark saved")
             } else {
-                toast.error("Failed to save bookmark")
+                const { error } = await supabase
+                    .from('bookmarks')
+                    .upsert({
+                        book_id: bookId,
+                        user_id: userId,
+                        page_number: currentLocation.currentPage,
+                        epub_cfi: currentLocation.currentCFI,
+                        progress_percentage: currentLocation.progressPercentage,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'book_id,user_id'
+                    })
+
+                if (error) throw error
+                
+                setIsBookmarked(true)
+                toast.success("Bookmark saved")
             }
+        } catch (error) {
+            console.error('Bookmark operation failed:', error)
+            toast.error(`Failed to ${isBookmarked ? 'remove' : 'save'} bookmark`)
         }
     }
 
-
-
     const handleThemeChange = (theme: 'light' | 'dark' | 'sepia') => {
-        setReaderTheme(theme);
-    };
+        setReaderTheme(theme)
+        // Optionally save theme preference to user settings
+        supabase
+            .from('user_settings')
+            .upsert(
+                { user_id: userId, reader_theme: theme },
+                { onConflict: 'user_id' }
+            )
+            .then(({ error }) => {
+                if (error) console.error('Failed to save theme preference:', error)
+            })
+    }
+
+    // Detect location updates
+    const handleLocationUpdate = useCallback((data: LocationData) => {
+        setCurrentLocation(prev => ({ ...prev, ...data }))
+        
+        // Auto-save reading progress periodically
+        if (data.progressPercentage && data.progressPercentage % 10 === 0) {
+            supabase
+                .from('reading_progress')
+                .upsert({
+                    book_id: bookId,
+                    user_id: userId,
+                    progress_percentage: data.progressPercentage,
+                    current_page: data.currentPage,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'book_id,user_id'
+                })
+                .then(({ error }) => {
+                    if (error) console.error('Failed to save reading progress:', error)
+                })
+        }
+    }, [bookId, userId, supabase])
 
     return (
         <div className="flex flex-col h-screen bg-background">
             {/* Header */}
             <header className="h-14 border-b flex items-center justify-between px-4 bg-background z-10">
                 <div className="flex items-center gap-4">
-                    <Link href="/dashboard/library">
-                        <Button variant="ghost" size="icon">
+                    <Link href="/dashboard/library" passHref>
+                        <Button variant="ghost" size="icon" aria-label="Back to library">
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                     </Link>
-                    <h1 className="font-semibold truncate max-w-[200px] md:max-w-md">{title}</h1>
+                    <h1 className="font-semibold truncate max-w-[200px] md:max-w-md" title={title}>
+                        {title}
+                    </h1>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
@@ -119,11 +153,18 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
                         size="icon"
                         onClick={handleBookmark}
                         className={isBookmarked ? "text-primary" : ""}
+                        aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
                     >
                         <Bookmark className={`h-5 w-5 ${isBookmarked ? "fill-current" : ""}`} />
                     </Button>
 
-                    <Button variant="ghost" size="icon" onClick={() => setShowSettings(!showSettings)}>
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => setShowSettings(!showSettings)}
+                        aria-label="Reader settings"
+                        aria-expanded={showSettings}
+                    >
                         <Settings className="h-5 w-5" />
                     </Button>
                 </div>
@@ -136,13 +177,16 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
                         return React.cloneElement(child as ReactElement<any>, {
                             readerTheme,
                             onLocationUpdate: handleLocationUpdate
-                        });
+                        })
                     }
-                    return child;
+                    return child
                 })}
                 {showSettings && (
                     <div className="absolute top-4 right-4 z-50">
-                        <ReaderSettings onThemeChange={handleThemeChange} currentTheme={readerTheme} />
+                        <ReaderSettings 
+                            onThemeChange={handleThemeChange} 
+                            currentTheme={readerTheme} 
+                        />
                     </div>
                 )}
             </main>

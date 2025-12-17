@@ -2,103 +2,169 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   SLEEK THEME TRANSITION ANIMATIONS
+   ============================================ */
+
+/* View Transition API - Modern browsers (Chrome 111+, Edge 111+) */
+@supports (view-transition-name: none) {
+  /* Root transition with smooth crossfade */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.4s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    animation-fill-mode: both;
+  }
+
+  /* Smooth fade out of old theme */
+  ::view-transition-old(root) {
+    animation-name: theme-fade-out;
+    z-index: 1;
+  }
+
+  /* Smooth fade in of new theme with subtle scale */
+  ::view-transition-new(root) {
+    animation-name: theme-fade-in;
+    z-index: 2;
+  }
+
+  /* Keyframes for smooth theme transition */
+  @keyframes theme-fade-out {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+  }
+
+  @keyframes theme-fade-in {
+    from {
+      opacity: 0;
+      transform: scale(1.02);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Add a subtle glow effect during transition */
+  ::view-transition-group(root) {
+    animation-duration: 0.4s;
+  }
+}
+
+/* Fallback for browsers without View Transition API */
+@supports not (view-transition-name: none) {
+  /* Smooth transitions for all color properties */
+  *,
+  *::before,
+  *::after {
+    transition-property: background-color, border-color, color, fill, stroke,
+      box-shadow, opacity, transform;
+    transition-duration: 0.4s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Exclude elements that shouldn't transition */
+  *:not(html):not(body):not([class*="animate"]):not([class*="transition-none"]) {
+    transition-delay: 0s;
+  }
+
+  /* Smooth body background transition */
+  body {
+    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
 @layer base {
   :root {
-    /* Main Background: Soft Cool Blue-White offering depth */
-    --background: 240 25% 98%;
+    /* Purple-themed color palette - Light mode */
+    --background: 270 50% 98%;
+    --foreground: 270 50% 10%;
 
-    /* Text: Deep Blue-Grey, softer than pure black */
-    --foreground: 240 10% 3.9%;
-
-    /* Cards: Pure White to pop against the colored background */
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 270 50% 10%;
 
-    /* Popovers */
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 270 50% 10%;
 
-    /* Primary: Vibrant Indigo-Violet */
-    --primary: 255 70% 55%;
-    --primary-foreground: 0 0% 98%;
+    /* Primary: Rich Violet (#7c3aed) */
+    --primary: 262 83% 58%;
+    --primary-foreground: 210 40% 98%;
 
-    /* Secondary: Soft Lavender-Grey */
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 5.9% 10%;
+    /* Secondary: Soft Lavender */
+    --secondary: 260 50% 96%;
+    --secondary-foreground: 262 83% 58%;
 
-    /* Muted: Subtle Blue-Grey */
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
+    /* Muted: Cool Gray */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-    /* Accent: Vivid Purple/Pink for highlights */
-    --accent: 280 60% 60%;
-    --accent-foreground: 0 0% 98%;
+    /* Accent: Indigo */
+    --accent: 260 50% 96%;
+    --accent-foreground: 262 83% 58%;
 
-    /* Destructive */
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 210 40% 98%;
 
-    /* Border: Subtle Blue-Grey mix */
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 255 70% 55%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 262 83% 58%;
 
-    --radius: 0.75rem;
-    /* Slightly more rounded for modern feel */
+    --radius: 0.5rem;
 
-    /* Chart Colors - Vibrant Spectrum */
-    --chart-1: 255 70% 55%;
-    /* Indigo */
-    --chart-2: 173 58% 39%;
-    /* Teal */
-    --chart-3: 30 80% 55%;
-    /* Orange */
-    --chart-4: 280 65% 60%;
-    /* Purple */
-    --chart-5: 340 75% 55%;
-    /* Pink */
+    /* Chart colors - Purple/Indigo based */
+    --chart-1: 262 83% 58%;
+    --chart-2: 280 65% 60%;
+    --chart-3: 250 60% 55%;
+    --chart-4: 290 70% 50%;
+    --chart-5: 270 50% 70%;
   }
 
   .dark {
-    /* Main Background: Deep Rich Midnight Blue */
-    --background: 240 20% 6%;
-    --foreground: 240 10% 98%;
+    /* Purple-themed color palette - Dark mode */
+    --background: 270 50% 5%;
+    --foreground: 210 40% 98%;
 
-    /* Cards: Slightly lighter midnight blue */
-    --card: 240 20% 8%;
-    --card-foreground: 240 10% 98%;
+    --card: 270 50% 8%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 240 20% 8%;
-    --popover-foreground: 240 10% 98%;
+    --popover: 270 50% 8%;
+    --popover-foreground: 210 40% 98%;
 
-    /* Primary: Brighter Luminous Indigo */
-    --primary: 255 80% 65%;
-    --primary-foreground: 240 10% 0%;
-    /* Dark text on bright primary */
+    /* Primary: Bright Violet for dark mode */
+    --primary: 263 70% 50%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 240 15% 15%;
-    --secondary-foreground: 240 10% 98%;
+    /* Secondary: Deep Purple */
+    --secondary: 262 80% 15%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 240 15% 15%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 262 50% 15%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 280 70% 65%;
-    --accent-foreground: 240 10% 98%;
+    /* Accent: Darker Violet */
+    --accent: 262 80% 15%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 240 15% 20%;
-    /* Darker borders for contrast */
-    --input: 240 15% 20%;
-    --ring: 255 80% 65%;
+    --border: 262 50% 20%;
+    --input: 262 50% 20%;
+    --ring: 263 70% 50%;
 
-    /* Chart Colors Dark Mode */
-    --chart-1: 255 80% 65%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 65%;
-    --chart-4: 280 70% 65%;
-    --chart-5: 340 75% 65%;
+    /* Chart colors - adjusted for dark mode */
+    --chart-1: 262 83% 65%;
+    --chart-2: 280 65% 60%;
+    --chart-3: 250 60% 55%;
+    --chart-4: 290 70% 50%;
+    --chart-5: 270 50% 70%;
   }
 }
 
@@ -108,16 +174,6 @@
   }
 
   body {
-    @apply bg-background text-foreground selection:bg-primary/20 selection:text-primary;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    @apply bg-background text-foreground;
   }
-}
-
-/* Optimized global transitions with smooth easing */
-*,
-*::before,
-*::after {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
 }

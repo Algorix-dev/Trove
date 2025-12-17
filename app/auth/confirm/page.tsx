@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { createBrowserClient } from "@supabase/ssr"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BookOpen, CheckCircle2, XCircle, Loader2 } from "lucide-react"
@@ -14,7 +14,10 @@ function ConfirmEmailContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
 
-    const supabase = createBrowserSupabaseClient()
+    const supabase = createBrowserClient(
+        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+        process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+    )
 
     useEffect(() => {
         const confirmEmail = async () => {

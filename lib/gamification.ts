@@ -1,9 +1,12 @@
-import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { createBrowserClient } from "@supabase/ssr"
 import { toast } from "sonner"
 
 export const GamificationService = {
     async awardXP(userId: string, amount: number, action: string, bookId?: string) {
-        const supabase = createBrowserSupabaseClient()
+        const supabase = createBrowserClient(
+            process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+            process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+        )
 
         try {
             // 1. Get current stats
@@ -64,7 +67,10 @@ export const GamificationService = {
     },
 
     async checkAndUnlockAchievement(userId: string, achievementCode: string) {
-        const supabase = createBrowserSupabaseClient()
+        const supabase = createBrowserClient(
+            process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+            process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+        )
 
         try {
             // 1. Get achievement ID

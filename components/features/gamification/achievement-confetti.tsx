@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react"
 import Confetti from "react-confetti"
 import { useWindowSize } from "@/hooks/use-window-size"
-import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { createBrowserClient } from "@supabase/ssr"
 import { toast } from "sonner"
 import { Trophy } from "lucide-react"
 import Link from "next/link"
-import type { UserAchievement } from "@/types/database"
 
 interface AchievementConfettiProps {
     duration?: number
@@ -21,7 +20,10 @@ export function AchievementConfetti({ duration = 5000 }: AchievementConfettiProp
     // Check for unnotified achievements
     useEffect(() => {
         const checkAchievements = async () => {
-            const supabase = createBrowserSupabaseClient()
+            const supabase = createBrowserClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            )
 
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
@@ -33,24 +35,23 @@ export function AchievementConfetti({ duration = 5000 }: AchievementConfettiProp
             // 1. Get unnotified achievements
             const { data: newAchievements } = await supabase
                 .from('user_achievements')
-                .select('id, user_id, achievement_id, unlocked_at, notified, achievements(name, description)')
+                .select('id, achievement_id, achievements(name, description)')
                 .eq('user_id', user.id)
                 .eq('notified', false)
 
             if (newAchievements && newAchievements.length > 0) {
                 // Filter out achievements that have already been shown in this session
                 const achievementsToShow = newAchievements.filter(
-                    (ua: UserAchievement) => !shownAchievements.includes(ua.id)
+                    ua => !shownAchievements.includes(ua.id)
                 )
-
 
                 if (achievementsToShow.length > 0) {
                     setShow(true)
-                    const names = achievementsToShow.map((ua: UserAchievement) => ua.achievements?.name || "New Achievement")
+                    const names = achievementsToShow.map((ua: any) => ua.achievements?.name || "New Achievement")
                     setAchievements(names)
 
                     // Show toast notification for each achievement
-                    achievementsToShow.forEach((ua: UserAchievement) => {
+                    achievementsToShow.forEach((ua: any) => {
                         toast.success(
                             <div className="flex items-start gap-3">
                                 <Trophy className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
@@ -70,7 +71,7 @@ export function AchievementConfetti({ duration = 5000 }: AchievementConfettiProp
                     })
 
                     // 2. Mark as notified in database
-                    const ids = achievementsToShow.map((ua: UserAchievement) => ua.id)
+                    const ids = achievementsToShow.map(ua => ua.id)
                     await supabase
                         .from('user_achievements')
                         .update({ notified: true })

@@ -1,22 +1,23 @@
 import { ReaderLayout } from "@/components/features/reader/reader-layout"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { EmptyState } from "@/components/ui/empty-state"
-import { BookOpen } from "lucide-react"
 import dynamic from "next/dynamic"
 
-const PDFViewer = dynamic(
-    () => import("@/components/features/reader/pdf-viewer").then(mod => mod.PDFViewer),
-    { ssr: false }
-)
-const EpubViewer = dynamic(
-    () => import("@/components/features/reader/epub-viewer").then(mod => mod.EpubViewer),
-    { ssr: false }
-)
-const TxtViewer = dynamic(
-    () => import("@/components/features/reader/txt-viewer").then(mod => mod.TxtViewer),
-    { ssr: false }
-)
+// Lazy load viewer components for better performance
+const PDFViewer = dynamic(() => import("@/components/features/reader/pdf-viewer").then(mod => ({ default: mod.PDFViewer })), {
+    loading: () => <div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>,
+    ssr: false
+})
+
+const EpubViewer = dynamic(() => import("@/components/features/reader/epub-viewer").then(mod => ({ default: mod.EpubViewer })), {
+    loading: () => <div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>,
+    ssr: false
+})
+
+const TxtViewer = dynamic(() => import("@/components/features/reader/txt-viewer").then(mod => ({ default: mod.TxtViewer })), {
+    loading: () => <div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>,
+    ssr: false
+})
 
 export default async function ReaderPage({
     params,
@@ -27,7 +28,7 @@ export default async function ReaderPage({
 }) {
     const { id } = await params
     const search = await searchParams
-    const supabase = createServerSupabaseClient()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -42,29 +43,30 @@ export default async function ReaderPage({
 
     if (!book) {
         return (
-            <div className="flex h-screen items-center justify-center">
-                <EmptyState
-                    icon={BookOpen}
-                    title="Book not found"
-                    description="The book you're looking for doesn't exist or you don't have access to it."
-                    actionLabel="Return to Library"
-                    actionHref="/dashboard"
-                />
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center space-y-4">
+                    <h1 className="text-2xl font-bold">Book not found</h1>
+                    <p className="text-muted-foreground">The book you're looking for doesn't exist or you don't have access to it.</p>
+                    <a 
+                        href="/dashboard/library" 
+                        className="text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+                    >
+                        Return to Library
+                    </a>
+                </div>
             </div>
         )
     }
 
-    // Extract file path from public URL to create a signed URL
-    // Public URL format: .../storage/v1/object/public/books/[path]
-    const filePath = book.file_url.split('/books/').pop()
-    const decodedPath = filePath ? decodeURIComponent(filePath) : ""
-
-    // Get signed URL for the file (works for both private and public buckets)
-    const { data } = await supabase.storage
-        .from('books')
-        .createSignedUrl(decodedPath, 3600) // 1 hour expiry
-
-    const fileUrl = data?.signedUrl || book.file_url // Fallback to public URL if signing fails
+    // Get signed URL for the file if it's a storage path, otherwise use the URL directly
+    let fileUrl = book.file_url
+    if (book.file_url && !book.file_url.startsWith('http')) {
+        // It's a storage path, create a signed URL
+        const { data } = await supabase.storage
+            .from('books')
+            .createSignedUrl(book.file_url, 3600) // 1 hour expiry
+        fileUrl = data?.signedUrl || book.file_url
+    }
     const format = book.format || 'pdf'
 
     // Extract bookmark navigation params

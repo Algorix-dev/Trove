@@ -1,24 +1,40 @@
-// app/dashboard/page.tsx
 import { DashboardStats } from "@/components/features/dashboard-stats"
-import { DashboardCharts } from "@/components/features/dashboard-charts"
 import { ContinueReading } from "@/components/features/continue-reading"
 import { QuickActions } from "@/components/features/quick-actions"
 import { ShareInviteModal } from "@/components/features/share-invite-modal"
 import { LevelProgress } from "@/components/features/gamification/level-progress"
-import { AchievementConfetti } from "@/components/features/gamification/achievement-confetti"
-import { DailyGoalCelebration } from "@/components/features/gamification/daily-goal-celebration"
-import { LevelUpCelebration } from "@/components/features/gamification/level-up-celebration"
-import { ReadingStreakCalendar } from "@/components/features/analytics/reading-streak-calendar"
 import { ReadingGoals } from "@/components/features/analytics/reading-goals"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { DashboardQuote } from "@/components/features/dashboard-quote"
+import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { AISuggestion } from "@/components/features/ai/ai-suggestion"
+import dynamic from "next/dynamic"
 
-export const dynamic = 'force-dynamic'
+// Lazy load heavy components for better performance
+const DashboardCharts = dynamic(() => import("@/components/features/dashboard-charts").then(mod => ({ default: mod.DashboardCharts })), {
+    loading: () => <div className="h-64 animate-pulse bg-muted rounded-lg" />,
+    ssr: false
+})
+
+const AchievementConfetti = dynamic(() => import("@/components/features/gamification/achievement-confetti").then(mod => ({ default: mod.AchievementConfetti })), {
+    ssr: false
+})
+
+const DailyGoalCelebration = dynamic(() => import("@/components/features/gamification/daily-goal-celebration").then(mod => ({ default: mod.DailyGoalCelebration })), {
+    ssr: false
+})
+
+const LevelUpCelebration = dynamic(() => import("@/components/features/gamification/level-up-celebration").then(mod => ({ default: mod.LevelUpCelebration })), {
+    ssr: false
+})
+
+const ReadingStreakCalendar = dynamic(() => import("@/components/features/analytics/reading-streak-calendar").then(mod => ({ default: mod.ReadingStreakCalendar })), {
+    loading: () => <div className="h-64 animate-pulse bg-muted rounded-lg" />,
+    ssr: false
+})
 
 export default async function DashboardPage() {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
         redirect("/login")
@@ -26,10 +42,21 @@ export default async function DashboardPage() {
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name, username, total_xp, current_level')
+        .select('full_name, username, nickname, onboarding_completed, tutorial_completed, total_xp, current_level')
         .eq('id', user.id)
         .single()
 
+    // Redirect to onboarding if not completed
+    if (!profile?.onboarding_completed) {
+        redirect("/onboarding")
+    }
+
+    // Redirect to tutorial if onboarding done but tutorial not completed
+    if (profile?.onboarding_completed && !profile?.tutorial_completed) {
+        redirect("/dashboard/tutorial")
+    }
+
+    // Fetch levels for progress calculation
     const { data: levels } = await supabase
         .from('levels')
         .select('*')
@@ -41,10 +68,11 @@ export default async function DashboardPage() {
     const levelInfo = levels?.find(l => l.level === currentLevel)
     const nextLevelInfo = levels?.find(l => l.level === currentLevel + 1)
 
-    const nextLevelXP = nextLevelInfo?.min_xp || (levelInfo?.min_xp || 0) + 1000
+    const nextLevelXP = nextLevelInfo?.min_xp || (levelInfo?.min_xp || 0) + 1000 // Fallback if max level
     const levelTitle = levelInfo?.title || "Reader"
 
-    const name = profile?.username || profile?.full_name?.split(' ')[0] || user.user_metadata?.full_name?.split(' ')[0] || "Reader"
+    // Use nickname if available, then username, then full name, otherwise "Reader"
+    const name = profile?.nickname || profile?.username || profile?.full_name?.split(' ')[0] || user.user_metadata?.full_name?.split(' ')[0] || "Reader"
     const hour = new Date().getHours()
     let greeting = "Good Morning"
     if (hour >= 12 && hour < 17) greeting = "Good Afternoon"
@@ -58,16 +86,12 @@ export default async function DashboardPage() {
                     <p className="text-muted-foreground">Ready to continue your reading journey?</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="text-sm text-muted-foreground italic bg-muted/50 px-4 py-2 rounded-full hidden md:block">
-                        "A reader lives a thousand lives before he dies." — George R.R. Martin
-                    </div>
+                    <DashboardQuote />
                     <ShareInviteModal />
                 </div>
             </div>
 
             <DashboardStats />
-
-            <AISuggestion />
 
             <div className="grid gap-6 md:grid-cols-2">
                 <LevelProgress

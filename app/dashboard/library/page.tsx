@@ -1,45 +1,124 @@
-// app/dashboard/library/page.tsx (server component)
+"use client"
+
+import { useEffect, useState } from "react"
 import { LibraryContent } from "@/components/features/library/library-content"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+import { UploadModal } from "@/components/features/library/upload-modal"
+import { WelcomeAnimation } from "@/components/features/welcome-animation"
+import { createBrowserClient } from "@supabase/ssr"
+import { useAuth } from "@/components/providers/auth-provider"
+import { useRouter } from "next/navigation"
 
-export const dynamic = 'force-dynamic'
+export default function LibraryPage() {
+    const { user, loading: authLoading } = useAuth()
+    const router = useRouter()
+    const [books, setBooks] = useState<Array<{
+        id: string
+        user_id: string
+        title: string
+        author: string
+        cover_url: string | null
+        file_url: string
+        format: 'pdf' | 'epub' | 'txt'
+        total_pages: number
+        created_at: string
+        updated_at: string
+        progress: number
+    }>>([])
+    const [loading, setLoading] = useState(true)
+    const [showWelcome, setShowWelcome] = useState(false)
 
-export default async function LibraryPage() {
-    const supabase = createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect("/login")
+    useEffect(() => {
+        if (authLoading) return
 
-    const { data: rawBooks } = await supabase
-        .from("books")
-        .select(`
-      id,
-      user_id,
-      title,
-      author,
-      cover_url,
-      file_url,
-      format,
-      total_pages,
-      created_at,
-      reading_progress ( progress_percentage )
-    `)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
+        if (!user) {
+            router.push("/login")
+            return
+        }
 
-    const books = (rawBooks || []).map((b: any) => ({
-        id: b.id,
-        user_id: b.user_id ?? user.id,
-        title: b.title ?? "",
-        author: b.author ?? "",
-        cover_url: b.cover_url ?? null,
-        file_url: b.file_url ?? null,
-        format: b.format ?? "pdf",
-        total_pages: b.total_pages ?? null,
-        created_at: b.created_at ?? null,
-        // reading_progress may be an array of relations: get first progress
-        progress: Array.isArray(b.reading_progress) ? (b.reading_progress[0]?.progress_percentage ?? 0) : (b.reading_progress?.progress_percentage ?? 0),
-    }))
+        const fetchBooks = async () => {
+            const supabase = createBrowserClient(
+                process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+                process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+            )
 
-    return <LibraryContent books={books} />
+            try {
+                // Fetch books with reading progress
+                const { data: booksData, error } = await supabase
+                    .from('books')
+                    .select(`
+                        id,
+                        user_id,
+                        title,
+                        author,
+                        cover_url,
+                        file_url,
+                        format,
+                        total_pages,
+                        created_at,
+                        updated_at,
+                        reading_progress (
+                            progress_percentage
+                        )
+                    `)
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false })
+
+                if (error) {
+                    console.error('Error fetching books:', error)
+                    setLoading(false)
+                    return
+                }
+
+                // Transform data to include progress percentage
+                const transformedBooks = booksData?.map(book => ({
+                    ...book,
+                    reading_progress: undefined,
+                    progress: book.reading_progress?.[0]?.progress_percentage || 0
+                })) || []
+
+                setBooks(transformedBooks)
+                
+                // Show welcome animation on first visit
+                const hasSeenWelcome = sessionStorage.getItem('library-welcome-seen')
+                if (!hasSeenWelcome && transformedBooks.length === 0) {
+                    setShowWelcome(true)
+                    sessionStorage.setItem('library-welcome-seen', 'true')
+                }
+            } catch (error) {
+                console.error('Unexpected error fetching books:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchBooks()
+    }, [user, authLoading, router])
+
+    if (authLoading || loading) {
+        return (
+            <div className="flex items-center justify-center h-96">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        )
+    }
+
+    return (
+        <>
+            {showWelcome && (
+                <WelcomeAnimation 
+                    message="Welcome to Your Treasures" 
+                    onComplete={() => setShowWelcome(false)}
+                    duration={3000}
+                />
+            )}
+            <div className="space-y-6 animate-in fade-in duration-500">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-3xl font-bold tracking-tight">Library</h2>
+                    <UploadModal />
+                </div>
+
+                <LibraryContent books={books} />
+            </div>
+        </>
+    )
 }

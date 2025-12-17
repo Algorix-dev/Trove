@@ -6,9 +6,8 @@ import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { createBrowserClient } from "@supabase/ssr";
 import { GamificationService } from "@/lib/gamification";
-import { format } from "date-fns";
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -28,7 +27,10 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light', onLo
     const [scale, setScale] = useState<number>(1.0);
     const [loading, setLoading] = useState(true);
 
-    const supabase = createBrowserSupabaseClient()
+    const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
     // Load bookmark or saved progress on mount
     useEffect(() => {
@@ -104,9 +106,7 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light', onLo
                             user_id: userId,
                             book_id: bookId,
                             duration_minutes: 1,
-                            // Use local date to avoid timezone issues with charts
-                            // Use local date to avoid timezone issues with charts
-                            session_date: format(new Date(), 'yyyy-MM-dd')
+                            session_date: new Date().toISOString().split('T')[0]
                         })
 
                     // Award XP

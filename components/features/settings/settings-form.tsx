@@ -1,151 +1,351 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Loader2, Bell, Mail } from "lucide-react"
-import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import {
+    Loader2,
+    Bell,
+    Upload,
+    User,
+    Shield,
+    Target,
+    Check
+} from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+// No unnecessary avatar imports here since we use custom 3D logic
+import { motion, AnimatePresence } from "framer-motion"
+import Image from "next/image"
 
-export function SettingsForm({ profile }: { profile: any | null }) {
-    const [fullName, setFullName] = useState(profile?.full_name || "")
-    const [username, setUsername] = useState(profile?.username || "")
-    const [email, setEmail] = useState(profile?.email || "")
-    const [dailyGoal, setDailyGoal] = useState(profile?.daily_goal_minutes ?? 30)
+const PRESET_AVATARS = [
+    { id: "scholar", name: "The Scholar" },
+    { id: "wizard", name: "The Wizard" },
+    { id: "explorer", name: "The Explorer" },
+    { id: "mentor", name: "The Mentor" },
+    { id: "observer", name: "The Observer" },
+]
+
+export function SettingsForm() {
+    const [activeTab, setActiveTab] = useState("profile")
+    const [fullName, setFullName] = useState("")
+    const [nickname, setNickname] = useState("")
+    const [username, setUsername] = useState("")
+    const [dailyGoal, setDailyGoal] = useState(30)
     const [loading, setLoading] = useState(false)
-    const [emailNotifications, setEmailNotifications] = useState(true)
+    const [emailNotifications] = useState(true)
     const [inAppNotifications, setInAppNotifications] = useState(true)
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+    const [avatarChoice, setAvatarChoice] = useState<string>("default")
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const [user, setUser] = useState<any>(null)
     const router = useRouter()
-    const supabase = createBrowserSupabaseClient()
+    const supabase = createClient()
 
     useEffect(() => {
-        if (profile) {
-            setFullName(profile.full_name || "")
-            setUsername(profile.username || "")
-            setEmail(profile.email || "")
-            setDailyGoal(profile.daily_goal_minutes || 30)
+        const checkUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            setUser(user)
+            if (user) {
+                loadProfile(user.id)
+            }
         }
-    }, [profile])
+        checkUser()
+    }, [])
 
-    const handleSaveProfile = async () => {
+    const loadProfile = async (userId: string) => {
+        try {
+            const { data } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single()
+
+            if (data) {
+                setFullName(data.full_name || "")
+                setNickname(data.nickname || "")
+                setUsername(data.username || "")
+                setDailyGoal(data.daily_goal_minutes || 30)
+                setAvatarUrl(data.avatar_url)
+                setAvatarChoice(data.avatar_choice || 'default')
+            }
+        } catch (error) {
+            console.error('Profile fetch error:', error)
+        }
+    }
+
+    const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!user || !event.target.files?.[0]) return
+        const file = event.target.files[0]
+        try {
+            const fileExt = file.name.split('.').pop()
+            const fileName = `${user.id}-${Math.random()}.${fileExt}`
+            const filePath = `avatars/${fileName}`
+
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file)
+
+            if (uploadError) throw uploadError
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath)
+
+            setAvatarUrl(publicUrl)
+            setAvatarChoice('upload')
+            toast.success("Identity updated!")
+        } catch (error: any) {
+            toast.error(error.message)
+        }
+    }
+
+    const handleSave = async () => {
+        if (!user) return
         setLoading(true)
         try {
-            // Validate username
-            if (username) {
-                const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
-                if (!usernameRegex.test(username)) {
-                    toast.error("Username must be 3-20 characters and contain only letters, numbers, or underscores.")
-                    setLoading(false)
-                    return
-                }
-            }
-
-            // Update profiles table (server RLS requires authenticated user)
-            const { error: profileError } = await supabase
+            const { error } = await supabase
                 .from('profiles')
                 .update({
                     full_name: fullName,
-                    username: username || null,
-                    daily_goal_minutes: dailyGoal
+                    nickname,
+                    username,
+                    daily_goal_minutes: dailyGoal,
+                    avatar_url: avatarUrl || (avatarChoice !== 'default' && avatarChoice !== 'upload' ? `/avatars/${avatarChoice}.png` : null),
+                    avatar_choice: avatarChoice
                 })
-                .eq('id', profile?.id)
+                .eq('id', user.id)
 
-            if (profileError) {
-                if ((profileError as any).code === '23505') {
-                    toast.error("Username is already taken.")
-                    setLoading(false)
-                    return
-                }
-                throw profileError
-            }
-
-            // Update email in auth if changed (requires valid session)
-            if (email !== profile?.email) {
-                const { error: authError } = await supabase.auth.updateUser({ email })
-                if (authError) throw authError
-            }
-
+            if (error) throw error
+            toast.success("Sanctuary updated successfully!")
             router.refresh()
-            toast.success("Profile updated successfully!")
         } catch (error: any) {
-            console.error(error)
-            toast.error(error.message || "Failed to update profile")
+            toast.error(error.message)
         } finally {
             setLoading(false)
         }
     }
 
+    const menuItems = [
+        { id: "profile", label: "Identity", icon: User },
+        { id: "goals", label: "Discipline", icon: Target },
+        { id: "notifications", label: "Alerts", icon: Bell },
+        { id: "security", label: "Security", icon: Shield },
+    ]
+
     return (
-        <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Profile Information</CardTitle>
-                    <CardDescription>Update your personal details.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="username">Username</Label>
-                        <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter a unique username" />
-                        <p className="text-xs text-muted-foreground">This will be displayed on your dashboard greeting.</p>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Enter your full name" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" />
-                        <p className="text-xs text-muted-foreground">Changing your email will require verification</p>
-                    </div>
-                </CardContent>
-                <CardFooter>
-                    <Button onClick={handleSaveProfile} disabled={loading}>
-                        {loading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>) : ("Save Changes")}
+        <div className="grid lg:grid-cols-12 gap-12 items-start">
+            {/* Navigation Sidebar */}
+            <div className="lg:col-span-3 space-y-2 bg-muted/30 p-4 rounded-[2.5rem] border border-border/50 shadow-sm">
+                {menuItems.map((item) => {
+                    const Icon = item.icon
+                    return (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveTab(item.id)}
+                            className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === item.id
+                                ? "bg-primary text-white shadow-lg shadow-primary/30"
+                                : "hover:bg-primary/10 text-muted-foreground hover:text-primary"
+                                }`}
+                        >
+                            <Icon className="w-5 h-5" />
+                            {item.label}
+                        </button>
+                    )
+                })}
+            </div>
+
+            {/* Content Area */}
+            <div className="lg:col-span-9">
+                <AnimatePresence mode="wait">
+                    {activeTab === "profile" && (
+                        <motion.div
+                            key="profile"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="space-y-8"
+                        >
+                            <Card className="border-none shadow-2xl bg-card/60 backdrop-blur-xl rounded-[3rem] overflow-hidden">
+                                <CardHeader className="p-10 pb-0">
+                                    <CardTitle className="text-3xl font-black">Identity & Appearance</CardTitle>
+                                    <CardDescription className="text-lg">How you manifest in the knowledge pool.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="p-10 space-y-10">
+                                    {/* Avatar Section */}
+                                    <div className="flex flex-col md:flex-row gap-10 items-start">
+                                        <div className="relative group">
+                                            <div className="w-40 h-40 rounded-[2.5rem] overflow-hidden border-4 border-background shadow-2xl transition-transform group-hover:rotate-2">
+                                                {avatarChoice !== 'upload' && avatarChoice !== 'default' ? (
+                                                    <Image src={`/avatars/${avatarChoice}.png`} alt="Avatar" width={160} height={160} className="w-full h-full object-cover" />
+                                                ) : avatarUrl ? (
+                                                    <Image src={avatarUrl} alt="Avatar" width={160} height={160} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full bg-primary flex items-center justify-center text-white text-5xl font-black">
+                                                        {nickname?.[0]?.toUpperCase() || "U"}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="absolute -bottom-2 -right-2 bg-primary text-white p-3 rounded-2xl shadow-xl hover:scale-110 transition-transform border-4 border-background"
+                                            >
+                                                <Upload className="w-5 h-5" />
+                                            </button>
+                                            <input type="file" ref={fileInputRef} onChange={handleAvatarUpload} className="hidden" accept="image/*" />
+                                        </div>
+
+                                        <div className="flex-1 space-y-4">
+                                            <Label className="text-xs font-black uppercase tracking-widest text-primary">Preset Archetypes</Label>
+                                            <div className="grid grid-cols-5 gap-3">
+                                                {PRESET_AVATARS.map(avatar => (
+                                                    <button
+                                                        key={avatar.id}
+                                                        onClick={() => { setAvatarChoice(avatar.id); setAvatarUrl(null); }}
+                                                        className={`aspect-square rounded-xl border-4 transition-all relative overflow-hidden group ${avatarChoice === avatar.id ? 'border-primary shadow-lg scale-105' : 'border-transparent opacity-60 hover:opacity-100'
+                                                            }`}
+                                                    >
+                                                        <Image src={`/avatars/${avatar.id}.png`} alt={avatar.name} fill className="object-cover" />
+                                                        {avatarChoice === avatar.id && (
+                                                            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                                                <Check className="w-6 h-6 text-white stroke-[4]" />
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Fields */}
+                                    <div className="grid md:grid-cols-2 gap-8">
+                                        <div className="space-y-4">
+                                            <Label className="text-xs font-black uppercase tracking-widest opacity-50">Chosen Nickname</Label>
+                                            <Input
+                                                value={nickname}
+                                                onChange={e => setNickname(e.target.value)}
+                                                className="h-14 rounded-2xl bg-muted/30 border-none font-bold italic text-lg px-6"
+                                            />
+                                        </div>
+                                        <div className="space-y-4">
+                                            <Label className="text-xs font-black uppercase tracking-widest opacity-50">Global Username</Label>
+                                            <Input
+                                                value={username}
+                                                onChange={e => setUsername(e.target.value)}
+                                                className="h-14 rounded-2xl bg-muted/30 border-none font-bold text-lg px-6"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 space-y-4">
+                                            <Label className="text-xs font-black uppercase tracking-widest opacity-50">Full Manifestation Name</Label>
+                                            <Input
+                                                value={fullName}
+                                                onChange={e => setFullName(e.target.value)}
+                                                className="h-14 rounded-2xl bg-muted/30 border-none font-bold text-lg px-6 font-medium"
+                                            />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
+
+                    {activeTab === "goals" && (
+                        <motion.div
+                            key="goals"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                        >
+                            <Card className="border-none shadow-2xl bg-card/60 backdrop-blur-xl rounded-[3rem] p-10">
+                                <div className="space-y-8">
+                                    <div className="space-y-2">
+                                        <h3 className="text-3xl font-black">Reading Discipline</h3>
+                                        <p className="text-muted-foreground text-lg">Define the intensity of your daily exploration.</p>
+                                    </div>
+
+                                    <div className="space-y-10 py-10">
+                                        <div className="flex justify-between items-end">
+                                            <div className="space-y-2">
+                                                <Label className="text-sm font-black uppercase tracking-widest opacity-50">Daily Commitment</Label>
+                                                <div className="text-6xl font-black text-primary italic">
+                                                    {dailyGoal} <span className="text-2xl text-muted-foreground not-italic">MINS</span>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-bold text-primary">Focus Level</p>
+                                                <p className="text-2xl font-black italic">{dailyGoal >= 60 ? "Scholar" : dailyGoal >= 30 ? "Seeker" : "Scout"}</p>
+                                            </div>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="15"
+                                            max="120"
+                                            step="5"
+                                            value={dailyGoal}
+                                            onChange={(e) => setDailyGoal(parseInt(e.target.value))}
+                                            className="w-full h-3 bg-muted/50 rounded-full appearance-none cursor-pointer accent-primary shadow-inner"
+                                        />
+                                        <div className="grid grid-cols-4 text-center text-[10px] font-black uppercase tracking-widest opacity-30">
+                                            <span>Scout</span>
+                                            <span>Seeker</span>
+                                            <span>Scholar</span>
+                                            <span>Master</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        </motion.div>
+                    )}
+
+                    {activeTab === "notifications" && (
+                        <motion.div
+                            key="notifications"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="space-y-6"
+                        >
+                            <Card className="border-none shadow-2xl bg-card/60 backdrop-blur-xl rounded-[3rem] p-10 pt-10">
+                                <div className="space-y-10">
+                                    <div className="flex items-center justify-between group">
+                                        <div className="space-y-1">
+                                            <h4 className="text-xl font-black">Thought Sparks</h4>
+                                            <p className="text-muted-foreground italic">Real-time alerts for the Circle and your progress.</p>
+                                        </div>
+                                        <Switch checked={inAppNotifications} onCheckedChange={setInAppNotifications} className="scale-125 data-[state=checked]:bg-primary" />
+                                    </div>
+                                    <div className="flex items-center justify-between opacity-50 group">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="text-xl font-black text-muted-foreground">Dream Summaries</h4>
+                                                <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full font-black">SOON</span>
+                                            </div>
+                                            <p className="text-muted-foreground italic">Weekly digests of your reading lore via raven.</p>
+                                        </div>
+                                        <Switch checked={emailNotifications} disabled className="scale-125" />
+                                    </div>
+                                </div>
+                            </Card>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Save Button */}
+                <div className="mt-10 flex justify-end">
+                    <Button
+                        disabled={loading}
+                        onClick={handleSave}
+                        className="h-16 px-12 rounded-[2rem] text-xl font-black italic shadow-2xl shadow-primary/30 transition-transform active:scale-95 bg-primary"
+                    >
+                        {loading && <Loader2 className="w-6 h-6 mr-3 animate-spin" />}
+                        Commit Changes
                     </Button>
-                </CardFooter>
-            </Card>
-
-            <Card>
-                <CardHeader><CardTitle>Reading Goals</CardTitle><CardDescription>Set your daily reading targets.</CardDescription></CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <Label>Daily Goal</Label>
-                            <span className="font-medium">{dailyGoal} minutes</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <span className="text-xs text-muted-foreground">15m</span>
-                            <input type="range" min="15" max="120" step="5" value={dailyGoal} onChange={(e) => setDailyGoal(parseInt(e.target.value))} className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer" />
-                            <span className="text-xs text-muted-foreground">120m</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">Aim to read for at least {dailyGoal} minutes every day to build your streak.</p>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader><CardTitle>Notification Preferences</CardTitle><CardDescription>Manage how you receive updates and reminders.</CardDescription></CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-0.5 flex-1">
-                            <div className="flex items-center gap-2"><Bell className="h-4 w-4 text-muted-foreground" /><Label>In-App Notifications</Label></div>
-                            <p className="text-sm text-muted-foreground">Get notified about streaks, achievements, and reading milestones</p>
-                        </div>
-                        <Switch checked={inAppNotifications} onCheckedChange={setInAppNotifications} />
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-0.5 flex-1">
-                            <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /><Label>Email Updates (Coming Soon)</Label></div>
-                            <p className="text-sm text-muted-foreground">Receive weekly reading summaries and motivational messages</p>
-                        </div>
-                        <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} disabled />
-                    </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </div>
     )
 }

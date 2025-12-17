@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { PlayCircle, BookOpen } from "lucide-react"
 import { useEffect, useState } from "react"
-import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { createBrowserClient } from "@supabase/ssr"
 import Link from "next/link"
 
 interface ContinueReadingBook {
@@ -33,15 +33,18 @@ export function ContinueReading() {
 
     useEffect(() => {
         const fetchLastReadBook = async () => {
-            const supabase = createBrowserSupabaseClient()
-            try {
-                const { data: { user } } = await supabase.auth.getUser()
-                if (!user) return
+            const supabase = createBrowserClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            )
 
-                // Get most recently updated book from reading_progress
-                const { data } = await supabase
-                    .from('reading_progress')
-                    .select(`
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
+            // Get most recently updated book from reading_progress
+            const { data } = await supabase
+                .from('reading_progress')
+                .select(`
                     current_page,
                     progress_percentage,
                     books (
@@ -52,30 +55,27 @@ export function ContinueReading() {
                         total_pages
                     )
                 `)
-                    .eq('user_id', user.id)
-                    // Removed .gt('progress_percentage', 0) to show books even at start
-                    .lt('progress_percentage', 100)
-                    .order('updated_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle()
+                .eq('user_id', user.id)
+                .gt('progress_percentage', 0)
+                .lt('progress_percentage', 100)
+                .order('updated_at', { ascending: false })
+                .limit(1)
+                .single()
 
-                if (data && data.books) {
-                    const bookData = Array.isArray(data.books) ? data.books[0] : data.books
-                    setBook({
-                        id: bookData.id,
-                        title: bookData.title,
-                        author: bookData.author,
-                        cover_url: bookData.cover_url,
-                        current_page: data.current_page,
-                        total_pages: bookData.total_pages || 0,
-                        progress_percentage: data.progress_percentage
-                    })
-                }
-            } catch (error) {
-                console.error("Error fetching continue reading:", error)
-            } finally {
-                setLoading(false)
+            if (data && data.books) {
+                const bookData = Array.isArray(data.books) ? data.books[0] : data.books
+                setBook({
+                    id: bookData.id,
+                    title: bookData.title,
+                    author: bookData.author,
+                    cover_url: bookData.cover_url,
+                    current_page: data.current_page,
+                    total_pages: bookData.total_pages || 0,
+                    progress_percentage: data.progress_percentage
+                })
             }
+
+            setLoading(false)
         }
 
         fetchLastReadBook()

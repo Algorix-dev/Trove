@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
@@ -16,42 +16,84 @@ import { Label } from "@/components/ui/label"
 import { Share2, Copy, Mail, MessageCircle, Check } from "lucide-react"
 import { toast } from "sonner"
 
+type ShareMethod = 'clipboard' | 'whatsapp' | 'email' | 'direct-email'
+
 export function ShareInviteModal() {
     const [copied, setCopied] = useState(false)
     const [email, setEmail] = useState("")
     const [sending, setSending] = useState(false)
-    const [inviteLink, setInviteLink] = useState("https://trove.app/invite/abc123")
-
-    useEffect(() => {
-        setInviteLink(`${window.location.origin}/invite/abc123`)
+    
+    // Use useMemo to avoid recalculating the invite link on every render
+    const inviteLink = useMemo(() => {
+        if (typeof window !== 'undefined') {
+            return `${window.location.origin}/invite/abc123`
+        }
+        return "https://trove.app/invite/abc123"
     }, [])
 
-    const copyToClipboard = () => {
-        navigator.clipboard.writeText(inviteLink)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-    }
+    const handleShareAction = useCallback((method: ShareMethod) => {
+        switch (method) {
+            case 'clipboard':
+                navigator.clipboard.writeText(inviteLink).then(() => {
+                    setCopied(true)
+                    toast.success('Link copied to clipboard!')
+                    setTimeout(() => setCopied(false), 2000)
+                }).catch(() => {
+                    toast.error('Failed to copy to clipboard')
+                })
+                break
+                
+            case 'whatsapp':
+                const message = encodeURIComponent(
+                    `Join me on Trove - the best reading companion app! 📚\n\n${inviteLink}`
+                )
+                window.open(`https://wa.me/?text=${message}`, '_blank', 'noopener,noreferrer')
+                break
+                
+            case 'email':
+                const subject = encodeURIComponent("Join me on Trove!")
+                const body = encodeURIComponent(
+                    `Hi!\n\nI've been using Trove to track my reading and I think you'd love it too!\n\n` +
+                    `Trove is a reading companion app that helps you:\n` +
+                    `- Track your reading progress\n` +
+                    `- Take notes and highlights\n` +
+                    `- View your reading analytics\n` +
+                    `- Join book communities\n\n` +
+                    `Join me here: ${inviteLink}\n\n` +
+                    `Happy reading! 📚`
+                )
+                window.open(`mailto:?subject=${subject}&body=${body}`, '_blank', 'noopener,noreferrer')
+                break
+        }
+    }, [inviteLink])
 
-    const shareViaWhatsApp = () => {
-        const message = encodeURIComponent(`Join me on Trove - the best reading companion app! 📚\n\n${inviteLink}`)
-        window.open(`https://wa.me/?text=${message}`, '_blank')
-    }
+    const sendEmailInvite = useCallback(async () => {
+        if (!email) {
+            toast.error('Please enter an email address')
+            return
+        }
 
-    const shareViaEmail = () => {
-        const subject = encodeURIComponent("Join me on Trove!")
-        const body = encodeURIComponent(`Hi!\n\nI've been using Trove to track my reading and I think you'd love it too!\n\nTrove is a reading companion app that helps you:\n- Track your reading progress\n- Take notes and highlights\n- View your reading analytics\n- Join book communities\n\nJoin me here: ${inviteLink}\n\nHappy reading! 📚`)
-        window.open(`mailto:?subject=${subject}&body=${body}`, '_blank')
-    }
-
-    const sendEmailInvite = async () => {
-        if (!email) return
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(email)) {
+            toast.error('Please enter a valid email address')
+            return
+        }
 
         setSending(true)
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        setSending(false)
-        setEmail("")
-        toast.success(`Invitation sent to ${email}!`)
-    }
+        try {
+            // Simulate API call with timeout
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            setSending(false)
+            setEmail("")
+            toast.success(`Invite sent to ${email}!`)
+        } catch (error) {
+            console.error('Failed to send invite:', error)
+            toast.error('Failed to send invite. Please try again.')
+        } finally {
+            setSending(false)
+        }
+    }, [email])
 
     return (
         <Dialog>
@@ -77,8 +119,24 @@ export function ShareInviteModal() {
                                 readOnly
                                 className="flex-1"
                             />
-                            <Button size="icon" variant="outline" onClick={copyToClipboard}>
-                                {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full justify-start"
+                                onClick={() => handleShareAction('clipboard')}
+                                disabled={copied}
+                            >
+                                {copied ? (
+                                    <>
+                                        <Check className="mr-2 h-4 w-4 text-green-500" />
+                                        Copied!
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="mr-2 h-4 w-4" />
+                                        Copy link
+                                    </>
+                                )}
                             </Button>
                         </div>
                     </div>
@@ -86,10 +144,10 @@ export function ShareInviteModal() {
                     <div className="space-y-2">
                         <Label>Quick Share</Label>
                         <div className="grid grid-cols-2 gap-2">
-                            <Button variant="outline" className="gap-2" onClick={shareViaEmail}>
+                            <Button variant="outline" className="gap-2" onClick={() => handleShareAction('email')}>
                                 <Mail className="h-4 w-4" /> Email
                             </Button>
-                            <Button variant="outline" className="gap-2" onClick={shareViaWhatsApp}>
+                            <Button variant="outline" className="gap-2" onClick={() => handleShareAction('whatsapp')}>
                                 <MessageCircle className="h-4 w-4" /> WhatsApp
                             </Button>
                         </div>

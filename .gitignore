@@ -3,6 +3,9 @@
 # dependencies
 /node_modules
 /.pnp
+.pnp.js
+.pnp.cjs
+/.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -16,6 +19,7 @@
 # next.js
 /.next/
 /out/
+/build
 
 # production
 /build
@@ -40,3 +44,83 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build output
+.next
+out
+
+# Cache
+.cache
+.turbo
+
+# Local development
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+logs
+*.log
+
+# Local Netlify folder
+.netlify
+
+# Dependency directories
+bower_components/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# parcel-bundler cache (https://parceljs.org/)
+.parcel-cache
+
+# VSCode
+.vscode/*
+!.vscode/extensions.json
+
+# vercel_build_output
+.vercel_build_output
+__pycache__/
+*.py[cod]
+*$py.class

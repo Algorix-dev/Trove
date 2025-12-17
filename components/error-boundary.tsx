@@ -42,10 +42,17 @@ export class ErrorBoundary extends Component<Props, State> {
                         We're sorry for the inconvenience. Please try refreshing the page.
                     </p>
                     <div className="flex gap-2">
-                        <Button onClick={() => window.location.reload()}>
+                        <Button 
+                            onClick={() => window.location.reload()}
+                            aria-label="Refresh the page to try again"
+                        >
                             Refresh Page
                         </Button>
-                        <Button variant="outline" onClick={() => window.history.back()}>
+                        <Button 
+                            variant="outline" 
+                            onClick={() => window.history.back()}
+                            aria-label="Go back to the previous page"
+                        >
                             Go Back
                         </Button>
                     </div>

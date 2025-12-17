@@ -1,189 +1,126 @@
-// app/dashboard/marketplace/page.tsx
 "use client"
 
-import { useState } from "react"
-import { Card } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { ShoppingBag, DollarSign, MessageCircle, Search, TrendingUp } from "lucide-react"
+import { Plus, Search, ShoppingBag } from "lucide-react"
+import Link from "next/link"
+import { ListingCard } from "@/components/features/marketplace/listing-card"
 
-interface BookListing {
-    id: string
-    title: string
-    author: string
-    price: number
-    condition: string
-    seller: string
-    image: string
-}
 
-const mockListings: BookListing[] = [
-    {
-        id: "1",
-        title: "The Midnight Library",
-        author: "Matt Haig",
-        price: 12.99,
-        condition: "Like New",
-        seller: "Sarah M.",
-        image: "gradient:linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-    },
-    {
-        id: "2",
-        title: "Project Hail Mary",
-        author: "Andy Weir",
-        price: 15.50,
-        condition: "Good",
-        seller: "John D.",
-        image: "gradient:linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
-    },
-    {
-        id: "3",
-        title: "Atomic Habits",
-        author: "James Clear",
-        price: 10.00,
-        condition: "Very Good",
-        seller: "Emma W.",
-        image: "gradient:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
-    }
-]
 
 export default function MarketplacePage() {
-    const [searchQuery, setSearchQuery] = useState("")
+  const supabase = createClient()
+  const [listings, setListings] = useState<any[]>([]) // Changed to any[]
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
 
-    return (
-        <div className="space-y-6">
-            <div className="flex items-start justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                        <ShoppingBag className="h-8 w-8 text-green-500" />
-                        Book Marketplace
-                    </h1>
-                    <p className="text-muted-foreground">Buy and sell books with fellow readers</p>
-                </div>
-                <Button className="bg-green-500 hover:bg-green-600">
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    List a Book
-                </Button>
-            </div>
+  useEffect(() => {
+    loadListings()
+  }, [selectedCategory])
 
-            {/* Stats */}
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card className="p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                            <ShoppingBag className="h-5 w-5 text-green-500" />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold">234</p>
-                            <p className="text-xs text-muted-foreground">Active Listings</p>
-                        </div>
-                    </div>
-                </Card>
-                <Card className="p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                            <TrendingUp className="h-5 w-5 text-blue-500" />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold">89</p>
-                            <p className="text-xs text-muted-foreground">Sold This Week</p>
-                        </div>
-                    </div>
-                </Card>
-                <Card className="p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                            <MessageCircle className="h-5 w-5 text-purple-500" />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold">156</p>
-                            <p className="text-xs text-muted-foreground">Active Buyers</p>
-                        </div>
-                    </div>
-                </Card>
-            </div>
+  const loadListings = async () => {
+    setLoading(true)
+    try {
+      let query = supabase
+        .from("marketplace_listings")
+        .select("*")
+        .eq("is_sold", false) // Changed from "status", "active"
+        .order("is_featured", { ascending: false }) // Changed from "featured"
+        .order("created_at", { ascending: false })
 
-            {/* Search */}
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search for books..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                />
-            </div>
+      if (selectedCategory !== "all") {
+        query = query.eq("category", selectedCategory)
+      }
 
-            {/* Discord Integration Notice */}
-            <Card className="p-4 bg-indigo-500/10 border-indigo-500/20">
-                <div className="flex items-start gap-3">
-                    <MessageCircle className="h-5 w-5 text-indigo-500 mt-0.5" />
-                    <div>
-                        <p className="font-semibold mb-1">Connect on Discord</p>
-                        <p className="text-sm text-muted-foreground">
-                            Join our Discord server to chat with sellers, arrange meetups, and discuss books!
-                            All transactions are coordinated through our community.
-                        </p>
-                        <Button variant="outline" size="sm" className="mt-3" asChild>
-                            <a href="https://discord.gg/trove-readers" target="_blank" rel="noopener noreferrer">
-                                <MessageCircle className="h-3 w-3 mr-2" />
-                                Join Discord
-                            </a>
-                        </Button>
-                    </div>
-                </div>
-            </Card>
+      const { data, error } = await query
 
-            {/* Listings */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {mockListings.map((listing) => (
-                    <Card key={listing.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                        <div
-                            className="h-48 w-full"
-                            style={{ background: listing.image.replace('gradient:', '') }}
-                        />
-                        <div className="p-4">
-                            <h3 className="font-semibold mb-1">{listing.title}</h3>
-                            <p className="text-sm text-muted-foreground mb-2">{listing.author}</p>
-                            <div className="flex items-center justify-between mb-3">
-                                <p className="text-2xl font-bold text-green-600">${listing.price}</p>
-                                <Badge variant="secondary">{listing.condition}</Badge>
-                            </div>
-                            <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
-                                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500" />
-                                <span>{listing.seller}</span>
-                            </div>
-                            <Button className="w-full" variant="outline">
-                                <MessageCircle className="h-4 w-4 mr-2" />
-                                Contact Seller
-                            </Button>
-                        </div>
-                    </Card>
-                ))}
-            </div>
+      if (error) throw error
+      setListings(data || [])
+    } catch (error: any) {
+      console.error("Error loading listings:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-            {/* How It Works */}
-            <Card className="p-6">
-                <h3 className="font-semibold mb-4">How It Works</h3>
-                <div className="grid gap-4 md:grid-cols-3">
-                    <div>
-                        <div className="h-8 w-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold mb-2">1</div>
-                        <p className="font-medium mb-1">List Your Book</p>
-                        <p className="text-sm text-muted-foreground">Post books you want to sell with price and condition</p>
-                    </div>
-                    <div>
-                        <div className="h-8 w-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold mb-2">2</div>
-                        <p className="font-medium mb-1">Connect on Discord</p>
-                        <p className="text-sm text-muted-foreground">Chat with buyers/sellers and arrange meetups</p>
-                    </div>
-                    <div>
-                        <div className="h-8 w-8 rounded-full bg-purple-500 text-white flex items-center justify-center font-bold mb-2">3</div>
-                        <p className="font-medium mb-1">Complete Transaction</p>
-                        <p className="text-sm text-muted-foreground">Meet safely and exchange books for cash</p>
-                    </div>
-                </div>
-            </Card>
+  const filteredListings = listings.filter(listing =>
+    listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    listing.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const categories = ["all", "books", "manga", "comics", "textbooks", "accessories"]
+
+  return (
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div>
+          <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">Trove Marketplace</h2>
+          <p className="text-muted-foreground text-lg">Discovery. Exchange. Knowledge. Join the circular economy.</p>
         </div>
-    )
+        <Button asChild size="lg" className="rounded-full px-8 shadow-xl hover:shadow-primary/30 transition-all">
+          <Link href="/dashboard/marketplace/create">
+            <Plus className="w-5 h-5 mr-2" />
+            List Item
+          </Link>
+        </Button>
+      </div>
+
+      <div className="bg-card/50 backdrop-blur-xl p-6 rounded-[2.5rem] border border-border/50 shadow-2xl flex flex-col md:flex-row gap-6">
+        <div className="flex-1 relative">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+          <Input
+            placeholder="Search our collection of treasures..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-12 h-14 bg-background/50 border-none rounded-2xl focus-visible:ring-primary/20 text-lg"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          {categories.map((cat) => (
+            <Button
+              key={cat}
+              variant={selectedCategory === cat ? "default" : "secondary"}
+              size="sm"
+              onClick={() => setSelectedCategory(cat)}
+              className={`capitalize rounded-full px-6 transition-all ${selectedCategory === cat ? 'shadow-lg shadow-primary/30' : 'hover:bg-primary/10'
+                }`}
+            >
+              {cat}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-[400px] bg-muted animate-pulse rounded-3xl" />
+          ))}
+        </div>
+      ) : filteredListings.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-20 bg-muted/10 rounded-[3rem] border-2 border-dashed border-border">
+          <div className="bg-primary/10 p-6 rounded-full mb-6 text-primary">
+            <ShoppingBag className="w-12 h-12" />
+          </div>
+          <h3 className="text-2xl font-bold mb-2">The trove is empty... for now.</h3>
+          <p className="text-muted-foreground text-center max-w-sm">Be the first to share a treasure with the community and earn your first sale badges!</p>
+          <Button asChild className="mt-8 rounded-full px-8" variant="outline">
+            <Link href="/dashboard/marketplace/create">
+              <Plus className="w-4 h-4 mr-2" />
+              Start Selling
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredListings.map((listing) => (
+            <ListingCard key={listing.id} listing={listing} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }

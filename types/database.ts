@@ -30,7 +30,7 @@ export interface Book {
     format: 'pdf' | 'epub' | 'txt'
     total_pages: number
     created_at: string
-    updated_at?: string
+    updated_at: string
 }
 
 export interface ReadingProgress {
@@ -124,24 +124,7 @@ export interface BookmarkWithBook extends Bookmark {
         author: string
         cover_url: string | null
         format: string
-    } | null
-}
-
-export interface BookQuote {
-    id: string
-    quote_text: string
-    page_number: number | null
-    chapter: string | null
-    note: string | null
-    is_favorite: boolean
-    created_at: string
-    books: {
-        id: string
-        title: string
-        author: string
-        cover_url?: string | null
-        format?: string | null
-    } | null
+    }
 }
 
 // API response types

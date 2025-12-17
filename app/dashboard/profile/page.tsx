@@ -1,12 +1,10 @@
 import { ProfileHeader } from "@/components/features/profile/profile-header"
-import { ProfileTabs } from "@/components/features/profile/profile-tabs"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { BadgesList } from "@/components/features/profile/badges-list"
+import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
-export const dynamic = 'force-dynamic'
-
 export default async function ProfilePage() {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -33,7 +31,7 @@ export default async function ProfilePage() {
         .select('duration_minutes')
         .eq('user_id', user.id)
 
-    const totalMinutes = sessions?.reduce((acc: number, session: any) => acc + session.duration_minutes, 0) || 0
+    const totalMinutes = sessions?.reduce((acc, session) => acc + session.duration_minutes, 0) || 0
 
     const stats = {
         booksRead: booksRead || 0,
@@ -47,13 +45,15 @@ export default async function ProfilePage() {
         full_name: profile?.full_name || user.user_metadata?.full_name,
         email: user.email,
         avatar_url: profile?.avatar_url || user.user_metadata?.avatar_url,
-        created_at: user.created_at
+        created_at: user.created_at,
+        rank: profile?.rank,
+        rank_title: profile?.rank_title
     }
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <ProfileHeader user={userData} stats={stats} />
-            <ProfileTabs />
+            <BadgesList />
         </div>
     )
 }

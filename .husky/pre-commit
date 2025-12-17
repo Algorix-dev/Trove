@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+
+# Skip hooks for now to avoid blocking commits
+# Uncomment below when ready to enable pre-commit checks
+
+# Lint and fix (optional - can be slow)
+# npm run lint -- --fix
+
+# Run tests (optional)
+# npm test -- --watchAll=false
+
+# Type checking (optional)
+# npm run type-check

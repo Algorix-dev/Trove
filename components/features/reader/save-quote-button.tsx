@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { createBrowserSupabaseClient } from "@/lib/supabase/client"
+import { createBrowserClient } from "@supabase/ssr"
 import { useAuth } from "@/components/providers/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Quote, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -33,7 +33,10 @@ export function SaveQuoteButton({ bookId, bookTitle, selectedText }: SaveQuoteBu
 
         setLoading(true)
         try {
-            const supabase = createBrowserSupabaseClient()
+            const supabase = createBrowserClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            )
 
             const { error } = await supabase
                 .from('book_quotes')
@@ -80,9 +83,6 @@ export function SaveQuoteButton({ bookId, bookTitle, selectedText }: SaveQuoteBu
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Save Quote from {bookTitle}</DialogTitle>
-                    <DialogDescription>
-                        Save this quote to your personal collection with optional notes.
-                    </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div>
