@@ -69,6 +69,9 @@ export default function LibraryPage() {
                     return
                 }
 
+                console.log('Raw booksData from Supabase:', booksData)
+                console.log('Current user.id:', user.id)
+
                 // Transform data to include progress percentage
                 const transformedBooks = booksData?.map(book => ({
                     ...book,
@@ -76,6 +79,7 @@ export default function LibraryPage() {
                     progress: book['reading_progress']?.[0]?.['progress_percentage'] || 0
                 })) || []
 
+                console.log('Transformed books:', transformedBooks)
                 setBooks(transformedBooks as any)
 
                 // Show welcome animation on first visit
