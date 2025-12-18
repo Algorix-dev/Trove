@@ -79,21 +79,21 @@ export function DashboardSidebar() {
                                 href={route.href}
                                 aria-current={isActive ? "page" : undefined}
                                 className={cn(
-                                    "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-primary hover:bg-primary/5 rounded-xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                                    "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-primary hover:bg-primary/5 rounded-xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 relative",
                                     isActive ? "text-primary bg-primary/10 shadow-sm" : "text-muted-foreground"
                                 )}
                             >
-                                <div className="flex items-center flex-1">
+                                {isActive && (
+                                    <motion.div
+                                        layoutId="active-pill"
+                                        className="absolute left-0 w-1.5 h-6 bg-primary rounded-r-full top-1/2 -translate-y-1/2"
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    />
+                                )}
+                                <div className="flex items-center flex-1 pl-1">
                                     <Icon className={cn("h-5 w-5 mr-3 transition-transform group-hover:scale-110", isActive ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />
                                     <span className="relative">
                                         {route.label}
-                                        {isActive && (
-                                            <motion.div
-                                                layoutId="active-pill"
-                                                className="absolute -left-4 w-1 h-4 bg-primary rounded-full"
-                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                            />
-                                        )}
                                     </span>
                                 </div>
                             </Link>
