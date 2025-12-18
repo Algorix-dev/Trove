@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label"
 import { BookOpen, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { createBrowserClient } from "@supabase/ssr"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 export default function SignupPage() {
@@ -20,7 +19,6 @@ export default function SignupPage() {
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState(false)
     const [signupEmail, setSignupEmail] = useState("")
-    const router = useRouter()
 
     const supabase = createBrowserClient(
         process.env['NEXT_PUBLIC_SUPABASE_URL']!,
@@ -42,6 +40,7 @@ export default function SignupPage() {
                         full_name: name,
                         avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${name}`,
                     },
+                    emailRedirectTo: `${window.location.origin}/auth/confirm`
                 },
             })
 

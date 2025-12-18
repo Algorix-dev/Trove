@@ -11,15 +11,18 @@ export default async function BookmarksPage() {
     }
 
     return (
-        <div className="container max-w-6xl mx-auto p-6 space-y-6">
-            <div className="space-y-2">
-                <h1 className="text-3xl font-bold">Bookmarks</h1>
-                <p className="text-muted-foreground">
-                    Quick access to your saved reading positions
-                </p>
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <div>
+                    <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">Bookmarks</h2>
+                    <p className="text-muted-foreground text-lg">Quick access to your saved treasures and notes.</p>
+                </div>
             </div>
 
-            <BookmarksList userId={user.id} />
+            <div className="bg-card/40 backdrop-blur-xl p-8 rounded-[3rem] border border-border/50 shadow-2xl relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <BookmarksList userId={user.id} />
+            </div>
         </div>
     )
 }

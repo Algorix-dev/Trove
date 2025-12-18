@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
     Select,
     SelectContent,
@@ -80,52 +81,56 @@ export function LibrarySearch({ books, onFilteredChange }: LibrarySearchProps) {
     const hasActiveFilters = searchQuery !== "" || formatFilter !== "all" || sortBy !== "date-desc"
 
     return (
-        <div className="space-y-4">
-            {/* Search Bar */}
-            <div className="flex gap-2">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="space-y-6">
+            {/* Premium Search Bar Container */}
+            <div className="bg-card/30 backdrop-blur-md p-4 rounded-[2rem] border border-border/50 shadow-lg flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1 group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                     <Input
                         type="search"
-                        placeholder="Search books by title or author..."
+                        placeholder="Search your treasures..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9"
+                        className="pl-12 h-14 bg-background/50 border-none rounded-2xl focus-visible:ring-primary/20 text-lg shadow-inner"
                         aria-label="Search books by title or author"
                     />
                     {searchQuery && (
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-destructive/10 hover:text-destructive rounded-full"
                             onClick={() => setSearchQuery("")}
-                            aria-label="Clear search"
                         >
-                            <X className="h-4 w-4" aria-hidden="true" />
+                            <X className="h-4 w-4" />
                         </Button>
                     )}
                 </div>
-                <Button
-                    variant={showFilters ? "default" : "outline"}
-                    size="icon"
-                    onClick={() => setShowFilters(!showFilters)}
-                    aria-label={showFilters ? "Hide filters" : "Show filters"}
-                    aria-expanded={showFilters}
-                >
-                    <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-                </Button>
+
+                <div className="flex gap-2">
+                    <Button
+                        variant={showFilters ? "default" : "secondary"}
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={cn(
+                            "h-14 px-6 rounded-2xl gap-2 font-semibold transition-all shadow-md items-center justify-center flex",
+                            showFilters ? "shadow-primary/30" : "hover:bg-primary/10"
+                        )}
+                    >
+                        <SlidersHorizontal className="h-5 w-5" />
+                        <span>Filters</span>
+                    </Button>
+                </div>
             </div>
 
-            {/* Filters Panel */}
+            {/* Premium Filters Panel */}
             {showFilters && (
-                <div className="flex flex-wrap gap-3 p-4 bg-muted/50 rounded-lg border">
-                    <div className="flex-1 min-w-[200px]">
-                        <label htmlFor="format-filter" className="text-sm font-medium mb-2 block">Format</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 bg-card/20 backdrop-blur-xl rounded-[2rem] border border-border/50 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold ml-2">Format</label>
                         <Select value={formatFilter} onValueChange={(value: FormatFilter) => setFormatFilter(value)}>
-                            <SelectTrigger id="format-filter" aria-label="Filter by book format">
+                            <SelectTrigger className="h-12 bg-background/50 border-none rounded-xl focus:ring-primary/20 shadow-sm">
                                 <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="rounded-xl border-border/50 backdrop-blur-xl">
                                 <SelectItem value="all">All Formats</SelectItem>
                                 <SelectItem value="pdf">PDF</SelectItem>
                                 <SelectItem value="epub">EPUB</SelectItem>
@@ -134,13 +139,13 @@ export function LibrarySearch({ books, onFilteredChange }: LibrarySearchProps) {
                         </Select>
                     </div>
 
-                    <div className="flex-1 min-w-[200px]">
-                        <label htmlFor="sort-filter" className="text-sm font-medium mb-2 block">Sort By</label>
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold ml-2">Sort By</label>
                         <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
-                            <SelectTrigger id="sort-filter" aria-label="Sort books">
+                            <SelectTrigger className="h-12 bg-background/50 border-none rounded-xl focus:ring-primary/20 shadow-sm">
                                 <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="rounded-xl border-border/50 backdrop-blur-xl">
                                 <SelectItem value="date-desc">Newest First</SelectItem>
                                 <SelectItem value="date-asc">Oldest First</SelectItem>
                                 <SelectItem value="title-asc">Title (A-Z)</SelectItem>
@@ -150,19 +155,24 @@ export function LibrarySearch({ books, onFilteredChange }: LibrarySearchProps) {
                         </Select>
                     </div>
 
-                    {hasActiveFilters && (
-                        <div className="flex items-end">
-                            <Button variant="ghost" size="sm" onClick={handleClearFilters}>
-                                <X className="h-4 w-4 mr-2" />
-                                Clear Filters
+                    <div className="flex items-end pb-1">
+                        {hasActiveFilters && (
+                            <Button
+                                variant="ghost"
+                                onClick={handleClearFilters}
+                                className="h-12 w-full rounded-xl hover:bg-destructive/5 hover:text-destructive gap-2 text-muted-foreground transition-all"
+                            >
+                                <X className="h-4 w-4" />
+                                Clear All Filters
                             </Button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             )}
 
             {/* Results Count */}
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground ml-4 flex items-center gap-2">
+                <div className="w-1 h-1 bg-primary rounded-full" />
                 {filteredBooks.length === books.length ? (
                     `Showing all ${books.length} ${books.length === 1 ? 'book' : 'books'}`
                 ) : (

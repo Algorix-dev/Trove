@@ -21,8 +21,8 @@ export function DashboardHeader() {
     const router = useRouter()
 
     const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+        process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
     )
 
     const handleSignOut = async () => {
@@ -39,7 +39,7 @@ export function DashboardHeader() {
     return (
         <div className="h-16 border-b flex items-center justify-between px-8 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center gap-4">
-                <h1 className="text-xl font-semibold">Trove</h1>
+                {/* Branding is now handled by the animated logo in the sidebar */}
             </div>
 
             <div className="flex items-center gap-2">
@@ -47,23 +47,23 @@ export function DashboardHeader() {
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="relative">
+                        <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-primary/10 transition-colors">
                             <User className="h-5 w-5" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>
-                            <div className="flex flex-col space-y-1">
-                                <p className="text-sm font-medium leading-none">
-                                    {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                    <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl shadow-2xl border-border/50 backdrop-blur-xl">
+                        <DropdownMenuLabel className="font-normal">
+                            <div className="flex flex-col space-y-1 p-2">
+                                <p className="text-sm font-semibold leading-none">
+                                    {user?.['user_metadata']?.['full_name'] || user?.['email']?.split('@')[0] || 'User'}
                                 </p>
                                 <p className="text-xs leading-none text-muted-foreground">
-                                    {user?.email}
+                                    {user?.['email']}
                                 </p>
                             </div>
                         </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive focus:text-destructive">
+                        <DropdownMenuSeparator className="my-2" />
+                        <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10 rounded-xl transition-all">
                             <LogOut className="mr-2 h-4 w-4" />
                             <span>Sign out</span>
                         </DropdownMenuItem>

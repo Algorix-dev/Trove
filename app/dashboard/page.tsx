@@ -72,49 +72,67 @@ export default async function DashboardPage() {
     const levelTitle = levelInfo?.title || "Reader"
 
     // Use nickname if available, then username, then full name, otherwise "Reader"
-    const name = profile?.nickname || profile?.username || profile?.full_name?.split(' ')[0] || user.user_metadata?.full_name?.split(' ')[0] || "Reader"
+    const name = profile?.nickname || profile?.username || profile?.['full_name']?.split(' ')[0] || user?.['user_metadata']?.['full_name']?.split(' ')[0] || "Reader"
     const hour = new Date().getHours()
     let greeting = "Good Morning"
     if (hour >= 12 && hour < 17) greeting = "Good Afternoon"
     if (hour >= 17) greeting = "Good Evening"
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">{greeting}, {name}</h2>
-                    <p className="text-muted-foreground">Ready to continue your reading journey?</p>
+                    <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">
+                        {greeting}, {name}
+                    </h2>
+                    <p className="text-muted-foreground text-lg">Your reading journey continues here.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                     <DashboardQuote />
                     <ShareInviteModal />
                 </div>
             </div>
 
-            <DashboardStats />
-
-            <div className="grid gap-6 md:grid-cols-2">
-                <LevelProgress
-                    level={currentLevel}
-                    currentXP={currentXP}
-                    nextLevelXP={nextLevelXP}
-                    levelTitle={levelTitle}
-                />
-                <ReadingGoals />
+            <div className="p-1 rounded-[2.5rem] bg-gradient-to-br from-primary/20 via-transparent to-purple-500/20 shadow-2xl">
+                <div className="bg-card/40 backdrop-blur-2xl p-6 rounded-[2.4rem] border border-white/10">
+                    <DashboardStats />
+                </div>
             </div>
 
-            <ReadingStreakCalendar />
+            <div className="grid gap-8 md:grid-cols-2">
+                <div className="bg-card/40 backdrop-blur-xl p-6 rounded-[2rem] border border-border/50 shadow-xl overflow-hidden relative group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <LevelProgress
+                        level={currentLevel}
+                        currentXP={currentXP}
+                        nextLevelXP={nextLevelXP}
+                        levelTitle={levelTitle}
+                    />
+                </div>
+                <div className="bg-card/40 backdrop-blur-xl p-6 rounded-[2rem] border border-border/50 shadow-xl relative group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ReadingGoals />
+                </div>
+            </div>
+
+            <div className="bg-card/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-border/50 shadow-xl">
+                <ReadingStreakCalendar />
+            </div>
 
             <AchievementConfetti />
             <DailyGoalCelebration />
             <LevelUpCelebration />
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 space-y-6">
-                    <ContinueReading />
-                    <QuickActions />
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
+                <div className="col-span-1 md:col-span-2 lg:col-span-3 space-y-8">
+                    <div className="bg-card/30 backdrop-blur-md p-6 rounded-[2rem] border border-border/50 shadow-lg">
+                        <ContinueReading />
+                    </div>
+                    <div className="bg-card/30 backdrop-blur-md p-6 rounded-[2rem] border border-border/50 shadow-lg">
+                        <QuickActions />
+                    </div>
                 </div>
-                <div className="col-span-1 md:col-span-2 lg:col-span-4">
+                <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-card/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-border/50 shadow-xl">
                     <DashboardCharts />
                 </div>
             </div>

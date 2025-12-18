@@ -3,7 +3,9 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, Library, BookOpen, Bookmark, StickyNote, Quote, Users, Settings, ShoppingBag, Sparkles, BarChart3 } from "lucide-react"
+import { motion } from "framer-motion"
+import { Home, Library, Bookmark, StickyNote, Quote, Users, Settings, ShoppingBag, Sparkles, BarChart3 } from "lucide-react"
+import { AnimatedLogo } from "@/components/ui/animated-logo"
 
 export function DashboardSidebar() {
     const pathname = usePathname()
@@ -62,11 +64,10 @@ export function DashboardSidebar() {
     ]
 
     return (
-        <div className="space-y-4 py-4 flex flex-col h-full bg-card border-r transition-colors duration-300">
+        <div className="space-y-4 py-4 flex flex-col h-full bg-card/50 backdrop-blur-xl border-r border-border/50 transition-colors duration-300">
             <div className="px-3 py-2">
                 <Link href="/dashboard" className="flex items-center pl-3 mb-14">
-                    <BookOpen className="h-8 w-8 text-primary mr-2" />
-                    <h1 className="text-2xl font-bold">Trove</h1>
+                    <AnimatedLogo />
                 </Link>
                 <div className="space-y-1">
                     {routes.map((route) => {
@@ -78,13 +79,22 @@ export function DashboardSidebar() {
                                 href={route.href}
                                 aria-current={isActive ? "page" : undefined}
                                 className={cn(
-                                    "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-primary hover:bg-primary/10 rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                                    isActive ? "text-primary bg-primary/10" : "text-muted-foreground"
+                                    "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-primary hover:bg-primary/5 rounded-xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                                    isActive ? "text-primary bg-primary/10 shadow-sm" : "text-muted-foreground"
                                 )}
                             >
                                 <div className="flex items-center flex-1">
-                                    <Icon className={cn("h-5 w-5 mr-3", isActive ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />
-                                    {route.label}
+                                    <Icon className={cn("h-5 w-5 mr-3 transition-transform group-hover:scale-110", isActive ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />
+                                    <span className="relative">
+                                        {route.label}
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId="active-pill"
+                                                className="absolute -left-4 w-1 h-4 bg-primary rounded-full"
+                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                            />
+                                        )}
+                                    </span>
                                 </div>
                             </Link>
                         )
