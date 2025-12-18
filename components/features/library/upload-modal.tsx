@@ -11,11 +11,9 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Upload, Loader2, FileText, Image as ImageIcon } from "lucide-react"
 import { createBrowserClient } from "@supabase/ssr"
 import { useAuth } from "@/components/providers/auth-provider"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 // Generate a beautiful gradient based on book title
@@ -37,9 +35,10 @@ function generateGradient(title: string): string {
 interface UploadModalProps {
     open?: boolean
     onOpenChange?: (open: boolean) => void
+    onSuccess?: () => void
 }
 
-export function UploadModal({ open: controlledOpen, onOpenChange }: UploadModalProps = {}) {
+export function UploadModal({ open: controlledOpen, onOpenChange, onSuccess }: UploadModalProps = {}) {
     const [file, setFile] = useState<File | null>(null)
     const [coverFile, setCoverFile] = useState<File | null>(null)
     const [uploading, setUploading] = useState(false)
@@ -48,7 +47,6 @@ export function UploadModal({ open: controlledOpen, onOpenChange }: UploadModalP
     const fileInputRef = useRef<HTMLInputElement>(null)
     const coverInputRef = useRef<HTMLInputElement>(null)
     const { user } = useAuth()
-    const router = useRouter()
 
     // Use controlled open state if provided, otherwise use internal state
     const open = controlledOpen !== undefined ? controlledOpen : internalOpen
@@ -218,13 +216,10 @@ export function UploadModal({ open: controlledOpen, onOpenChange }: UploadModalP
             setCoverFile(null)
             setOpen(false)
 
-            // Force refresh the library page
-            router.refresh()
-
-            // Small delay then navigate to ensure data is fresh
-            setTimeout(() => {
-                router.push('/dashboard/library')
-            }, 100)
+            // Trigger re-fetch if callback provided
+            if (onSuccess) {
+                onSuccess()
+            }
         } catch (error) {
             toast.error("An unexpected error occurred. Please try again.")
             console.error(error)
@@ -236,84 +231,107 @@ export function UploadModal({ open: controlledOpen, onOpenChange }: UploadModalP
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button>
-                    <Upload className="h-4 w-4" /> Upload Book
+                <Button className="h-12 px-6 rounded-2xl gap-2 font-semibold shadow-lg shadow-primary/20 transition-all hover:scale-105">
+                    <Upload className="h-5 w-5" />
+                    <span>Upload Treasure</span>
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                    <DialogTitle>Upload Book</DialogTitle>
-                    <DialogDescription>
-                        Select a PDF, EPUB, or TXT file to add to your library. Optionally add a cover image.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    {/* Book File Upload */}
-                    <div
-                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer flex flex-col items-center justify-center ${isDragging ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
-                            }`}
-                        onClick={() => fileInputRef.current?.click()}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                    >
-                        {file ? (
-                            <>
-                                <FileText className="h-8 w-8 text-primary mb-2" />
-                                <p className="text-sm font-medium">{file.name}</p>
-                                <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                            </>
-                        ) : (
-                            <>
-                                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                                <p className="text-sm font-medium">Click or drag to upload book</p>
-                                <p className="text-xs text-muted-foreground mt-1">PDF, EPUB, or TXT files (max 50MB)</p>
-                            </>
-                        )}
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            className="hidden"
-                            accept=".pdf,.epub,.txt"
-                            onChange={handleFileSelect}
-                        />
-                    </div>
-
-                    {/* Cover Image Upload (Optional) */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Cover Image (Optional)</label>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                type="file"
-                                ref={coverInputRef}
-                                accept="image/*"
-                                onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
-                                className="flex-1"
-                            />
-                            {coverFile && (
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <ImageIcon className="h-3 w-3" />
-                                    {coverFile.name}
-                                </div>
+            <DialogContent className="sm:max-w-[500px] border-none bg-background/80 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl p-0 overflow-hidden">
+                <div className="bg-gradient-to-br from-primary/10 via-transparent to-purple-500/10 p-8">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold">Upload New Treasure</DialogTitle>
+                        <DialogDescription className="text-base">
+                            Select a PDF, EPUB, or TXT file to add to your collection.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-6 py-8">
+                        {/* Book File Upload */}
+                        <div
+                            className={`border-2 border-dashed rounded-[2rem] p-10 text-center transition-all cursor-pointer flex flex-col items-center justify-center group relative overflow-hidden ${isDragging ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"
+                                }`}
+                            onClick={() => fileInputRef.current?.click()}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                        >
+                            {file ? (
+                                <>
+                                    <div className="bg-primary/10 p-4 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
+                                        <FileText className="h-10 w-10 text-primary" />
+                                    </div>
+                                    <p className="text-lg font-bold truncate max-w-full px-4">{file.name}</p>
+                                    <p className="text-sm text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="bg-muted p-4 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
+                                        <Upload className="h-10 w-10 text-muted-foreground" />
+                                    </div>
+                                    <p className="text-lg font-bold">Drag & Drop</p>
+                                    <p className="text-sm text-muted-foreground mt-1">PDF, EPUB, or TXT (Max 50MB)</p>
+                                </>
                             )}
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept=".pdf,.epub,.txt"
+                                onChange={handleFileSelect}
+                            />
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            If not provided, a beautiful gradient will be generated automatically
-                        </p>
+
+                        {/* Cover Image Upload (Optional) */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between px-2">
+                                <label className="text-sm font-semibold">Custom Cover</label>
+                                <span className="text-xs text-muted-foreground italic">(Optional)</span>
+                            </div>
+                            <div className="flex items-center gap-4 bg-muted/50 p-3 rounded-2xl border border-border/50">
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="rounded-xl h-10 px-4"
+                                    onClick={() => coverInputRef.current?.click()}
+                                >
+                                    Choose Image
+                                </Button>
+                                <div className="flex-1 truncate">
+                                    {coverFile ? (
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <ImageIcon className="h-4 w-4 text-primary" />
+                                            <span className="truncate">{coverFile.name}</span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-sm text-muted-foreground">Auto-generated gradient</span>
+                                    )}
+                                </div>
+                                <input
+                                    type="file"
+                                    ref={coverInputRef}
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                                />
+                            </div>
+                        </div>
                     </div>
+                    <DialogFooter>
+                        <Button
+                            onClick={handleUpload}
+                            disabled={!file || uploading}
+                            className="w-full h-14 rounded-2xl text-lg font-bold shadow-xl shadow-primary/20"
+                        >
+                            {uploading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                    <span>Securing Treasure...</span>
+                                </>
+                            ) : (
+                                "Add to Collection"
+                            )}
+                        </Button>
+                    </DialogFooter>
                 </div>
-                <DialogFooter>
-                    <Button onClick={handleUpload} disabled={!file || uploading}>
-                        {uploading ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Uploading...
-                            </>
-                        ) : (
-                            "Upload"
-                        )}
-                    </Button>
-                </DialogFooter>
             </DialogContent>
         </Dialog>
     )

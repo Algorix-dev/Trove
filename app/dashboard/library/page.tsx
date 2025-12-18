@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { LibraryContent } from "@/components/features/library/library-content"
 import { UploadModal } from "@/components/features/library/upload-modal"
 import { WelcomeAnimation } from "@/components/features/welcome-animation"
@@ -73,10 +73,10 @@ export default function LibraryPage() {
                 const transformedBooks = booksData?.map(book => ({
                     ...book,
                     reading_progress: undefined,
-                    progress: book.reading_progress?.[0]?.progress_percentage || 0
+                    progress: book['reading_progress']?.[0]?.['progress_percentage'] || 0
                 })) || []
 
-                setBooks(transformedBooks)
+                setBooks(transformedBooks as any)
 
                 // Show welcome animation on first visit
                 const hasSeenWelcome = sessionStorage.getItem('library-welcome-seen')
@@ -93,6 +93,32 @@ export default function LibraryPage() {
 
         fetchBooks()
     }, [user, authLoading, router])
+
+    const handleUploadSuccess = useCallback(() => {
+        // Re-fetch books to show the newly uploaded one
+        const supabase = createBrowserClient(
+            process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+            process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+        )
+
+        const refreshBooks = async () => {
+            if (!user) return
+            const { data } = await supabase
+                .from('books')
+                .select(`*, reading_progress(progress_percentage)`)
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+
+            if (data) {
+                const transformed = data.map(book => ({
+                    ...book,
+                    progress: book['reading_progress']?.[0]?.['progress_percentage'] || 0
+                }))
+                setBooks(transformed as any)
+            }
+        }
+        refreshBooks()
+    }, [user])
 
     if (authLoading || loading) {
         return (
@@ -117,7 +143,7 @@ export default function LibraryPage() {
                         <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">Your Library</h2>
                         <p className="text-muted-foreground text-lg">Manage and explore your collection of treasures.</p>
                     </div>
-                    <UploadModal />
+                    <UploadModal onSuccess={handleUploadSuccess} />
                 </div>
 
                 <div className="bg-card/40 backdrop-blur-xl p-8 rounded-[3rem] border border-border/50 shadow-2xl relative overflow-hidden group">
