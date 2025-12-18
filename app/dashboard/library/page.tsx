@@ -27,6 +27,59 @@ export default function LibraryPage() {
     const [loading, setLoading] = useState(true)
     const [showWelcome, setShowWelcome] = useState(false)
 
+    const loadBooks = useCallback(async () => {
+        if (!user) return
+
+        const supabase = createBrowserClient(
+            process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+            process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+        )
+
+        try {
+            setLoading(true)
+            const { data: booksData, error } = await supabase
+                .from('books')
+                .select(`
+                    id,
+                    user_id,
+                    title,
+                    author,
+                    cover_url,
+                    file_url,
+                    format,
+                    total_pages,
+                    created_at,
+                    updated_at,
+                    reading_progress (
+                        progress_percentage
+                    )
+                `)
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+
+            if (error) throw error
+
+            const transformedBooks = booksData?.map(book => ({
+                ...book,
+                reading_progress: undefined,
+                progress: book['reading_progress']?.[0]?.['progress_percentage'] || 0
+            })) || []
+
+            setBooks(transformedBooks as any)
+
+            // Show welcome animation on first visit
+            const hasSeenWelcome = sessionStorage.getItem('library-welcome-seen')
+            if (!hasSeenWelcome && transformedBooks.length === 0) {
+                setShowWelcome(true)
+                sessionStorage.setItem('library-welcome-seen', 'true')
+            }
+        } catch (error) {
+            console.error('Error loading books:', error)
+        } finally {
+            setLoading(false)
+        }
+    }, [user])
+
     useEffect(() => {
         if (authLoading) return
 
@@ -35,96 +88,10 @@ export default function LibraryPage() {
             return
         }
 
-        const fetchBooks = async () => {
-            const supabase = createBrowserClient(
-                process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-                process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
-            )
+        loadBooks()
+    }, [user, authLoading, router, loadBooks])
 
-            try {
-                // Fetch books with reading progress
-                const { data: booksData, error } = await supabase
-                    .from('books')
-                    .select(`
-                        id,
-                        user_id,
-                        title,
-                        author,
-                        cover_url,
-                        file_url,
-                        format,
-                        total_pages,
-                        created_at,
-                        updated_at,
-                        reading_progress (
-                            progress_percentage
-                        )
-                    `)
-                    .eq('user_id', user.id)
-                    .order('created_at', { ascending: false })
-
-                if (error) {
-                    console.error('Error fetching books:', error)
-                    setLoading(false)
-                    return
-                }
-
-                console.log('Raw booksData from Supabase:', booksData)
-                console.log('Current user.id:', user.id)
-
-                // Transform data to include progress percentage
-                const transformedBooks = booksData?.map(book => ({
-                    ...book,
-                    reading_progress: undefined,
-                    progress: book['reading_progress']?.[0]?.['progress_percentage'] || 0
-                })) || []
-
-                console.log('Transformed books:', transformedBooks)
-                setBooks(transformedBooks as any)
-
-                // Show welcome animation on first visit
-                const hasSeenWelcome = sessionStorage.getItem('library-welcome-seen')
-                if (!hasSeenWelcome && transformedBooks.length === 0) {
-                    setShowWelcome(true)
-                    sessionStorage.setItem('library-welcome-seen', 'true')
-                }
-            } catch (error) {
-                console.error('Unexpected error fetching books:', error)
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        fetchBooks()
-    }, [user, authLoading, router])
-
-    const handleUploadSuccess = useCallback(() => {
-        // Re-fetch books to show the newly uploaded one
-        const supabase = createBrowserClient(
-            process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-            process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
-        )
-
-        const refreshBooks = async () => {
-            if (!user) return
-            const { data } = await supabase
-                .from('books')
-                .select(`*, reading_progress(progress_percentage)`)
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-
-            if (data) {
-                const transformed = data.map(book => ({
-                    ...book,
-                    progress: book['reading_progress']?.[0]?.['progress_percentage'] || 0
-                }))
-                setBooks(transformed as any)
-            }
-        }
-        refreshBooks()
-    }, [user])
-
-    if (authLoading || loading) {
+    if (authLoading || (loading && books.length === 0)) {
         return (
             <div className="flex items-center justify-center h-96">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -147,7 +114,7 @@ export default function LibraryPage() {
                         <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">Your Library</h2>
                         <p className="text-muted-foreground text-lg">Manage and explore your collection of treasures.</p>
                     </div>
-                    <UploadModal onSuccess={handleUploadSuccess} />
+                    <UploadModal onSuccess={loadBooks} />
                 </div>
 
                 <div className="bg-card/40 backdrop-blur-xl p-8 rounded-[3rem] border border-border/50 shadow-2xl relative overflow-hidden group">

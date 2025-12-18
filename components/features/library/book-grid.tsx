@@ -8,16 +8,16 @@ import { BookOpen, Trash2, Star, MoreVertical, Bookmark, Eye, Loader2 } from "lu
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
 import { type BookWithProgress } from "@/types/database"
-import { 
-  Card, 
-  CardContent, 
-  CardFooter, 
-  CardHeader 
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader
 } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -49,8 +49,8 @@ interface BookGridProps {
   isLoading?: boolean
 }
 
-export function BookGrid({ 
-  books, 
+export function BookGrid({
+  books,
   variant = "grid",
   showProgress = true,
   showActions = true,
@@ -62,7 +62,7 @@ export function BookGrid({
   const [deleteTarget, setDeleteTarget] = useState<{ id: string, title: string } | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isBookmarked, setIsBookmarked] = useState<Record<string, boolean>>({})
-  
+
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -143,10 +143,10 @@ export function BookGrid({
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return
-    
+
     try {
       setIsDeleting(true)
-      
+
       if (onDelete) {
         await onDelete(deleteTarget.id)
       } else {
@@ -183,8 +183,8 @@ export function BookGrid({
     const isBookmarkedStatus = isBookmarked[book.id] || false
 
     return (
-      <Card 
-        key={book.id} 
+      <Card
+        key={book.id}
         className="group relative overflow-hidden hover:shadow-lg transition-all duration-200 h-full flex flex-col"
       >
         {showActions && (
@@ -199,20 +199,20 @@ export function BookGrid({
                 toggleBookmark(book.id)
               }}
             >
-              <Bookmark 
+              <Bookmark
                 className={cn(
                   "h-4 w-4 transition-colors",
-                  isBookmarkedStatus 
-                    ? "fill-yellow-500 text-yellow-500" 
+                  isBookmarkedStatus
+                    ? "fill-yellow-500 text-yellow-500"
                     : "text-muted-foreground"
-                )} 
+                )}
               />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -227,7 +227,7 @@ export function BookGrid({
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   onClick={(e) => {
                     e.stopPropagation()
@@ -280,7 +280,7 @@ export function BookGrid({
               <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
                 {book.author || 'Unknown Author'}
               </p>
-              
+
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 {book.format && (
                   <Badge variant="secondary" className="text-xs">
@@ -312,8 +312,8 @@ export function BookGrid({
                       </span>
                     )}
                   </div>
-<div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div 
+                  <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
                       className={cn("h-full", getProgressColor(progress))}
                       style={{ width: `${progress}%` }}
                     />
@@ -334,8 +334,8 @@ export function BookGrid({
     const isBookmarkedStatus = isBookmarked[book.id] || false
 
     return (
-      <div 
-        key={book.id} 
+      <div
+        key={book.id}
         className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors group"
       >
         <div className="relative w-20 h-28 flex-shrink-0">
@@ -369,7 +369,7 @@ export function BookGrid({
                 {book.author || 'Unknown Author'}
               </p>
             </div>
-            
+
             {showActions && (
               <div className="flex items-center gap-1">
                 <Button
@@ -382,21 +382,21 @@ export function BookGrid({
                     toggleBookmark(book.id)
                   }}
                 >
-                  <Bookmark 
+                  <Bookmark
                     className={cn(
                       "h-4 w-4 transition-colors",
-                      isBookmarkedStatus 
-                        ? "fill-yellow-500 text-yellow-500" 
+                      isBookmarkedStatus
+                        ? "fill-yellow-500 text-yellow-500"
                         : "text-muted-foreground"
-                    )} 
+                    )}
                   />
                 </Button>
-                
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -411,7 +411,7 @@ export function BookGrid({
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="text-destructive focus:text-destructive"
                       onClick={(e) => {
                         e.stopPropagation()
@@ -463,9 +463,9 @@ export function BookGrid({
                   {Math.round((book.pages || 0) * (progress / 100)) || 0}/{book.pages || '?'} pages
                 </span>
               </div>
-              <Progress 
-                value={progress} 
-                className="h-2" 
+              <Progress
+                value={progress}
+                className="h-2"
                 indicatorClassName={getProgressColor(progress)}
               />
             </div>
@@ -506,17 +506,16 @@ export function BookGrid({
 
   return (
     <div className={cn(
-      "space-y-4",
-      variant === "grid" 
-        ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
-        : "space-y-2"
+      variant === "grid"
+        ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"
+        : "space-y-4"
     )}>
-      {variant === "grid" 
+      {variant === "grid"
         ? books.map(book => renderBookCard(book))
         : books.map(book => renderBookListItem(book))
       }
 
-<>
+      <>
         {deleteTarget && (
           <DeleteConfirmDialog
             open={!!deleteTarget}
