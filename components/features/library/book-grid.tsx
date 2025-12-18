@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo, useEffect } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createBrowserClient } from "@supabase/ssr"
@@ -12,9 +12,7 @@ import {
   Card,
   CardContent,
   CardFooter,
-  CardHeader
 } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -24,12 +22,13 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-// Skeleton component is not available, using a simple div instead
-const Skeleton = ({ className }: { className: string }) => (
-  <div className={cn("animate-pulse bg-muted", className)} />
-)
 import { cn } from "@/lib/utils"
 import { DeleteConfirmDialog } from "@/components/features/delete-confirm-dialog"
+
+// Simple Skeleton if not available
+const Skeleton = ({ className }: { className: string }) => (
+  <div className={cn("animate-pulse bg-muted rounded-lg", className)} />
+)
 
 // Extend the BookWithProgress type to include optional fields
 interface ExtendedBook extends Omit<BookWithProgress, 'format'> {
@@ -44,9 +43,8 @@ interface BookGridProps {
   variant?: "grid" | "list"
   showProgress?: boolean
   showActions?: boolean
-  onBookSelect?: (book: ExtendedBook) => void
-  onDelete?: (bookId: string) => Promise<void>
   isLoading?: boolean
+  onDelete?: (bookId: string) => Promise<void>
 }
 
 export function BookGrid({
@@ -54,9 +52,8 @@ export function BookGrid({
   variant = "grid",
   showProgress = true,
   showActions = true,
-  onBookSelect,
-  onDelete,
-  isLoading = false
+  isLoading = false,
+  onDelete
 }: BookGridProps) {
   const router = useRouter()
   const [deleteTarget, setDeleteTarget] = useState<{ id: string, title: string } | null>(null)
@@ -64,8 +61,8 @@ export function BookGrid({
   const [isBookmarked, setIsBookmarked] = useState<Record<string, boolean>>({})
 
   const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+    process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
   )
 
   // Fetch bookmark status for all books
@@ -126,19 +123,12 @@ export function BookGrid({
       toast.success(isCurrentlyBookmarked ? "Bookmark removed" : "Book saved to your library")
     } catch (error) {
       console.error('Error toggling bookmark:', error)
-      // Revert on error
       setIsBookmarked(prev => ({
         ...prev,
         [bookId]: !prev[bookId]
       }))
       toast.error("Failed to update bookmark")
     }
-  }
-
-  const handleDeleteClick = (e: React.MouseEvent, bookId: string, title: string) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDeleteTarget({ id: bookId, title })
   }
 
   const handleDeleteConfirm = async () => {
@@ -283,8 +273,8 @@ export function BookGrid({
 
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 {book.format && (
-                  <Badge variant="secondary" className="text-xs">
-                    {book.format.toUpperCase()}
+                  <Badge variant="secondary" className="text-xs uppercase">
+                    {book.format}
                   </Badge>
                 )}
                 {book.pages && (
@@ -314,7 +304,7 @@ export function BookGrid({
                   </div>
                   <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
                     <div
-                      className={cn("h-full", getProgressColor(progress))}
+                      className={cn("h-full transition-all", getProgressColor(progress))}
                       style={{ width: `${progress}%` }}
                     />
                   </div>
@@ -430,7 +420,7 @@ export function BookGrid({
           <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
             {book.format && (
               <div className="flex items-center gap-1">
-                <span className="font-medium">{book.format.toUpperCase()}</span>
+                <span className="font-medium uppercase">{book.format}</span>
               </div>
             )}
             {book.pages && (
@@ -463,11 +453,12 @@ export function BookGrid({
                   {Math.round((book.pages || 0) * (progress / 100)) || 0}/{book.pages || '?'} pages
                 </span>
               </div>
-              <Progress
-                value={progress}
-                className="h-2"
-                indicatorClassName={getProgressColor(progress)}
-              />
+              <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn("h-full transition-all", getProgressColor(progress))}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -478,12 +469,12 @@ export function BookGrid({
   if (isLoading) {
     return (
       <div className={cn(
-        "grid gap-4",
+        "grid gap-6",
         variant === "grid" ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" : "grid-cols-1"
       )}>
         {[...Array(6)].map((_, i) => (
           <div key={i} className="space-y-3">
-            <Skeleton className="aspect-[2/3] w-full rounded-lg" />
+            <Skeleton className="aspect-[2/3] w-full" />
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-3 w-1/2" />
           </div>
@@ -515,26 +506,16 @@ export function BookGrid({
         : books.map(book => renderBookListItem(book))
       }
 
-      <>
-        {deleteTarget && (
-          <DeleteConfirmDialog
-            open={!!deleteTarget}
-            onOpenChange={(open) => !open && setDeleteTarget(null)}
-            onConfirm={handleDeleteConfirm}
-            title="Delete Book"
-            description={`Are you sure you want to delete "${deleteTarget.title}"? This action cannot be undone.`}
-          >
-            {isDeleting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deleting...
-              </>
-            ) : (
-              "Delete"
-            )}
-          </DeleteConfirmDialog>
-        )}
-      </>
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          open={!!deleteTarget}
+          onOpenChange={(open) => !open && setDeleteTarget(null)}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Book"
+          description={`Are you sure you want to delete "${deleteTarget.title}"? This action cannot be undone.`}
+          storageKey={`delete-book-${deleteTarget.id}`}
+        />
+      )}
     </div>
   )
 }
