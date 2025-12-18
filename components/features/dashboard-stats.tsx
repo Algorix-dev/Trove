@@ -19,26 +19,33 @@ export function DashboardStats() {
     useEffect(() => {
         const fetchStats = async () => {
             const supabase = createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+                process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
             )
 
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
 
-            // Fetch all data in parallel for better performance
-            const [profileData, progressData, sessionsData] = await Promise.all([
-                // Fetch profile for streak and goal
+            // Fetch all data in parallel
+            const [profileData, preferencesData, progressData, sessionsData] = await Promise.all([
+                // Fetch profile for streak
                 supabase
                     .from('profiles')
-                    .select('current_streak, daily_goal_minutes')
+                    .select('current_streak')
                     .eq('id', user.id)
+                    .single(),
+
+                // Fetch preferences for daily goal
+                supabase
+                    .from('user_preferences')
+                    .select('reading_goal_minutes')
+                    .eq('user_id', user.id)
                     .single(),
 
                 // Fetch reading progress stats
                 supabase
                     .from('reading_progress')
-                    .select('progress_percentage', { count: 'exact' })
+                    .select('progress_percentage')
                     .eq('user_id', user.id),
 
                 // Fetch all reading sessions
@@ -67,7 +74,7 @@ export function DashboardStats() {
                 streak: profileData.data?.current_streak || 0,
                 totalMinutes,
                 booksRead,
-                dailyGoal: profileData.data?.daily_goal_minutes || 30,
+                dailyGoal: preferencesData.data?.reading_goal_minutes || 30,
                 todayMinutes,
                 readingNow
             })

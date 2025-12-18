@@ -177,3 +177,17 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ============================================
+   GLOBAL UI POLISH
+   ============================================ */
+
+/* Hide scrollbars globally across all browsers */
+*::-webkit-scrollbar {
+  display: none !important;
+}
+
+* {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;     /* Firefox */
+}

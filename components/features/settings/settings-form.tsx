@@ -59,19 +59,29 @@ export function SettingsForm() {
 
     const loadProfile = async (userId: string) => {
         try {
-            const { data } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single()
+            const [profileRes, preferencesRes] = await Promise.all([
+                supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', userId)
+                    .single(),
+                supabase
+                    .from('user_preferences')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .single()
+            ])
 
-            if (data) {
-                setFullName(data.full_name || "")
-                setNickname(data.nickname || "")
-                setUsername(data.username || "")
-                setDailyGoal(data.daily_goal_minutes || 30)
-                setAvatarUrl(data.avatar_url)
-                setAvatarChoice(data.avatar_choice || 'default')
+            if (profileRes.data) {
+                setFullName(profileRes.data.full_name || "")
+                setNickname(profileRes.data.nickname || "")
+                setUsername(profileRes.data.username || "")
+                setAvatarUrl(profileRes.data.avatar_url)
+                setAvatarChoice(profileRes.data.avatar_choice || 'default')
+            }
+
+            if (preferencesRes.data) {
+                setDailyGoal(preferencesRes.data.reading_goal_minutes || 30)
             }
         } catch (error) {
             console.error('Profile fetch error:', error)
@@ -108,19 +118,28 @@ export function SettingsForm() {
         if (!user) return
         setLoading(true)
         try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({
-                    full_name: fullName,
-                    nickname,
-                    username,
-                    daily_goal_minutes: dailyGoal,
-                    avatar_url: avatarUrl || (avatarChoice !== 'default' && avatarChoice !== 'upload' ? `/avatars/${avatarChoice}.png` : null),
-                    avatar_choice: avatarChoice
-                })
-                .eq('id', user.id)
+            const [profileError, preferencesError] = await Promise.all([
+                supabase
+                    .from('profiles')
+                    .update({
+                        full_name: fullName,
+                        nickname,
+                        username,
+                        avatar_url: avatarUrl || (avatarChoice !== 'default' && avatarChoice !== 'upload' ? `/avatars/${avatarChoice}.png` : null),
+                        avatar_choice: avatarChoice
+                    })
+                    .eq('id', user.id),
+                supabase
+                    .from('user_preferences')
+                    .update({
+                        reading_goal_minutes: dailyGoal
+                    })
+                    .eq('user_id', user.id)
+            ])
 
-            if (error) throw error
+            if (profileError.error) throw profileError.error
+            if (preferencesError.error) throw preferencesError.error
+
             toast.success("Sanctuary updated successfully!")
             router.refresh()
         } catch (error: any) {

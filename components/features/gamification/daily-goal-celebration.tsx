@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
 import { createBrowserClient } from '@supabase/ssr'
 import confetti from 'canvas-confetti'
-import { Trophy } from 'lucide-react'
 
 export function DailyGoalCelebration() {
     const { user } = useAuth()
@@ -21,18 +20,18 @@ export function DailyGoalCelebration() {
             }
 
             const supabase = createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+                process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
             )
 
-            // Get user's daily goal
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('daily_goal_minutes')
-                .eq('id', user.id)
+            // Get user's daily goal from user_preferences
+            const { data: preferences } = await supabase
+                .from('user_preferences')
+                .select('reading_goal_minutes')
+                .eq('user_id', user.id)
                 .single()
 
-            if (!profile) return
+            if (!preferences) return
 
             // Get today's reading time
             const today = new Date().toISOString().split('T')[0]
@@ -45,7 +44,7 @@ export function DailyGoalCelebration() {
             const todayMinutes = sessions?.reduce((sum, s) => sum + s.duration_minutes, 0) || 0
 
             // Check if goal is reached
-            if (todayMinutes >= profile.daily_goal_minutes && !celebrated) {
+            if (todayMinutes >= preferences.reading_goal_minutes && !celebrated) {
                 celebrate()
                 sessionStorage.setItem(todayKey, 'true')
                 setCelebrated(true)

@@ -50,9 +50,7 @@ export default function LibraryPage() {
                     total_pages,
                     created_at,
                     updated_at,
-                    reading_progress (
-                        progress_percentage
-                    )
+                    progress_percentage
                 `)
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false })
@@ -60,12 +58,10 @@ export default function LibraryPage() {
             if (error) throw error
 
             console.log('[LibraryPage] Fetched books for user:', user.id, 'Count:', booksData?.length)
-            console.log('[LibraryPage] Raw books data:', booksData)
 
             const transformedBooks = booksData?.map(book => ({
                 ...book,
-                reading_progress: undefined,
-                progress: book['reading_progress']?.[0]?.['progress_percentage'] || 0
+                progress: book.progress_percentage || 0
             })) || []
 
             setBooks(transformedBooks as any)
