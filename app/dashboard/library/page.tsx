@@ -59,6 +59,9 @@ export default function LibraryPage() {
 
             if (error) throw error
 
+            console.log('[LibraryPage] Fetched books for user:', user.id, 'Count:', booksData?.length)
+            console.log('[LibraryPage] Raw books data:', booksData)
+
             const transformedBooks = booksData?.map(book => ({
                 ...book,
                 reading_progress: undefined,

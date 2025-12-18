@@ -210,7 +210,8 @@ export function UploadModal({ open: controlledOpen, onOpenChange, onSuccess }: U
                 return
             }
 
-            console.log('Book inserted successfully:', insertedBook)
+            console.log('[UploadModal] Successfully inserted book. User ID:', user.id)
+            console.log('[UploadModal] Inserted book details:', insertedBook)
             toast.success("Book uploaded successfully!")
             setFile(null)
             setCoverFile(null)
