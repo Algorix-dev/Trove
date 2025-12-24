@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
+
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { GamificationService } from "@/lib/gamification"
 import { createBrowserClient } from "@supabase/ssr"
@@ -48,8 +48,8 @@ export function TxtViewer({ url, initialLocation, onLocationChange, readerTheme 
 
                 if (minutesRead >= 1) {
                     const supabase = createBrowserClient(
-                        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+                        process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
                     )
 
                     // Create reading session record
@@ -125,8 +125,8 @@ export function TxtViewer({ url, initialLocation, onLocationChange, readerTheme 
     const saveProgress = async (progressValue: number) => {
         // Debounce could be good here but keeping it simple first
         const supabase = createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+            process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
         )
 
         // Only save if progress changed significantly?

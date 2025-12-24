@@ -28,8 +28,8 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light', onLo
     const [loading, setLoading] = useState(true);
 
     const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+        process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
     );
 
     // Load bookmark or saved progress on mount
@@ -87,6 +87,7 @@ export function PDFViewer({ fileUrl, bookId, userId, readerTheme = 'light', onLo
 
             return () => clearTimeout(saveTimeout);
         }
+        return undefined;
     }, [pageNumber, numPages, bookId, userId, onLocationUpdate]);
 
     // Track reading time and award XP

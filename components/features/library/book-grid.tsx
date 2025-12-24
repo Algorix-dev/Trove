@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createBrowserClient } from "@supabase/ssr"
-import { BookOpen, Trash2, Star, MoreVertical, Bookmark, Eye, Loader2 } from "lucide-react"
+import { BookOpen, Trash2, Star, MoreVertical, Bookmark, Eye } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
 import { type BookWithProgress } from "@/types/database"
@@ -57,7 +57,7 @@ export function BookGrid({
 }: BookGridProps) {
   const router = useRouter()
   const [deleteTarget, setDeleteTarget] = useState<{ id: string, title: string } | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [_isDeleting, setIsDeleting] = useState(false)
   const [isBookmarked, setIsBookmarked] = useState<Record<string, boolean>>({})
 
   const supabase = createBrowserClient(

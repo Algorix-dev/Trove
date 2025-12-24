@@ -28,8 +28,8 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     const [currentLocation, setCurrentLocation] = useState<LocationData>({})
 
     const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+        process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
     )
 
     // Load bookmark status
@@ -68,7 +68,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
                     .eq('user_id', userId)
 
                 if (error) throw error
-                
+
                 setIsBookmarked(false)
                 toast.success("Bookmark removed")
             } else {
@@ -86,7 +86,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
                     })
 
                 if (error) throw error
-                
+
                 setIsBookmarked(true)
                 toast.success("Bookmark saved")
             }
@@ -113,7 +113,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     // Detect location updates
     const handleLocationUpdate = useCallback((data: LocationData) => {
         setCurrentLocation(prev => ({ ...prev, ...data }))
-        
+
         // Auto-save reading progress periodically
         if (data.progressPercentage && data.progressPercentage % 10 === 0) {
             supabase
@@ -158,9 +158,9 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
                         <Bookmark className={`h-5 w-5 ${isBookmarked ? "fill-current" : ""}`} />
                     </Button>
 
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => setShowSettings(!showSettings)}
                         aria-label="Reader settings"
                         aria-expanded={showSettings}
@@ -183,9 +183,9 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
                 })}
                 {showSettings && (
                     <div className="absolute top-4 right-4 z-50">
-                        <ReaderSettings 
-                            onThemeChange={handleThemeChange} 
-                            currentTheme={readerTheme} 
+                        <ReaderSettings
+                            onThemeChange={handleThemeChange}
+                            currentTheme={readerTheme}
                         />
                     </div>
                 )}

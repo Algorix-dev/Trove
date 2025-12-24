@@ -6,7 +6,7 @@ import { cookies } from 'next/headers'
  */
 export async function createClient() {
   const cookieStore = await cookies()
-  
+
   return createServerClient(
     process.env['NEXT_PUBLIC_SUPABASE_URL']!,
     process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
@@ -36,19 +36,18 @@ export async function createClient() {
  * Only use in server-side API routes, not in client components
  */
 export function createAdminClient() {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  const serviceRoleKey = process.env['SUPABASE_SERVICE_ROLE_KEY']
+  if (!serviceRoleKey) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for admin operations')
   }
-  
+
   const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL']
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  
-  if (!supabaseUrl || !supabaseKey) {
+  if (!supabaseUrl || !serviceRoleKey) {
     throw new Error('Missing Supabase URL or Service Role Key')
   }
-  
-  const { createClient } = require('@supabase/supabase-js')
-  return createClient(supabaseUrl, supabaseKey, {
+
+  const { createClient: createSupbaseJSClient } = require('@supabase/supabase-js')
+  return createSupbaseJSClient(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false

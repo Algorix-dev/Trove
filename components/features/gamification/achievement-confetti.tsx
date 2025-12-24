@@ -6,7 +6,6 @@ import { useWindowSize } from "@/hooks/use-window-size"
 import { createBrowserClient } from "@supabase/ssr"
 import { toast } from "sonner"
 import { Trophy } from "lucide-react"
-import Link from "next/link"
 
 interface AchievementConfettiProps {
     duration?: number
@@ -15,14 +14,13 @@ interface AchievementConfettiProps {
 export function AchievementConfetti({ duration = 5000 }: AchievementConfettiProps) {
     const { width, height } = useWindowSize()
     const [show, setShow] = useState(false)
-    const [achievements, setAchievements] = useState<string[]>([])
 
     // Check for unnotified achievements
     useEffect(() => {
         const checkAchievements = async () => {
             const supabase = createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+                process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
             )
 
             const { data: { user } } = await supabase.auth.getUser()
@@ -47,8 +45,6 @@ export function AchievementConfetti({ duration = 5000 }: AchievementConfettiProp
 
                 if (achievementsToShow.length > 0) {
                     setShow(true)
-                    const names = achievementsToShow.map((ua: any) => ua.achievements?.name || "New Achievement")
-                    setAchievements(names)
 
                     // Show toast notification for each achievement
                     achievementsToShow.forEach((ua: any) => {
@@ -95,6 +91,7 @@ export function AchievementConfetti({ duration = 5000 }: AchievementConfettiProp
             const timer = setTimeout(() => setShow(false), duration)
             return () => clearTimeout(timer)
         }
+        return undefined;
     }, [show, duration])
 
     if (!show) return null

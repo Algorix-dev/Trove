@@ -7,7 +7,7 @@ import { motion } from "framer-motion"
 import { Home, Library, Bookmark, StickyNote, Quote, Users, Settings, ShoppingBag, Sparkles, BarChart3 } from "lucide-react"
 import { AnimatedLogo } from "@/components/ui/animated-logo"
 
-export function DashboardSidebar() {
+export function SidebarContent() {
     const pathname = usePathname()
 
     const routes = [
@@ -103,4 +103,8 @@ export function DashboardSidebar() {
             </div>
         </div>
     )
+}
+
+export function DashboardSidebar() {
+    return <SidebarContent />
 }

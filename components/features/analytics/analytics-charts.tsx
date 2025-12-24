@@ -15,8 +15,8 @@ export function AnalyticsCharts() {
     const [loading, setLoading] = useState(true)
 
     const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+        process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
     )
 
     useEffect(() => {
@@ -27,7 +27,7 @@ export function AnalyticsCharts() {
             // 1. Fetch Daily Data (Last 7 days)
             const today = new Date()
             const lastWeek = subDays(today, 6)
-            
+
             const { data: sessions } = await supabase
                 .from('reading_sessions')
                 .select('duration_minutes, session_date')
@@ -40,7 +40,7 @@ export function AnalyticsCharts() {
                 const date = subDays(today, i)
                 const dateStr = format(date, 'yyyy-MM-dd')
                 const dayName = format(date, 'EEE')
-                
+
                 const minutes = sessions
                     ?.filter((s: any) => s.session_date === dateStr)
                     .reduce((acc: number, s: any) => acc + s.duration_minutes, 0) || 0
@@ -75,7 +75,7 @@ export function AnalyticsCharts() {
                 .select('duration_minutes, session_date')
                 .eq('user_id', user.id)
                 .gte('session_date', format(lastMonth, 'yyyy-MM-dd'))
-            
+
             // Correct logic for labels
             setTrendData([
                 { name: "3 Weeks Ago", minutes: getWeeklyMinutes(monthSessions, 3) },
@@ -89,7 +89,7 @@ export function AnalyticsCharts() {
 
         fetchData()
     }, [])
-    
+
     // Helper for weekly aggregation
     const getWeeklyMinutes = (sessions: any[] | null, weeksAgo: number) => {
         const today = new Date()
@@ -97,7 +97,7 @@ export function AnalyticsCharts() {
         const startDay = subDays(endDay, 6)
         const startStr = format(startDay, 'yyyy-MM-dd')
         const endStr = format(endDay, 'yyyy-MM-dd')
-        
+
         return sessions
             ?.filter((s: any) => s.session_date >= startStr && s.session_date <= endStr)
             .reduce((acc: number, s: any) => acc + s.duration_minutes, 0) || 0
@@ -105,9 +105,9 @@ export function AnalyticsCharts() {
 
     if (loading) {
         return <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 animate-pulse">
-             <Card className="h-[300px] bg-muted/20" />
-             <Card className="h-[300px] bg-muted/20" />
-             <Card className="h-[300px] bg-muted/20 col-span-2" />
+            <Card className="h-[300px] bg-muted/20" />
+            <Card className="h-[300px] bg-muted/20" />
+            <Card className="h-[300px] bg-muted/20 col-span-2" />
         </div>
     }
 
@@ -146,7 +146,7 @@ export function AnalyticsCharts() {
                                 paddingAngle={5}
                                 dataKey="value"
                             >
-                                {formatData.map((entry, index) => (
+                                {formatData.map((_, index) => (
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                 ))}
                             </Pie>

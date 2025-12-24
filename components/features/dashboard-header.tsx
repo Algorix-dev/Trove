@@ -16,6 +16,10 @@ import { createBrowserClient } from "@supabase/ssr"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
+import { Menu } from "lucide-react"
+import { SidebarContent } from "@/components/features/dashboard-sidebar"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+
 export function DashboardHeader() {
     const { user } = useAuth()
     const router = useRouter()
@@ -39,7 +43,16 @@ export function DashboardHeader() {
     return (
         <div className="h-16 border-b flex items-center justify-between px-8 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center gap-4">
-                {/* Branding is now handled by the animated logo in the sidebar */}
+                <Sheet>
+                    <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon" className="md:hidden">
+                            <Menu className="h-6 w-6" />
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="p-0 bg-transparent border-none w-72">
+                        <SidebarContent />
+                    </SheetContent>
+                </Sheet>
             </div>
 
             <div className="flex items-center gap-2">

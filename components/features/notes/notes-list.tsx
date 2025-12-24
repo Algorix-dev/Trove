@@ -12,15 +12,14 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { GamificationService } from "@/lib/gamification"
 import { DeleteConfirmDialog } from "@/components/features/delete-confirm-dialog"
 
 import type { Note } from "@/types/database"
 
 export function NotesList() {
     const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+        process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
     )
 
     const [notes, setNotes] = useState<Note[]>([])

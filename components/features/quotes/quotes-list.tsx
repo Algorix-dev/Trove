@@ -29,8 +29,8 @@ export function QuotesList({ userId }: { userId: string }) {
     const [filter, setFilter] = useState<'all' | 'favorites'>('all')
 
     const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+        process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
     )
 
     useEffect(() => {

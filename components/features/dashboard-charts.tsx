@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { createBrowserClient } from "@supabase/ssr"
-import { format, subDays, startOfDay, endOfDay } from "date-fns"
+import { format, subDays } from "date-fns"
 
 export function DashboardCharts() {
     const [data, setData] = useState<{ name: string; minutes: number }[]>([])
@@ -13,8 +13,8 @@ export function DashboardCharts() {
     useEffect(() => {
         const fetchData = async () => {
             const supabase = createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+                process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
             )
 
             const { data: { user } } = await supabase.auth.getUser()
@@ -103,14 +103,14 @@ export function DashboardCharts() {
                             axisLine={false}
                             tickFormatter={(value) => `${value}m`}
                         />
-                        <Tooltip 
-                            content={<CustomTooltip />} 
-                            cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }} 
+                        <Tooltip
+                            content={<CustomTooltip />}
+                            cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
                             animationDuration={200}
                         />
-                        <Bar 
-                            dataKey="minutes" 
-                            fill="hsl(var(--primary))" 
+                        <Bar
+                            dataKey="minutes"
+                            fill="hsl(var(--primary))"
                             radius={[8, 8, 0, 0]}
                             className="transition-all duration-300 hover:opacity-80"
                             animationDuration={800}

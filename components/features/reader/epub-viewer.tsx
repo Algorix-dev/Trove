@@ -23,13 +23,12 @@ export function EpubViewer({ url, initialLocation, onLocationChange, readerTheme
     const bookRef = useRef<any>(null)
     const saveProgressDebounced = useRef<NodeJS.Timeout | undefined>(undefined)
     const [isReady, setIsReady] = useState(false)
-    const [currentCfi, setCurrentCfi] = useState<string>("")
     const [progress, setProgress] = useState(0)
 
     const saveProgress = async (cfi: string, progressValue: number) => {
         const supabase = createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+            process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
         )
 
         await supabase
@@ -115,8 +114,7 @@ export function EpubViewer({ url, initialLocation, onLocationChange, readerTheme
             })
 
             // Listen for relocation events
-            rendition.on("relocated", (location: any) => {
-                setCurrentCfi(location.start.cfi)
+            rendition.on("relocated", () => {
                 updateProgress()
             })
         }
@@ -155,8 +153,8 @@ export function EpubViewer({ url, initialLocation, onLocationChange, readerTheme
 
                 if (minutesRead >= 1) {
                     const supabase = createBrowserClient(
-                        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+                        process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
                     )
 
                     // Create reading session record

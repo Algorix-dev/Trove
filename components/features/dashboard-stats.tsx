@@ -42,9 +42,9 @@ export function DashboardStats() {
                     .eq('user_id', user.id)
                     .single(),
 
-                // Fetch reading progress stats
+                // Fetch books for progress stats
                 supabase
-                    .from('reading_progress')
+                    .from('books')
                     .select('progress_percentage')
                     .eq('user_id', user.id),
 

@@ -21,8 +21,8 @@ export function ReadingStreakCalendar() {
 
         const fetchReadingData = async () => {
             const supabase = createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+                process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
             )
 
             // Get last 365 days of reading sessions
@@ -207,7 +207,7 @@ export function ReadingStreakCalendar() {
                     <div className="inline-flex gap-1">
                         {weeks.map((week, weekIndex) => (
                             <div key={weekIndex} className="flex flex-col gap-1">
-                                {week.map((day, dayIndex) => (
+                                {week.map((day) => (
                                     <div
                                         key={day.date}
                                         className={`w-3 h-3 rounded-sm ${getIntensityColor(day.minutes)} hover:ring-2 hover:ring-primary transition-all cursor-pointer group relative`}
