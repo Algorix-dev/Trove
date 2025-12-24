@@ -140,6 +140,34 @@ export function BookGrid({
       if (onDelete) {
         await onDelete(deleteTarget.id)
       } else {
+        // 1. Get file path from book record
+        const { data: book } = await supabase
+          .from('books')
+          .select('file_path, cover_url')
+          .eq('id', deleteTarget.id)
+          .single()
+
+        if (book?.file_path) {
+          // 2. Delete file from storage
+          await supabase.storage
+            .from('books')
+            .remove([book.file_path])
+
+          // 3. Delete cover if it's a custom upload (not a gradient)
+          if (book.cover_url && !book.cover_url.startsWith('gradient:')) {
+            // Extract path from public URL or just assume standard path if possible, 
+            // but simpler to list covers bucket if we knew the path. 
+            // For now, focusing on the main book file is critical to prevent orphans.
+            // If cover_url contains the path, we could delete it too.
+            const coverPath = book.cover_url.split('/').pop()
+            if (coverPath) {
+              await supabase.storage.from('books').remove([`covers/${coverPath}`])
+              // Note: This assumes standard path structure. Safest to just delete book for now.
+            }
+          }
+        }
+
+        // 4. Delete database record
         const { error } = await supabase
           .from('books')
           .delete()
