@@ -171,8 +171,8 @@ export function UploadModal({ open: controlledOpen, onOpenChange, onSuccess }: U
                 try {
                     const arrayBuffer = await file.arrayBuffer()
                     const pdfJS = await import('pdfjs-dist')
-                    // Explicitly set worker source to a CDN compatible with the version
-                    pdfJS.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfJS.version}/build/pdf.worker.min.js`
+                    // Use local worker to avoid CORS issues
+                    pdfJS.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
 
                     const pdf = await pdfJS.getDocument({ data: arrayBuffer }).promise
                     totalPages = pdf.numPages

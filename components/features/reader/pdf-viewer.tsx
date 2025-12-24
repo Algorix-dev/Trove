@@ -11,7 +11,7 @@ import { GamificationService } from "@/lib/gamification";
 
 // Configure PDF.js worker
 // Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 interface PDFViewerProps {
     fileUrl: string;
