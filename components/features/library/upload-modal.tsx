@@ -204,8 +204,18 @@ export function UploadModal({ open: controlledOpen, onOpenChange, onSuccess }: U
                 .single()
 
             if (dbError) {
-                toast.error("Failed to save book details. Please try again.")
                 console.error('Database insert error:', dbError)
+                toast.error("Failed to save book details. Rolling back upload...")
+
+                // Rollback: Delete file from storage to prevent ghost files
+                const { error: deleteError } = await supabase.storage
+                    .from('books')
+                    .remove([filePath])
+
+                if (deleteError) {
+                    console.error('Failed to rollback file upload:', deleteError)
+                }
+
                 setUploading(false)
                 return
             }
