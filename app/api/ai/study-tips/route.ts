@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-export async function GET(request: NextRequest) {
+export const dynamic = 'force-dynamic'
+
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -21,7 +23,6 @@ export async function GET(request: NextRequest) {
     // Analyze reading patterns
     const totalMinutes = sessions?.reduce((acc, s) => acc + s.duration_minutes, 0) || 0
     const avgMinutes = sessions?.length ? totalMinutes / sessions.length : 0
-    const bestTime = "morning" // Could analyze actual times
 
     // Generate personalized tips
     const tips = [

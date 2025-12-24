@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import Parser from "rss-parser"
 
+export const dynamic = 'force-dynamic'
+
 const parser = new Parser({
   customFields: {
     item: ['media:content', 'media:thumbnail']
@@ -17,7 +19,9 @@ const RSS_FEEDS = {
   authors: 'https://news.google.com/rss/search?q=author+news&hl=en&gl=US&ceid=US:en'
 }
 
-export async function GET(request: NextRequest) {
+
+
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -34,22 +38,22 @@ export async function GET(request: NextRequest) {
       .single()
 
     const userGenres = preferences?.favorite_genres || []
-    
+
     // Determine which feeds to fetch based on preferences
     const feedsToFetch: string[] = []
-    
+
     if (userGenres.length === 0) {
       // No preferences, fetch all
       feedsToFetch.push(...Object.values(RSS_FEEDS))
     } else {
       // Fetch based on preferences
-      if (userGenres.some(g => ['Manga', 'Comics'].includes(g))) {
+      if (userGenres.some((g: string) => ['Manga', 'Comics'].includes(g))) {
         feedsToFetch.push(RSS_FEEDS.manga)
       }
-      if (userGenres.some(g => ['Anime'].includes(g))) {
+      if (userGenres.some((g: string) => ['Anime'].includes(g))) {
         feedsToFetch.push(RSS_FEEDS.anime)
       }
-      if (userGenres.some(g => ['Fiction', 'Non-Fiction', 'Mystery', 'Romance', 'Science Fiction', 'Fantasy'].includes(g))) {
+      if (userGenres.some((g: string) => ['Fiction', 'Non-Fiction', 'Mystery', 'Romance', 'Science Fiction', 'Fantasy'].includes(g))) {
         feedsToFetch.push(RSS_FEEDS.books, RSS_FEEDS.bookReleases)
       }
       if (feedsToFetch.length === 0) {
@@ -60,11 +64,11 @@ export async function GET(request: NextRequest) {
 
     // Fetch and parse RSS feeds
     const allNewsItems: any[] = []
-    
+
     for (const feedUrl of feedsToFetch) {
       try {
         const feed = await parser.parseURL(feedUrl)
-        
+
         if (feed.items) {
           feed.items.forEach((item: any) => {
             // Extract image from media or content
@@ -106,7 +110,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Sort by date (newest first)
-    uniqueNews.sort((a, b) => 
+    uniqueNews.sort((a, b) =>
       new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
     )
 
