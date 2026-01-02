@@ -1,36 +1,37 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { BookOpen, Sparkles, Loader2 } from "lucide-react"
-import { motion } from "framer-motion"
+import { motion } from 'framer-motion';
+import { BookOpen, Loader2, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Recommendation {
-  title: string
-  author: string
-  reason: string
+  title: string;
+  author: string;
+  reason: string;
 }
 
 export function AIRecommendations() {
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
-  const [loading, setLoading] = useState(true)
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadRecommendations()
-  }, [])
+    loadRecommendations();
+  }, []);
 
   const loadRecommendations = async () => {
     try {
-      const response = await fetch("/api/ai/recommendations")
-      const data = await response.json()
-      setRecommendations(data.recommendations || [])
+      const response = await fetch('/api/ai/recommendations');
+      const data = await response.json();
+      setRecommendations(data.recommendations || []);
     } catch (error) {
-      console.error("Error loading recommendations:", error)
+      console.error('Error loading recommendations:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -47,7 +48,7 @@ export function AIRecommendations() {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -84,15 +85,10 @@ export function AIRecommendations() {
             ))}
           </div>
         )}
-        <Button
-          variant="outline"
-          className="w-full mt-4"
-          onClick={loadRecommendations}
-        >
+        <Button variant="outline" className="w-full mt-4" onClick={loadRecommendations}>
           Refresh Recommendations
         </Button>
       </CardContent>
     </Card>
-  )
+  );
 }
-

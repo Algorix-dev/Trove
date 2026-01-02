@@ -1,66 +1,74 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Plus, Search, ShoppingBag } from "lucide-react"
-import Link from "next/link"
-import { ListingCard } from "@/components/features/marketplace/listing-card"
+import { Plus, Search, ShoppingBag } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
-
+import { ListingCard } from '@/components/features/marketplace/listing-card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { createClient } from '@/lib/supabase/client';
 
 export default function MarketplacePage() {
-  const supabase = createClient()
-  const [listings, setListings] = useState<any[]>([]) // Changed to any[]
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const supabase = createClient();
+  const [listings, setListings] = useState<any[]>([]); // Changed to any[]
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   useEffect(() => {
-    loadListings()
-  }, [selectedCategory])
+    loadListings();
+  }, [selectedCategory]);
 
   const loadListings = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       let query = supabase
-        .from("marketplace_listings")
-        .select("*")
-        .eq("is_sold", false) // Changed from "status", "active"
-        .order("is_featured", { ascending: false }) // Changed from "featured"
-        .order("created_at", { ascending: false })
+        .from('marketplace_listings')
+        .select('*')
+        .eq('is_sold', false) // Changed from "status", "active"
+        .order('is_featured', { ascending: false }) // Changed from "featured"
+        .order('created_at', { ascending: false });
 
-      if (selectedCategory !== "all") {
-        query = query.eq("category", selectedCategory)
+      if (selectedCategory !== 'all') {
+        query = query.eq('category', selectedCategory);
       }
 
-      const { data, error } = await query
+      const { data, error } = await query;
 
-      if (error) throw error
-      setListings(data || [])
+      if (error) throw error;
+      setListings(data || []);
     } catch (error: any) {
-      console.error("Error loading listings:", error)
+      console.error('Error loading listings:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const filteredListings = listings.filter(listing =>
-    listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    listing.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredListings = listings.filter(
+    (listing) =>
+      listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      listing.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const categories = ["all", "books", "manga", "comics", "textbooks", "accessories"]
+  const categories = ['all', 'books', 'manga', 'comics', 'textbooks', 'accessories'];
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">Trove Marketplace</h2>
-          <p className="text-muted-foreground text-lg">Discovery. Exchange. Knowledge. Join the circular economy.</p>
+          <h2 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+            Trove Marketplace
+          </h2>
+          <p className="text-muted-foreground text-lg">
+            Discovery. Exchange. Knowledge. Join the circular economy.
+          </p>
         </div>
-        <Button asChild size="lg" className="rounded-full px-8 shadow-xl hover:shadow-primary/30 transition-all">
+        <Button
+          asChild
+          size="lg"
+          className="rounded-full px-8 shadow-xl hover:shadow-primary/30 transition-all"
+        >
           <Link href="/dashboard/marketplace/create">
             <Plus className="w-5 h-5 mr-2" />
             List Item
@@ -82,11 +90,12 @@ export default function MarketplacePage() {
           {categories.map((cat) => (
             <Button
               key={cat}
-              variant={selectedCategory === cat ? "default" : "secondary"}
+              variant={selectedCategory === cat ? 'default' : 'secondary'}
               size="sm"
               onClick={() => setSelectedCategory(cat)}
-              className={`capitalize rounded-full px-6 transition-all ${selectedCategory === cat ? 'shadow-lg shadow-primary/30' : 'hover:bg-primary/10'
-                }`}
+              className={`capitalize rounded-full px-6 transition-all ${
+                selectedCategory === cat ? 'shadow-lg shadow-primary/30' : 'hover:bg-primary/10'
+              }`}
             >
               {cat}
             </Button>
@@ -106,7 +115,9 @@ export default function MarketplacePage() {
             <ShoppingBag className="w-12 h-12" />
           </div>
           <h3 className="text-2xl font-bold mb-2">The trove is empty... for now.</h3>
-          <p className="text-muted-foreground text-center max-w-sm">Be the first to share a treasure with the community and earn your first sale badges!</p>
+          <p className="text-muted-foreground text-center max-w-sm">
+            Be the first to share a treasure with the community and earn your first sale badges!
+          </p>
           <Button asChild className="mt-8 rounded-full px-8" variant="outline">
             <Link href="/dashboard/marketplace/create">
               <Plus className="w-4 h-4 mr-2" />
@@ -122,5 +133,5 @@ export default function MarketplacePage() {
         </div>
       )}
     </div>
-  )
+  );
 }

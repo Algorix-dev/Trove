@@ -1,41 +1,45 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, MapPin, Eye, MessageSquare, Calendar, ShoppingBag } from "lucide-react"
-import Image from "next/image"
-import { toast } from "sonner"
-import { PaystackButton } from "@/components/features/marketplace/paystack-button"
+import { ArrowLeft, Calendar, Eye, MapPin, MessageSquare, ShoppingBag } from 'lucide-react';
+import Image from 'next/image';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+
+import { PaystackButton } from '@/components/features/marketplace/paystack-button';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { createClient } from '@/lib/supabase/client';
 
 export default function MarketplaceListingPage() {
-  const params = useParams()
-  const router = useRouter()
-  const supabase = createClient()
-  const [listing, setListing] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
+  const params = useParams();
+  const router = useRouter();
+  const supabase = createClient();
+  const [listing, setListing] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    if (params["id"]) {
-      loadListing()
+    if (params['id']) {
+      loadListing();
     }
-    checkUser()
-  }, [params["id"]])
+    checkUser();
+  }, [params['id']]);
 
   const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    setUser(user)
-  }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    setUser(user);
+  };
 
   const loadListing = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("marketplace_listings")
-        .select(`
+        .from('marketplace_listings')
+        .select(
+          `
           *,
           profiles:seller_id (
             full_name,
@@ -43,44 +47,45 @@ export default function MarketplaceListingPage() {
             email,
             avatar_url
           )
-        `)
-        .eq("id", params["id"])
-        .single()
+        `
+        )
+        .eq('id', params['id'])
+        .single();
 
-      if (error) throw error
+      if (error) throw error;
 
       if (data) {
         await supabase
-          .from("marketplace_listings")
+          .from('marketplace_listings')
           .update({ view_count: (data.view_count || 0) + 1 })
-          .eq("id", params["id"])
+          .eq('id', params['id']);
       }
 
-      setListing(data)
+      setListing(data);
     } catch (error: any) {
-      console.error("Error loading listing:", error)
-      toast.error("Failed to load listing")
+      console.error('Error loading listing:', error);
+      toast.error('Failed to load listing');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handlePaymentSuccess = async (reference: string) => {
     // Record transaction
-    const { error } = await supabase.from("marketplace_transactions").insert({
+    const { error } = await supabase.from('marketplace_transactions').insert({
       buyer_id: user.id,
       seller_id: listing.seller_id,
       listing_id: listing.id,
       amount: listing.price,
       payment_reference: reference,
-      status: 'paid'
-    })
+      status: 'paid',
+    });
 
     if (!error) {
-      toast.success("Payment successful! The seller has been notified.")
-      loadListing() // Refresh status
+      toast.success('Payment successful! The seller has been notified.');
+      loadListing(); // Refresh status
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -91,7 +96,7 @@ export default function MarketplaceListingPage() {
           <div className="h-6 bg-muted animate-pulse rounded-lg w-1/2" />
         </div>
       </div>
-    )
+    );
   }
 
   if (!listing) {
@@ -105,13 +110,17 @@ export default function MarketplaceListingPage() {
           <p className="text-2xl font-bold text-muted-foreground">This treasure has vanished.</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-1000 max-w-7xl mx-auto pb-20">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => router.back()} className="rounded-full group hover:bg-primary/10 pl-2">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          className="rounded-full group hover:bg-primary/10 pl-2"
+        >
           <div className="bg-background shadow-md rounded-full p-2 mr-3 group-hover:bg-primary group-hover:text-white transition-all">
             <ArrowLeft className="w-5 h-5" />
           </div>
@@ -119,7 +128,12 @@ export default function MarketplaceListingPage() {
         </Button>
         <div className="flex gap-2 text-sm font-medium text-muted-foreground bg-muted/50 px-4 py-2 rounded-full">
           <Calendar className="w-4 h-4" />
-          Listed on {new Date(listing.created_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+          Listed on{' '}
+          {new Date(listing.created_at).toLocaleDateString(undefined, {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+          })}
         </div>
       </div>
 
@@ -153,7 +167,9 @@ export default function MarketplaceListingPage() {
               <div className="bg-black/60 backdrop-blur-xl text-white px-6 py-3 rounded-2xl flex items-center gap-2 border border-white/20">
                 <Eye className="w-5 h-5 text-primary-foreground" />
                 <span className="font-bold">{listing.view_count || 0}</span>
-                <span className="text-xs opacity-70 border-l border-white/20 pl-2">Interactions</span>
+                <span className="text-xs opacity-70 border-l border-white/20 pl-2">
+                  Interactions
+                </span>
               </div>
             </div>
           </div>
@@ -171,8 +187,12 @@ export default function MarketplaceListingPage() {
 
             <div className="flex items-center gap-6 pt-4">
               <div className="flex flex-col">
-                <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Acquisition Price</span>
-                <span className="text-6xl font-black text-primary drop-shadow-sm">₦{Number(listing.price).toLocaleString()}</span>
+                <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                  Acquisition Price
+                </span>
+                <span className="text-6xl font-black text-primary drop-shadow-sm">
+                  ₦{Number(listing.price).toLocaleString()}
+                </span>
               </div>
               {listing.location_city && (
                 <div className="mt-8 flex items-center gap-2 text-sm font-bold bg-muted px-5 py-2.5 rounded-2xl">
@@ -184,16 +204,26 @@ export default function MarketplaceListingPage() {
           </div>
 
           <p className="text-lg text-muted-foreground leading-relaxed italic bg-muted/30 p-8 rounded-[2rem] border-l-4 border-primary">
-            "{listing.description || "The owner left no lore for this item."}"
+            "{listing.description || 'The owner left no lore for this item.'}"
           </p>
 
           <div className="pt-6 space-y-4">
             {user?.id === listing.seller_id ? (
-              <Button variant="outline" size="lg" className="w-full h-16 rounded-2xl text-lg font-bold border-2 border-dashed" disabled>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full h-16 rounded-2xl text-lg font-bold border-2 border-dashed"
+                disabled
+              >
                 This listing belongs to you
               </Button>
             ) : listing.is_sold ? (
-              <Button variant="outline" size="lg" className="w-full h-16 rounded-2xl text-lg font-bold border-destructive text-destructive" disabled>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full h-16 rounded-2xl text-lg font-bold border-destructive text-destructive"
+                disabled
+              >
                 SOLD OUT
               </Button>
             ) : user ? (
@@ -203,19 +233,29 @@ export default function MarketplaceListingPage() {
                   amount={listing.price}
                   metadata={{ listing_id: listing.id }}
                   onSuccess={handlePaymentSuccess}
-                  onClose={() => { }}
+                  onClose={() => {}}
                 />
-                <Button variant="secondary" className="w-full h-16 rounded-2xl text-lg font-bold shadow-sm" onClick={() => toast.info("Messaging feature coming soon!")}>
+                <Button
+                  variant="secondary"
+                  className="w-full h-16 rounded-2xl text-lg font-bold shadow-sm"
+                  onClick={() => toast.info('Messaging feature coming soon!')}
+                >
                   <MessageSquare className="w-5 h-5 mr-3" />
                   Inquire with Seller
                 </Button>
               </div>
             ) : (
-              <Button size="lg" className="w-full h-16 rounded-2xl text-lg font-bold" onClick={() => router.push('/login')}>
+              <Button
+                size="lg"
+                className="w-full h-16 rounded-2xl text-lg font-bold"
+                onClick={() => router.push('/login')}
+              >
                 Sign in to Purchase
               </Button>
             )}
-            <p className="text-center text-xs text-muted-foreground font-medium">✨ Secured with Paystack. Instant seller notification.</p>
+            <p className="text-center text-xs text-muted-foreground font-medium">
+              ✨ Secured with Paystack. Instant seller notification.
+            </p>
           </div>
 
           {/* Seller Profile Card */}
@@ -229,23 +269,33 @@ export default function MarketplaceListingPage() {
                   {listing.profiles?.avatar_url ? (
                     <Image
                       src={listing.profiles.avatar_url}
-                      alt={listing.profiles.nickname || "Seller"}
+                      alt={listing.profiles.nickname || 'Seller'}
                       width={80}
                       height={80}
                       className="object-cover h-full w-full"
                     />
                   ) : (
                     <div className="bg-primary h-full w-full flex items-center justify-center text-white text-3xl font-black">
-                      {listing.profiles?.nickname?.[0]?.toUpperCase() || "S"}
+                      {listing.profiles?.nickname?.[0]?.toUpperCase() || 'S'}
                     </div>
                   )}
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] mb-1">Authenticated Merchant</h4>
-                  <p className="text-2xl font-black">{listing.profiles?.nickname || listing.profiles?.full_name || "Anonymous Member"}</p>
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] mb-1">
+                    Authenticated Merchant
+                  </h4>
+                  <p className="text-2xl font-black">
+                    {listing.profiles?.nickname ||
+                      listing.profiles?.full_name ||
+                      'Anonymous Member'}
+                  </p>
                   <div className="flex gap-4 mt-2">
-                    <span className="text-xs font-semibold px-3 py-1 bg-primary/10 text-primary rounded-full">Top Seller 🎖️</span>
-                    <span className="text-xs font-semibold px-3 py-1 bg-muted rounded-full">Joined {new Date().getFullYear()}</span>
+                    <span className="text-xs font-semibold px-3 py-1 bg-primary/10 text-primary rounded-full">
+                      Top Seller 🎖️
+                    </span>
+                    <span className="text-xs font-semibold px-3 py-1 bg-muted rounded-full">
+                      Joined {new Date().getFullYear()}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -254,7 +304,5 @@ export default function MarketplaceListingPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-
-

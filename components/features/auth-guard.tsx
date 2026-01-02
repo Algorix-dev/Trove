@@ -1,31 +1,32 @@
-"use client"
+'use client';
 
-import { useAuth } from "@/components/providers/auth-provider"
-import { useRouter, usePathname } from "next/navigation"
-import { useEffect } from "react"
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+import { useAuth } from '@/components/providers/auth-provider';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-    const { user, loading } = useAuth()
-    const router = useRouter()
-    const pathname = usePathname()
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
 
-    useEffect(() => {
-        if (!loading && !user) {
-            router.replace(`/login?next=${pathname}`)
-        }
-    }, [user, loading, router, pathname])
-
-    if (loading) {
-        return (
-            <div className="flex h-screen w-full items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
-        )
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace(`/login?next=${pathname}`);
     }
+  }, [user, loading, router, pathname]);
 
-    if (!user) {
-        return null
-    }
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
-    return <>{children}</>
+  if (!user) {
+    return null;
+  }
+
+  return <>{children}</>;
 }

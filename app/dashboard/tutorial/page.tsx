@@ -1,137 +1,157 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { X, ArrowRight, BookOpen, BarChart3, Trophy, Users, ShoppingBag, MessageSquare, Sparkles } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-import { toast } from "sonner"
+import { motion } from 'framer-motion';
+import {
+  ArrowRight,
+  BarChart3,
+  BookOpen,
+  ShoppingBag,
+  Sparkles,
+  Trophy,
+  Users,
+  X,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { createClient } from '@/lib/supabase/client';
 
 const TUTORIAL_STEPS = [
   {
     id: 1,
-    title: "Welcome to Trove",
-    description: "Your personal reading companion",
+    title: 'Welcome to Trove',
+    description: 'Your personal reading companion',
     icon: BookOpen,
-    content: "Trove helps you organize your books, track your reading progress, and discover new favorites. Let's explore the key features!",
-    highlight: null
+    content:
+      "Trove helps you organize your books, track your reading progress, and discover new favorites. Let's explore the key features!",
+    highlight: null,
   },
   {
     id: 2,
-    title: "Your Library",
-    description: "All your books in one place",
+    title: 'Your Library',
+    description: 'All your books in one place',
     icon: BookOpen,
-    content: "Upload and organize your books. Track reading progress, add notes, and bookmark your favorite passages.",
-    highlight: "library"
+    content:
+      'Upload and organize your books. Track reading progress, add notes, and bookmark your favorite passages.',
+    highlight: 'library',
   },
   {
     id: 3,
-    title: "Analytics & Stats",
-    description: "Track your reading journey",
+    title: 'Analytics & Stats',
+    description: 'Track your reading journey',
     icon: BarChart3,
-    content: "View detailed statistics about your reading habits, track your progress, and see your reading trends over time.",
-    highlight: "dashboard"
+    content:
+      'View detailed statistics about your reading habits, track your progress, and see your reading trends over time.',
+    highlight: 'dashboard',
   },
   {
     id: 4,
-    title: "Gamification",
-    description: "Level up as you read",
+    title: 'Gamification',
+    description: 'Level up as you read',
     icon: Trophy,
-    content: "Earn XP for every minute you read, unlock achievements, maintain reading streaks, and climb the leaderboard!",
-    highlight: "dashboard"
+    content:
+      'Earn XP for every minute you read, unlock achievements, maintain reading streaks, and climb the leaderboard!',
+    highlight: 'dashboard',
   },
   {
     id: 5,
-    title: "Community",
-    description: "Connect with other readers",
+    title: 'Community',
+    description: 'Connect with other readers',
     icon: Users,
-    content: "Join discussions, share recommendations, and connect with fellow book lovers in our community spaces.",
-    highlight: "community"
+    content:
+      'Join discussions, share recommendations, and connect with fellow book lovers in our community spaces.',
+    highlight: 'community',
   },
   {
     id: 6,
-    title: "Marketplace",
-    description: "Buy and sell books",
+    title: 'Marketplace',
+    description: 'Buy and sell books',
     icon: ShoppingBag,
-    content: "Browse listings, sell your books, or find rare editions. All transactions are secure and tracked.",
-    highlight: "marketplace"
+    content:
+      'Browse listings, sell your books, or find rare editions. All transactions are secure and tracked.',
+    highlight: 'marketplace',
   },
   {
     id: 7,
-    title: "AI Assistant",
-    description: "Your reading companion",
+    title: 'AI Assistant',
+    description: 'Your reading companion',
     icon: Sparkles,
-    content: "Get personalized book recommendations, study tips, reading analytics, and AI-powered book summaries.",
-    highlight: "dashboard"
+    content:
+      'Get personalized book recommendations, study tips, reading analytics, and AI-powered book summaries.',
+    highlight: 'dashboard',
   },
   {
     id: 8,
     title: "You're Ready!",
-    description: "Start your reading journey",
+    description: 'Start your reading journey',
     icon: Sparkles,
-    content: "You're all set! Explore Trove and discover the joy of organized reading. Happy reading!",
-    highlight: null
-  }
-]
+    content:
+      "You're all set! Explore Trove and discover the joy of organized reading. Happy reading!",
+    highlight: null,
+  },
+];
 
 export default function TutorialPage() {
-  const router = useRouter()
-  const supabase = createClient()
-  const [currentStep, setCurrentStep] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [canSkip, setCanSkip] = useState(false)
+  const router = useRouter();
+  const supabase = createClient();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [canSkip, setCanSkip] = useState(false);
 
   useEffect(() => {
     // Allow skipping after 3 seconds
-    const timer = setTimeout(() => setCanSkip(true), 3000)
-    return () => clearTimeout(timer)
-  }, [])
+    const timer = setTimeout(() => setCanSkip(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleNext = () => {
     if (currentStep < TUTORIAL_STEPS.length - 1) {
-      setCurrentStep(currentStep + 1)
+      setCurrentStep(currentStep + 1);
     } else {
-      handleComplete()
+      handleComplete();
     }
-  }
+  };
 
   const handleSkip = async () => {
-    await handleComplete()
-  }
+    await handleComplete();
+  };
 
   const handleComplete = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error("Not authenticated")
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
       const { error } = await supabase
-        .from("profiles")
+        .from('profiles')
         .update({ tutorial_completed: true })
-        .eq("id", user.id)
+        .eq('id', user.id);
 
-      if (error) throw error
+      if (error) throw error;
 
-      toast.success("Tutorial completed! Welcome to Trove! 🎉")
-      router.push("/dashboard")
+      toast.success('Tutorial completed! Welcome to Trove! 🎉');
+      router.push('/dashboard');
     } catch (error: any) {
-      toast.error(error.message || "Failed to complete tutorial")
+      toast.error(error.message || 'Failed to complete tutorial');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const progress = ((currentStep + 1) / TUTORIAL_STEPS.length) * 100
-  const step = TUTORIAL_STEPS[currentStep]
-  const Icon = step.icon
+  const progress = ((currentStep + 1) / TUTORIAL_STEPS.length) * 100;
+  const step = TUTORIAL_STEPS[currentStep];
+  const Icon = step.icon;
 
   return (
     <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
-      
+
       {/* Background content (blurred) */}
       <div className="absolute inset-0 opacity-20 pointer-events-none">
         <div className="h-full w-full flex items-center justify-center">
@@ -170,7 +190,7 @@ export default function TutorialPage() {
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: "spring", delay: 0.2 }}
+                transition={{ type: 'spring', delay: 0.2 }}
                 className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center"
               >
                 <Icon className="w-10 h-10 text-primary" />
@@ -205,7 +225,8 @@ export default function TutorialPage() {
                   className="bg-muted/50 rounded-lg p-4 text-center"
                 >
                   <p className="text-sm text-muted-foreground">
-                    💡 You can explore the <strong>{step.highlight}</strong> section after this tutorial
+                    💡 You can explore the <strong>{step.highlight}</strong> section after this
+                    tutorial
                   </p>
                 </motion.div>
               )}
@@ -223,13 +244,9 @@ export default function TutorialPage() {
                   <div />
                 )}
 
-                <Button
-                  onClick={handleNext}
-                  disabled={loading}
-                  className="min-w-[120px]"
-                >
+                <Button onClick={handleNext} disabled={loading} className="min-w-[120px]">
                   {currentStep === TUTORIAL_STEPS.length - 1 ? (
-                    "Get Started"
+                    'Get Started'
                   ) : (
                     <>
                       Next
@@ -243,6 +260,5 @@ export default function TutorialPage() {
         </motion.div>
       </div>
     </div>
-  )
+  );
 }
-

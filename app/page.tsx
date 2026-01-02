@@ -1,8 +1,8 @@
-import { LandingNavbar } from "@/components/features/landing-navbar"
-import { LandingHero } from "@/components/features/landing-hero"
-import { LandingFeatures } from "@/components/features/landing-features"
-import { LandingCTA } from "@/components/features/landing-cta"
-import { LandingFooter } from "@/components/features/landing-footer"
+import { LandingCTA } from '@/components/features/landing-cta';
+import { LandingFeatures } from '@/components/features/landing-features';
+import { LandingFooter } from '@/components/features/landing-footer';
+import { LandingHero } from '@/components/features/landing-hero';
+import { LandingNavbar } from '@/components/features/landing-navbar';
 
 export default function Home() {
   return (
@@ -15,5 +15,5 @@ export default function Home() {
       </main>
       <LandingFooter />
     </div>
-  )
+  );
 }

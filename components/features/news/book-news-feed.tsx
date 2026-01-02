@@ -1,45 +1,46 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Newspaper, ExternalLink, Loader2, RefreshCw } from "lucide-react"
-import { motion } from "framer-motion"
-import Image from "next/image"
+import { motion } from 'framer-motion';
+import { ExternalLink, Loader2, Newspaper, RefreshCw } from 'lucide-react';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface NewsItem {
-  id: string
-  title: string
-  description: string
-  url: string
-  source: string
-  category: string
-  published_at: string
-  image_url?: string
-  tags: string[]
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  source: string;
+  category: string;
+  published_at: string;
+  image_url?: string;
+  tags: string[];
 }
 
 export function BookNewsFeed() {
-  const [news, setNews] = useState<NewsItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadNews()
-  }, [])
+    loadNews();
+  }, []);
 
   const loadNews = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const response = await fetch("/api/news/fetch")
-      const data = await response.json()
-      setNews(data.news || [])
+      const response = await fetch('/api/news/fetch');
+      const data = await response.json();
+      setNews(data.news || []);
     } catch (error) {
-      console.error("Error loading news:", error)
+      console.error('Error loading news:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <Card>
@@ -50,17 +51,10 @@ export function BookNewsFeed() {
               <Newspaper className="w-5 h-5" />
               Book News
             </CardTitle>
-            <CardDescription>
-              Latest releases and updates based on your interests
-            </CardDescription>
+            <CardDescription>Latest releases and updates based on your interests</CardDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={loadNews}
-            disabled={loading}
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          <Button variant="ghost" size="sm" onClick={loadNews} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </CardHeader>
@@ -87,12 +81,7 @@ export function BookNewsFeed() {
                 <div className="flex gap-4">
                   {item.image_url && (
                     <div className="relative w-24 h-24 flex-shrink-0 rounded overflow-hidden">
-                      <Image
-                        src={item.image_url}
-                        alt={item.title}
-                        fill
-                        className="object-cover"
-                      />
+                      <Image src={item.image_url} alt={item.title} fill className="object-cover" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
@@ -113,18 +102,12 @@ export function BookNewsFeed() {
                         {item.published_at && (
                           <>
                             <span>•</span>
-                            <span>
-                              {new Date(item.published_at).toLocaleDateString()}
-                            </span>
+                            <span>{new Date(item.published_at).toLocaleDateString()}</span>
                           </>
                         )}
                       </div>
                       {item.url && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          asChild
-                        >
+                        <Button variant="ghost" size="sm" asChild>
                           <a
                             href={item.url}
                             target="_blank"
@@ -145,6 +128,5 @@ export function BookNewsFeed() {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
-
