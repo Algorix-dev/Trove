@@ -117,6 +117,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
 
       // Auto-save reading progress periodically
       if (data.progressPercentage && data.progressPercentage % 10 === 0) {
+        // 1. Update reading_progress
         supabase
           .from('reading_progress')
           .upsert(
@@ -133,6 +134,20 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
           )
           .then(({ error }) => {
             if (error) console.error('Failed to save reading progress:', error);
+          });
+
+        // 2. Sync to books
+        supabase
+          .from('books')
+          .update({
+            progress_percentage: data.progressPercentage,
+            current_page: data.currentPage,
+            last_read_at: new Date().toISOString(),
+          })
+          .eq('id', bookId)
+          .eq('user_id', userId)
+          .then(({ error }) => {
+            if (error) console.error('Failed to sync reading progress to books:', error);
           });
       }
     },

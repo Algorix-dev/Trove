@@ -44,6 +44,7 @@ export function EpubViewer({
       process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
     );
 
+    // 1. Update reading_progress table
     await supabase.from('reading_progress').upsert(
       {
         book_id: bookId,
@@ -57,6 +58,17 @@ export function EpubViewer({
         onConflict: 'book_id,user_id',
       }
     );
+
+    // 2. Sync to books table for library/dashboard overview
+    await supabase
+      .from('books')
+      .update({
+        progress_percentage: progressValue,
+        current_location: cfi,
+        last_read_at: new Date().toISOString(),
+      })
+      .eq('id', bookId)
+      .eq('user_id', userId);
   };
 
   // Debounced save to prevent excessive writes

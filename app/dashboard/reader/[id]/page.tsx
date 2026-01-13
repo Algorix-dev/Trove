@@ -85,9 +85,13 @@ export default async function ReaderPage({
 
   // Get signed URL for the file if it's a storage path, otherwise use the URL directly
   let fileUrl = book.file_url;
-  if (book.file_url && !book.file_url.startsWith('http')) {
-    // It's a storage path, create a signed URL
-    const { data } = await supabase.storage.from('books').createSignedUrl(book.file_url, 3600); // 1 hour expiry
+  // If file_path is available, always use it to generate a signed URL as the books bucket is private
+  if (book.file_path) {
+    const { data } = await supabase.storage.from('books').createSignedUrl(book.file_path, 3600); // 1 hour expiry
+    fileUrl = data?.signedUrl || book.file_url;
+  } else if (book.file_url && !book.file_url.startsWith('http')) {
+    // Fallback for older records that might only have a relative path in file_url
+    const { data } = await supabase.storage.from('books').createSignedUrl(book.file_url, 3600);
     fileUrl = data?.signedUrl || book.file_url;
   }
   const format = book.format || 'pdf';

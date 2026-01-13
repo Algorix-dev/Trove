@@ -85,6 +85,7 @@ export function PDFViewer({
 
       // Debounced save - only save after user stops changing pages
       const saveTimeout = setTimeout(async () => {
+        // 1. Update reading_progress table
         await supabase.from('reading_progress').upsert(
           {
             book_id: bookId,
@@ -98,6 +99,17 @@ export function PDFViewer({
             onConflict: 'book_id,user_id',
           }
         );
+
+        // 2. Sync to books table for library/dashboard overview
+        await supabase
+          .from('books')
+          .update({
+            progress_percentage: progressPercentage,
+            current_page: pageNumber,
+            last_read_at: new Date().toISOString(),
+          })
+          .eq('id', bookId)
+          .eq('user_id', userId);
       }, 1000); // Save 1 second after last page change
 
       return () => clearTimeout(saveTimeout);
