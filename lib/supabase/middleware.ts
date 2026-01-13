@@ -28,11 +28,19 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Refreshing the auth token
-  // Optimization: Only refresh if there are supabase cookies present
   const hasSessionCookie = request.cookies.getAll().some((cookie) => cookie.name.startsWith('sb-'));
+  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard');
+  const isLandingPage = request.nextUrl.pathname === '/';
+
+  // Optimization:
+  // 1. If on dashboard, we MUST refresh the user session to prevent redirect loops.
+  // 2. If elsewhere (like landing), we only refresh if cookies exist, to avoid unnecessary work.
+  // 3. We skip refresh on the absolute landing page for maximum speed for new visitors.
 
   if (hasSessionCookie) {
-    await supabase.auth.getUser();
+    if (isDashboardRoute || !isLandingPage) {
+      await supabase.auth.getUser();
+    }
   }
 
   return supabaseResponse;
