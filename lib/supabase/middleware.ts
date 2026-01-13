@@ -28,7 +28,12 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Refreshing the auth token
-  await supabase.auth.getUser();
+  // Optimization: Only refresh if there are supabase cookies present
+  const hasSessionCookie = request.cookies.getAll().some((cookie) => cookie.name.startsWith('sb-'));
+
+  if (hasSessionCookie) {
+    await supabase.auth.getUser();
+  }
 
   return supabaseResponse;
 }
