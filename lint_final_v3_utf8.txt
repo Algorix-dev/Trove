@@ -1,0 +1,895 @@
+﻿
+> trove@0.1.0 lint
+> next lint --max-warnings=0
+
+node.exe : 
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" "C:
+\Users\DELL\AppData\R
+oaming\n ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (:String   
+ ) [], RemoteExce    
+ption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+./app/api/news/fetch/
+route.ts
+162:19  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./app/api/news/fetch-
+rss/route.ts
+164:19  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./app/auth/confirm/pa
+ge.tsx
+49:23  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+56:6  Warning: React 
+Hook useEffect has a 
+missing dependency: 
+'supabase.auth'. 
+Either include it or 
+remove the 
+dependency array.  re
+act-hooks/exhaustive-
+deps
+
+./app/dashboard/commu
+nity/page.tsx
+14:36  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+25:6  Warning: React 
+Hook useEffect has a 
+missing dependency: 
+'supabase.auth'. 
+Either include it or 
+remove the 
+dependency array.  re
+act-hooks/exhaustive-
+deps
+
+./app/dashboard/libra
+ry/page.tsx
+71:36  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./app/dashboard/marke
+tplace/page.tsx
+14:44  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+21:6  Warning: React 
+Hook useEffect has a 
+missing dependency: 
+'loadListings'. 
+Either include it or 
+remove the 
+dependency array.  re
+act-hooks/exhaustive-
+deps
+41:21  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./app/dashboard/marke
+tplace/[id]/page.tsx
+18:42  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+27:6  Warning: React 
+Hook useEffect has 
+missing 
+dependencies: 
+'checkUser', 
+'loadListing', and 
+'params'. Either 
+include them or 
+remove the 
+dependency array.  re
+act-hooks/exhaustive-
+deps
+27:7  Warning: React 
+Hook useEffect has a 
+complex expression 
+in the dependency 
+array. Extract it to 
+a separate variable 
+so it can be 
+statically checked.  
+react-hooks/exhaustiv
+e-deps
+65:21  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+237:35  Error: 
+Delete `┬╖`  
+prettier/prettier
+
+./app/dashboard/tutor
+ial/page.tsx
+140:21  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./app/onboarding/page
+.tsx
+72:6  Warning: React 
+Hook useEffect has a 
+missing dependency: '
+checkOnboardingStatus
+'. Either include it 
+or remove the 
+dependency array.  re
+act-hooks/exhaustive-
+deps
+296:23  Error: The 
+autoFocus prop 
+should not be used, 
+as it can reduce 
+usability and 
+accessibility for 
+users.  
+jsx-a11y/no-autofocus
+360:124  Error: 
+Insert `ΓÅÄ┬╖┬╖┬╖┬╖┬╖
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬
+╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖
+┬╖┬╖┬╖┬╖`  
+prettier/prettier
+361:1  Error: Insert 
+`┬╖┬╖`  
+prettier/prettier
+362:31  Error: 
+Insert `┬╖┬╖`  
+prettier/prettier
+363:1  Error: Delete 
+`┬╖┬╖`  
+prettier/prettier
+399:97  Error: 
+Insert `ΓÅÄ┬╖┬╖┬╖┬╖┬╖
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬
+╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖
+`  prettier/prettier
+400:1  Error: Insert 
+`┬╖┬╖`  
+prettier/prettier
+401:27  Error: 
+Insert `┬╖┬╖`  
+prettier/prettier
+402:1  Error: Delete 
+`┬╖┬╖`  
+prettier/prettier
+
+./app/signup/page.tsx
+63:19  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+79:19  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+99:19  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./components/error-bo
+undary.tsx
+28:55  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+43:15  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  
+react/no-unescaped-en
+tities
+
+./components/features
+/analytics/analytics-
+charts.tsx
+61:26  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+62:38  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+72:29  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+107:6  Warning: 
+React Hook useEffect 
+has a missing 
+dependency: 
+'supabase'. Either 
+include it or remove 
+the dependency 
+array.  react-hooks/e
+xhaustive-deps
+110:39  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+119:22  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+120:34  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./components/features
+/analytics/reading-go
+als.tsx
+33:6  Warning: React 
+Hook useEffect has a 
+missing dependency: 
+'fetchGoal'. Either 
+include it or remove 
+the dependency 
+array.  react-hooks/e
+xhaustive-deps
+166:13  Error: A 
+form label must be 
+associated with a 
+control.  jsx-a11y/la
+bel-has-associated-co
+ntrol
+195:13  Error: `"` 
+can be escaped with 
+`&quot;`, `&ldquo;`, 
+`&#34;`, `&rdquo;`.  
+react/no-unescaped-en
+tities
+195:68  Error: `"` 
+can be escaped with 
+`&quot;`, `&ldquo;`, 
+`&#34;`, `&rdquo;`.  
+react/no-unescaped-en
+tities
+
+./components/features
+/bookmarks/bookmarks-
+list.tsx
+47:6  Warning: React 
+Hook useEffect has a 
+missing dependency: 
+'fetchBookmarks'. 
+Either include it or 
+remove the 
+dependency array.  re
+act-hooks/exhaustive-
+deps
+77:28  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+177:19  Warning: 
+Using `<img>` could 
+result in slower LCP 
+and higher 
+bandwidth. Consider 
+using `<Image />` 
+from `next/image` to 
+automatically 
+optimize images. 
+This may incur 
+additional usage or 
+cost from your 
+provider. See: https:
+//nextjs.org/docs/mes
+sages/no-img-element 
+ @next/next/no-img-el
+ement
+219:80  Error: `"` 
+can be escaped with 
+`&quot;`, `&ldquo;`, 
+`&#34;`, `&rdquo;`.  
+react/no-unescaped-en
+tities
+219:96  Error: `"` 
+can be escaped with 
+`&quot;`, `&ldquo;`, 
+`&#34;`, `&rdquo;`.  
+react/no-unescaped-en
+tities
+
+./components/features
+/community/community-
+feed.tsx
+13:38  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+19:6  Warning: React 
+Hook useEffect has a 
+missing dependency: 
+'loadPosts'. Either 
+include it or remove 
+the dependency 
+array.  react-hooks/e
+xhaustive-deps
+
+./components/features
+/community/community-
+invite-modal.tsx
+77:56  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  
+react/no-unescaped-en
+tities
+77:90  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  
+react/no-unescaped-en
+tities
+
+./components/features
+/community/community-
+list.tsx
+150:80  Error: `"` 
+can be escaped with 
+`&quot;`, `&ldquo;`, 
+`&#34;`, `&rdquo;`.  
+react/no-unescaped-en
+tities
+150:94  Error: `"` 
+can be escaped with 
+`&quot;`, `&ldquo;`, 
+`&#34;`, `&rdquo;`.  
+react/no-unescaped-en
+tities
+
+./components/features
+/community/create-pos
+t.tsx
+18:9  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./components/features
+/continue-reading.tsx
+137:13  Warning: 
+Using `<img>` could 
+result in slower LCP 
+and higher 
+bandwidth. Consider 
+using `<Image />` 
+from `next/image` to 
+automatically 
+optimize images. 
+This may incur 
+additional usage or 
+cost from your 
+provider. See: https:
+//nextjs.org/docs/mes
+sages/no-img-element 
+ @next/next/no-img-el
+ement
+
+./components/features
+/dashboard-charts.tsx
+63:47  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./components/features
+/dashboard-quote.tsx
+60:37  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+100:50  Error: `"` 
+can be escaped with 
+`&quot;`, `&ldquo;`, 
+`&#34;`, `&rdquo;`.  
+react/no-unescaped-en
+tities
+100:63  Error: `"` 
+can be escaped with 
+`&quot;`, `&ldquo;`, 
+`&#34;`, `&rdquo;`.  
+react/no-unescaped-en
+tities
+
+./components/features
+/dashboard-stats.tsx
+119:59  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  
+react/no-unescaped-en
+tities
+
+./components/features
+/delete-confirm-dialo
+g.tsx
+63:16  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  
+react/no-unescaped-en
+tities
+
+./components/features
+/gamification/achieve
+ment-confetti.tsx
+53:43  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./components/features
+/gamification/level-u
+p-celebration.tsx
+65:21  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./components/features
+/landing-footer.tsx
+45:17  Error: The 
+href attribute 
+requires a valid 
+value to be 
+accessible. Provide 
+a valid, navigable 
+address as the href 
+value. If you cannot 
+provide a valid 
+href, but still need 
+the element to 
+resemble a link, use 
+a button and change 
+it with appropriate 
+styles. Learn more: h
+ttps://github.com/jsx
+-eslint/eslint-plugin
+-jsx-a11y/blob/HEAD/d
+ocs/rules/anchor-is-v
+alid.md  jsx-a11y/anc
+hor-is-valid
+50:17  Error: The 
+href attribute 
+requires a valid 
+value to be 
+accessible. Provide 
+a valid, navigable 
+address as the href 
+value. If you cannot 
+provide a valid 
+href, but still need 
+the element to 
+resemble a link, use 
+a button and change 
+it with appropriate 
+styles. Learn more: h
+ttps://github.com/jsx
+-eslint/eslint-plugin
+-jsx-a11y/blob/HEAD/d
+ocs/rules/anchor-is-v
+alid.md  jsx-a11y/anc
+hor-is-valid
+
+./components/features
+/library/book-grid.ts
+x
+58:10  Error: 
+'_isDeleting' is 
+assigned a value but 
+never used.  @typescr
+ipt-eslint/no-unused-
+vars
+175:21  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+277:19  Warning: 
+Using `<img>` could 
+result in slower LCP 
+and higher 
+bandwidth. Consider 
+using `<Image />` 
+from `next/image` to 
+automatically 
+optimize images. 
+This may incur 
+additional usage or 
+cost from your 
+provider. See: https:
+//nextjs.org/docs/mes
+sages/no-img-element 
+ @next/next/no-img-el
+ement
+366:13  Warning: 
+Using `<img>` could 
+result in slower LCP 
+and higher 
+bandwidth. Consider 
+using `<Image />` 
+from `next/image` to 
+automatically 
+optimize images. 
+This may incur 
+additional usage or 
+cost from your 
+provider. See: https:
+//nextjs.org/docs/mes
+sages/no-img-element 
+ @next/next/no-img-el
+ement
+
+./components/features
+/library/library-sear
+ch.tsx
+129:13  Error: A 
+form label must be 
+associated with a 
+control.  jsx-a11y/la
+bel-has-associated-co
+ntrol
+147:13  Error: A 
+form label must be 
+associated with a 
+control.  jsx-a11y/la
+bel-has-associated-co
+ntrol
+
+./components/features
+/library/upload-modal
+.tsx
+258:13  Error: 
+Visible, 
+non-interactive 
+elements with click 
+handlers must have 
+at least one 
+keyboard listener.  j
+sx-a11y/click-events-
+have-key-events
+258:13  Error: Avoid 
+non-native 
+interactive 
+elements. If using 
+native HTML is not 
+possible, add an 
+appropriate role and 
+support for tabbing, 
+mouse, keyboard, and 
+touch inputs to an 
+interactive content 
+element.  jsx-a11y/no
+-static-element-inter
+actions
+259:187  Error: 
+Insert `ΓÅÄ┬╖┬╖┬╖┬╖┬╖
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬
+╖`  prettier/prettier
+260:1  Error: Delete 
+`┬╖┬╖`  
+prettier/prettier
+297:17  Error: A 
+form label must be 
+associated with a 
+control.  jsx-a11y/la
+bel-has-associated-co
+ntrol
+
+./components/features
+/marketplace/paystack
+-button.tsx
+12:14  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+29:7  Error: Use 
+"@ts-expect-error" 
+instead of 
+"@ts-ignore", as 
+"@ts-ignore" will do 
+nothing if the 
+following line is 
+error-free.  @typescr
+ipt-eslint/ban-ts-com
+ment
+36:30  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+56:14  Error: 
+Replace `ΓÅÄ┬╖┬╖┬╖┬╖┬
+╖┬╖┬╖┬╖src="https://j
+s.paystack.co/v1/inli
+ne.js"ΓÅÄ┬╖┬╖┬╖┬╖┬╖┬╖
+┬╖┬╖asyncΓÅÄ┬╖┬╖┬╖┬╖┬
+╖┬╖┬╖┬╖onLoad={()┬╖=>
+┬╖{┬╖}}ΓÅÄ┬╖┬╖┬╖┬╖┬╖`
+ with `┬╖src="https:/
+/js.paystack.co/v1/in
+line.js"┬╖async┬╖onLo
+ad={()┬╖=>┬╖{}}`  
+prettier/prettier
+
+./components/features
+/notes/notes-list.tsx
+31:6  Warning: React 
+Hook useEffect has a 
+missing dependency: 
+'fetchNotes'. Either 
+include it or remove 
+the dependency 
+array.  react-hooks/e
+xhaustive-deps
+
+./components/features
+/quotes/quotes-list.t
+sx
+39:6  Warning: React 
+Hook useEffect has a 
+missing dependency: 
+'fetchQuotes'. 
+Either include it or 
+remove the 
+dependency array.  re
+act-hooks/exhaustive-
+deps
+64:25  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+192:15  Error: `"` 
+can be escaped with 
+`&quot;`, `&ldquo;`, 
+`&#34;`, `&rdquo;`.  
+react/no-unescaped-en
+tities
+192:34  Error: `"` 
+can be escaped with 
+`&quot;`, `&ldquo;`, 
+`&#34;`, `&rdquo;`.  
+react/no-unescaped-en
+tities
+
+./components/features
+/reader/epub-viewer.t
+sx
+35:31  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+36:26  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+155:6  Warning: 
+React Hook useEffect 
+has missing 
+dependencies: 
+'initialLocation' 
+and 
+'updateProgress'. 
+Either include them 
+or remove the 
+dependency array.  re
+act-hooks/exhaustive-
+deps
+
+./components/features
+/reader/pdf-viewer.ts
+x
+71:6  Warning: React 
+Hook useEffect has a 
+missing dependency: 
+'supabase'. Either 
+include it or remove 
+the dependency 
+array.  react-hooks/e
+xhaustive-deps
+118:6  Warning: 
+React Hook useEffect 
+has a missing 
+dependency: 
+'supabase'. Either 
+include it or remove 
+the dependency 
+array.  react-hooks/e
+xhaustive-deps
+148:6  Warning: 
+React Hook useEffect 
+has a missing 
+dependency: 
+'supabase'. Either 
+include it or remove 
+the dependency 
+array.  react-hooks/e
+xhaustive-deps
+
+./components/features
+/reader/reader-layout
+.tsx
+198:61  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./components/features
+/reader/reader-settin
+gs.tsx
+22:14  Error: A form 
+label must be 
+associated with a 
+control.  jsx-a11y/la
+bel-has-associated-co
+ntrol
+
+./components/features
+/reader/save-quote-bu
+tton.tsx
+95:13  Error: A form 
+label must be 
+associated with a 
+control.  jsx-a11y/la
+bel-has-associated-co
+ntrol
+107:15  Error: A 
+form label must be 
+associated with a 
+control.  jsx-a11y/la
+bel-has-associated-co
+ntrol
+116:15  Error: A 
+form label must be 
+associated with a 
+control.  jsx-a11y/la
+bel-has-associated-co
+ntrol
+126:13  Error: A 
+form label must be 
+associated with a 
+control.  jsx-a11y/la
+bel-has-associated-co
+ntrol
+
+./components/features
+/settings/settings-fo
+rm.tsx
+38:36  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+53:6  Warning: React 
+Hook useEffect has 
+missing 
+dependencies: 
+'loadProfile' and 
+'supabase.auth'. 
+Either include them 
+or remove the 
+dependency array.  re
+act-hooks/exhaustive-
+deps
+97:21  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+134:21  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./components/provider
+s/auth-provider.tsx
+17:25  Error: Delete 
+`┬╖`  
+prettier/prettier
+
+./components/ui/card.
+tsx
+25:5  Error: 
+Headings must have 
+content and the 
+content must be 
+accessible by a 
+screen reader.  jsx-a
+11y/heading-has-conte
+nt
+
+./components/ui/theme
+-toggle.tsx
+40:39  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-es
+lint/no-explicit-any
+
+./lib/supabase/server
+.ts
+49:51  Error: 
+Require statement 
+not part of import 
+statement.  @typescri
+pt-eslint/no-var-requ
+ires
+
+info  - Need to 
+disable some ESLint 
+rules? Learn more 
+here: https://nextjs.
+org/docs/basic-featur
+es/eslint#disabling-r
+ules
+
