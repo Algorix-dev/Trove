@@ -48,11 +48,11 @@ export default async function ReaderPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }) {
-  const { id } = await params;
-  const search = await searchParams;
+  const { id } = params;
+  const search = searchParams;
   const supabase = await createClient();
   const {
     data: { user },

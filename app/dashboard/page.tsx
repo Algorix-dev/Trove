@@ -141,7 +141,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-8 md:grid-cols-2">
         <div className="bg-card/40 backdrop-blur-xl p-6 rounded-[2rem] border border-border/50 shadow-xl overflow-hidden relative group">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
           <LevelProgress
             level={currentLevel}
             currentXP={currentXP}
@@ -150,7 +150,7 @@ export default async function DashboardPage() {
           />
         </div>
         <div className="bg-card/40 backdrop-blur-xl p-6 rounded-[2rem] border border-border/50 shadow-xl relative group">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
           <ReadingGoals />
         </div>
       </div>
