@@ -37,6 +37,7 @@ export function EpubViewer({
   const saveProgressDebounced = useRef<NodeJS.Timeout | undefined>(undefined);
   const [isReady, setIsReady] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   const saveProgress = async (cfi: string, progressValue: number) => {
     const supabase = createBrowserClient(
@@ -124,25 +125,30 @@ export function EpubViewer({
     renditionRef.current = rendition;
 
     const initBook = async () => {
-      await book.ready;
+      try {
+        await book.ready;
 
-      // Display initial location or start
-      if (initialLocation) {
-        await rendition.display(initialLocation.toString());
-      } else {
-        await rendition.display();
+        // Display initial location or start
+        if (initialLocation) {
+          await rendition.display(initialLocation.toString());
+        } else {
+          await rendition.display();
+        }
+
+        // Generate locations for progress tracking
+        book.locations.generate(1000).then(() => {
+          setIsReady(true);
+          updateProgress();
+        });
+
+        // Listen for relocation events
+        rendition.on('relocated', () => {
+          updateProgress();
+        });
+      } catch (err) {
+        console.error('Failed to initialize EPUB:', err);
+        setError('Failed to load EPUB. This might be due to a corrupted file or an expired link.');
       }
-
-      // Generate locations for progress tracking
-      book.locations.generate(1000).then(() => {
-        setIsReady(true);
-        updateProgress();
-      });
-
-      // Listen for relocation events
-      rendition.on('relocated', () => {
-        updateProgress();
-      });
     };
 
     initBook();
@@ -215,10 +221,25 @@ export function EpubViewer({
     }
   };
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+        <p className="text-destructive font-bold mb-4">{error}</p>
+        <Button onClick={() => window.location.reload()}>Retry</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full relative group">
       <div className="flex-1 relative">
         <div ref={viewerRef} className="h-full w-full" />
+
+        {!isReady && !error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        )}
 
         {/* Navigation Overlays */}
         <div className="absolute inset-y-0 left-0 w-16 flex items-center justify-start opacity-0 group-hover:opacity-100 transition-opacity">

@@ -88,11 +88,15 @@ export function TxtViewer({
     const fetchContent = async () => {
       try {
         const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch text file: ${response.status} ${response.statusText}`);
+        }
         const text = await response.text();
         setContent(text);
         setLoading(false);
       } catch (error) {
         console.error('Failed to load text file:', error);
+        setContent('Error: Failed to load text file. This might be due to a storage permission issue or an expired link.');
         setLoading(false);
       }
     };

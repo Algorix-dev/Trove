@@ -87,11 +87,24 @@ export default async function ReaderPage({
   let fileUrl = book.file_url;
   // If file_path is available, always use it to generate a signed URL as the books bucket is private
   if (book.file_path) {
-    const { data } = await supabase.storage.from('books').createSignedUrl(book.file_path, 3600); // 1 hour expiry
+    const { data, error: signedUrlError } = await supabase.storage
+      .from('books')
+      .createSignedUrl(book.file_path, 3600);
+
+    if (signedUrlError) {
+      console.error('Failed to generate signed URL for path:', book.file_path, signedUrlError);
+    }
+
     fileUrl = data?.signedUrl || book.file_url;
   } else if (book.file_url && !book.file_url.startsWith('http')) {
     // Fallback for older records that might only have a relative path in file_url
-    const { data } = await supabase.storage.from('books').createSignedUrl(book.file_url, 3600);
+    const { data, error: signedUrlError } = await supabase.storage
+      .from('books')
+      .createSignedUrl(book.file_url, 3600);
+
+    if (signedUrlError) {
+      console.error('Failed to generate signed URL for URL:', book.file_url, signedUrlError);
+    }
     fileUrl = data?.signedUrl || book.file_url;
   }
   const format = book.format || 'pdf';
