@@ -56,7 +56,7 @@ export function PaystackButton({
       <script
         src="https://js.paystack.co/v1/inline.js"
         async
-        onLoad={() => console.log('Paystack loaded')}
+        onLoad={() => { }}
       />
       <Button
         onClick={handlePaystackPayment}

@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/client';
 
 export default function MarketplacePage() {
   const supabase = createClient();
-  const [listings, setListings] = useState<any[]>([]); // Changed to any[]
+  const [listings, setListings] = useState<any[]>([]); // TODO: Define proper Listing type
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -38,7 +38,7 @@ export default function MarketplacePage() {
 
       if (error) throw error;
       setListings(data || []);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error loading listings:', error);
     } finally {
       setLoading(false);
@@ -93,9 +93,8 @@ export default function MarketplacePage() {
               variant={selectedCategory === cat ? 'default' : 'secondary'}
               size="sm"
               onClick={() => setSelectedCategory(cat)}
-              className={`capitalize rounded-full px-6 transition-all ${
-                selectedCategory === cat ? 'shadow-lg shadow-primary/30' : 'hover:bg-primary/10'
-              }`}
+              className={`capitalize rounded-full px-6 transition-all ${selectedCategory === cat ? 'shadow-lg shadow-primary/30' : 'hover:bg-primary/10'
+                }`}
             >
               {cat}
             </Button>

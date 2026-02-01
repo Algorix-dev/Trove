@@ -70,7 +70,7 @@ export default async function ReaderPage({
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold">Book not found</h1>
           <p className="text-muted-foreground">
-            The book you're looking for doesn't exist or you don't have access to it.
+            The book you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
           </p>
           <a
             href="/dashboard/library"

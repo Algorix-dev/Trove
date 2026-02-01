@@ -193,21 +193,17 @@ export function UploadModal({
         .trim();
 
       // 6. Insert record into database
-      const { data: insertedBook, error: dbError } = await supabase
-        .from('books')
-        .insert({
-          user_id: user.id,
-          title: bookTitle,
-          author: 'Unknown Author',
-          file_url: publicUrl,
-          file_path: filePath,
-          cover_url: coverUrl,
-          format: fileExt || 'pdf',
-          size_bytes: file.size,
-          total_pages: totalPages,
-        })
-        .select()
-        .maybeSingle();
+      const { error: dbError } = await supabase.from('books').insert({
+        user_id: user.id,
+        title: bookTitle,
+        author: 'Unknown Author',
+        file_url: publicUrl,
+        file_path: filePath,
+        cover_url: coverUrl,
+        format: fileExt || 'pdf',
+        size_bytes: file.size,
+        total_pages: totalPages,
+      });
 
       if (dbError) {
         console.error('Database insert error:', dbError);
@@ -224,8 +220,6 @@ export function UploadModal({
         return;
       }
 
-      console.log('[UploadModal] Successfully inserted book. User ID:', user.id);
-      console.log('[UploadModal] Inserted book details:', insertedBook);
       toast.success('Book uploaded successfully!');
       setFile(null);
       setCoverFile(null);
@@ -262,9 +256,8 @@ export function UploadModal({
           <div className="grid gap-6 py-8">
             {/* Book File Upload */}
             <div
-              className={`border-2 border-dashed rounded-[2rem] p-10 text-center transition-all cursor-pointer flex flex-col items-center justify-center group relative overflow-hidden ${
-                isDragging ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/50'
-              }`}
+              className={`border-2 border-dashed rounded-[2rem] p-10 text-center transition-all cursor-pointer flex flex-col items-center justify-center group relative overflow-hidden ${isDragging ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/50'
+                }`}
               onClick={() => fileInputRef.current?.click()}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}

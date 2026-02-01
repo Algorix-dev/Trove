@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
       } = await supabase.auth.exchangeCodeForSession(code);
 
       if (error) {
-        console.error('Auth callback error:', error);
         return NextResponse.redirect(`${origin}/login?error=auth_failed`);
       }
 
@@ -60,7 +59,6 @@ export async function GET(request: NextRequest) {
       // Session is now stored in cookies
       return NextResponse.redirect(`${origin}/dashboard`);
     } catch (error) {
-      console.error('Auth callback exception:', error);
       return NextResponse.redirect(`${origin}/login?error=callback_failed`);
     }
   }

@@ -37,7 +37,11 @@ export async function GET(_request: NextRequest) {
 
     // Simple recommendation logic (can be enhanced with AI)
     const genres = preferences?.favorite_genres || [];
-    const recommendations: any[] = [];
+    const recommendations: Array<{
+      title: string;
+      author: string;
+      reason: string;
+    }> = [];
 
     // For now, return a structured response
     // In production, you'd call OpenAI API here
@@ -49,8 +53,7 @@ export async function GET(_request: NextRequest) {
         readingHistory: readingHistory?.length || 0,
       },
     });
-  } catch (error: any) {
-    console.error('Error generating recommendations:', error);
+  } catch (error) {
     return NextResponse.json({ error: 'Failed to generate recommendations' }, { status: 500 });
   }
 }

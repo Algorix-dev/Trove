@@ -56,7 +56,6 @@ export const GamificationService = {
         }
       }
 
-      console.log(`[Gamification] Awarded ${amount} XP for ${action}. Total: ${newXP}`);
       return { success: true, newXP };
     } catch (error) {
       console.error('[Gamification] Error awarding XP:', error);

@@ -146,8 +146,8 @@ export default function OnboardingPage() {
       setAvatarUrl(publicUrl);
       setAvatarChoice('upload');
       toast.success('Avatar uploaded!');
-    } catch (error: any) {
-      toast.error('Upload failed: ' + error.message);
+    } catch (error) {
+      toast.error('Upload failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setUploadingAvatar(false);
     }
@@ -191,8 +191,8 @@ export default function OnboardingPage() {
 
       toast.success('Welcome to Trove! 🎉');
       router.push('/dashboard');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to complete onboarding');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to complete onboarding');
     } finally {
       setLoading(false);
     }
@@ -228,7 +228,7 @@ export default function OnboardingPage() {
             <div className="px-8 space-y-2">
               <Progress value={progress} className="h-1.5 bg-muted/40" />
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground opacity-50">
-                Phase {currentStep} <span className="mx-2">//</span> {STEPS.length}
+                Phase {currentStep} {'//'} {STEPS.length}
               </p>
             </div>
           </CardHeader>
@@ -255,8 +255,8 @@ export default function OnboardingPage() {
                       Your Journey Begins.
                     </h3>
                     <p className="text-muted-foreground text-lg leading-relaxed max-w-sm mx-auto">
-                      Trove is more than a reader. It's your sanctuary for wisdom and discovery.
-                      Let's make it yours.
+                      Trove is more than a reader. It&apos;s your sanctuary for wisdom and
+                      discovery. Let&apos;s make it yours.
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-3 justify-center pt-6">
@@ -357,11 +357,10 @@ export default function OnboardingPage() {
                               setAvatarChoice(avatar.id);
                               setAvatarUrl(null);
                             }}
-                            className={`aspect-square rounded-2xl border-4 transition-all overflow-hidden relative group ${
-                              avatarChoice === avatar.id
-                                ? 'border-primary shadow-xl scale-105'
-                                : 'border-transparent opacity-60 hover:opacity-100'
-                            }`}
+                            className={`aspect-square rounded-2xl border-4 transition-all overflow-hidden relative group ${avatarChoice === avatar.id
+                              ? 'border-primary shadow-xl scale-105'
+                              : 'border-transparent opacity-60 hover:opacity-100'
+                              }`}
                           >
                             <Image
                               src={`/avatars/${avatar.id}.png`}
@@ -397,11 +396,10 @@ export default function OnboardingPage() {
                       <motion.button
                         key={genre}
                         onClick={() => toggleGenre(genre)}
-                        className={`p-4 rounded-2xl border-2 text-sm font-bold transition-all ${
-                          selectedGenres.includes(genre)
-                            ? 'border-primary bg-primary shadow-[0_0_20px_rgba(var(--primary),0.3)] text-white'
-                            : 'border-muted bg-muted/20 hover:border-primary/30'
-                        }`}
+                        className={`p-4 rounded-2xl border-2 text-sm font-bold transition-all ${selectedGenres.includes(genre)
+                          ? 'border-primary bg-primary shadow-[0_0_20px_rgba(var(--primary),0.3)] text-white'
+                          : 'border-muted bg-muted/20 hover:border-primary/30'
+                          }`}
                         whileHover={{ y: -2 }}
                         whileTap={{ scale: 0.95 }}
                       >

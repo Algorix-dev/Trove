@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  override componentDidCatch(error: Error, errorInfo: any) {
+  override componentDidCatch(error: Error, errorInfo: unknown) {
     console.error('Error boundary caught:', error, errorInfo);
   }
 
@@ -40,7 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
           <h2 className="text-2xl font-bold mb-2">Oops! Something went wrong</h2>
           <p className="text-muted-foreground text-center mb-6 max-w-md">
-            We're sorry for the inconvenience. Please try refreshing the page.
+            We&apos;re sorry for the inconvenience. Please try refreshing the page.
           </p>
           <div className="flex gap-2">
             <Button

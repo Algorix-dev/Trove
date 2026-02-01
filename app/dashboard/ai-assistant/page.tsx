@@ -94,13 +94,13 @@ export default function AIAssistantPage() {
             </p>
             <div className="bg-background/50 rounded-lg p-4 mb-4 border">
               <p className="text-sm italic text-muted-foreground">
-                "What are the main themes in this chapter?"
+                &quot;What are the main themes in this chapter?&quot;
               </p>
               <p className="text-sm italic text-muted-foreground mt-2">
-                "Explain this concept in simpler terms"
+                &quot;Explain this concept in simpler terms&quot;
               </p>
               <p className="text-sm italic text-muted-foreground mt-2">
-                "Recommend similar books to what I'm reading"
+                &quot;Recommend similar books to what I&apos;m reading&quot;
               </p>
             </div>
             <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">

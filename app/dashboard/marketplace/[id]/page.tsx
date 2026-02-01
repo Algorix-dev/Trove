@@ -15,9 +15,9 @@ export default function MarketplaceListingPage() {
   const params = useParams();
   const router = useRouter();
   const supabase = createClient();
-  const [listing, setListing] = useState<any>(null);
+  const [listing, setListing] = useState<any>(null); // TODO: Define proper Listing type
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
 
   useEffect(() => {
     if (params['id']) {
@@ -62,7 +62,7 @@ export default function MarketplaceListingPage() {
       }
 
       setListing(data);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error loading listing:', error);
       toast.error('Failed to load listing');
     } finally {
@@ -71,6 +71,7 @@ export default function MarketplaceListingPage() {
   };
 
   const handlePaymentSuccess = async (reference: string) => {
+    if (!user) return;
     // Record transaction
     const { error } = await supabase.from('marketplace_transactions').insert({
       buyer_id: user.id,
@@ -204,7 +205,7 @@ export default function MarketplaceListingPage() {
           </div>
 
           <p className="text-lg text-muted-foreground leading-relaxed italic bg-muted/30 p-8 rounded-[2rem] border-l-4 border-primary">
-            "{listing.description || 'The owner left no lore for this item.'}"
+            &quot;{listing.description || 'The owner left no lore for this item.'}&quot;
           </p>
 
           <div className="pt-6 space-y-4">
@@ -229,11 +230,11 @@ export default function MarketplaceListingPage() {
             ) : user ? (
               <div className="space-y-4">
                 <PaystackButton
-                  email={user.email}
+                  email={user.email || ''}
                   amount={listing.price}
                   metadata={{ listing_id: listing.id }}
                   onSuccess={handlePaymentSuccess}
-                  onClose={() => {}}
+                  onClose={() => { }}
                 />
                 <Button
                   variant="secondary"

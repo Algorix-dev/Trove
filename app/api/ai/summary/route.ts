@@ -44,8 +44,7 @@ export async function POST(request: NextRequest) {
         author: book.author,
       },
     });
-  } catch (error: any) {
-    console.error('Error generating summary:', error);
+  } catch (error) {
     return NextResponse.json({ error: 'Failed to generate summary' }, { status: 500 });
   }
 }

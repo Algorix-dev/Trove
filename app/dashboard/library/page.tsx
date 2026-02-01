@@ -62,15 +62,13 @@ export default function LibraryPage() {
 
       if (error) throw error;
 
-      console.log('[LibraryPage] Fetched books for user:', user.id, 'Count:', booksData?.length);
-
       const transformedBooks =
         booksData?.map((book) => ({
           ...book,
           progress: book.progress_percentage || 0,
         })) || [];
 
-      setBooks(transformedBooks as any);
+      setBooks(transformedBooks);
 
       // Show welcome animation on first visit
       const hasSeenWelcome = sessionStorage.getItem('library-welcome-seen');

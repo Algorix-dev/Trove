@@ -62,8 +62,7 @@ export async function GET(_request: NextRequest) {
         totalMinutes,
       },
     });
-  } catch (error: any) {
-    console.error('Error generating study tips:', error);
+  } catch (error) {
     return NextResponse.json({ error: 'Failed to generate study tips' }, { status: 500 });
   }
 }

@@ -68,14 +68,23 @@ export async function GET(_request: NextRequest) {
     }
 
     // Fetch and parse RSS feeds
-    const allNewsItems: any[] = [];
+    const allNewsItems: Array<{
+      title: string;
+      description: string;
+      url: string;
+      source: string;
+      category: string;
+      published_at: string;
+      image_url: string | null;
+      tags: string[];
+    }> = [];
 
     for (const feedUrl of feedsToFetch) {
       try {
         const feed = await parser.parseURL(feedUrl);
 
         if (feed.items) {
-          feed.items.forEach((item: any) => {
+          feed.items.forEach((item) => {
             // Extract image from media or content
             let imageUrl = null;
             if (item['media:content']) {
@@ -101,18 +110,19 @@ export async function GET(_request: NextRequest) {
                 ? new Date(item.pubDate).toISOString()
                 : new Date().toISOString(),
               image_url: imageUrl,
-              tags: extractTags(item.title, item.contentSnippet),
+              tags: extractTags(item.title || '', item.contentSnippet || ''),
             });
           });
         }
       } catch (error) {
-        console.error(`Error fetching feed ${feedUrl}:`, error);
         // Continue with other feeds
       }
     }
 
     // Remove duplicates (by title)
-    const uniqueNews = Array.from(new Map(allNewsItems.map((item) => [item.title, item])).values());
+    const uniqueNews = Array.from(
+      new Map(allNewsItems.map((item) => [item.title || '', item])).values()
+    );
 
     // Sort by date (newest first)
     uniqueNews.sort(
@@ -150,7 +160,6 @@ export async function GET(_request: NextRequest) {
       source: 'google-news-rss',
     });
   } catch (error: any) {
-    console.error('Error fetching news:', error);
     return NextResponse.json(
       { error: 'Failed to fetch news', details: error.message },
       { status: 500 }

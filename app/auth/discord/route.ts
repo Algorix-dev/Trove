@@ -100,14 +100,12 @@ export async function GET(request: Request) {
     });
 
     if (signUpError) {
-      console.error('Discord signup error:', signUpError);
       return NextResponse.redirect(`${origin}/login?error=discord_signup_failed`);
     }
 
     // Redirect to onboarding for new users
     return NextResponse.redirect(`${origin}/onboarding`);
   } catch (error) {
-    console.error('Discord OAuth error:', error);
     return NextResponse.redirect(`${origin}/login?error=discord_auth_failed`);
   }
 }

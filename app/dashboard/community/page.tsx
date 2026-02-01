@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/client';
 
 export default function CommunityPage() {
   const supabase = createClient();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
