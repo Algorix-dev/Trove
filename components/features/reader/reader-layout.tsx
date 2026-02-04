@@ -3,7 +3,7 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { ArrowLeft, Bookmark, Settings } from 'lucide-react';
 import Link from 'next/link';
-import React, { ReactElement, useCallback, useEffect, useState } from 'react';
+import React, { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { ReaderSettings } from '@/components/features/reader/reader-settings';
@@ -28,9 +28,13 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   const [readerTheme, setReaderTheme] = useState<'light' | 'dark' | 'sepia'>('light');
   const [currentLocation, setCurrentLocation] = useState<LocationData>({});
 
-  const supabase = createBrowserClient(
-    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-    process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+  const supabase = useMemo(
+    () =>
+      createBrowserClient(
+        process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+        process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+      ),
+    []
   );
 
   // Load bookmark status
@@ -40,7 +44,6 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         .from('bookmarks')
         .select('id')
         .eq('book_id', bookId)
-        .eq('user_id', userId)
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -103,56 +106,16 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     setReaderTheme(theme);
     // Optionally save theme preference to user settings
     supabase
-      .from('user_settings')
+      .from('user_preferences')
       .upsert({ user_id: userId, reader_theme: theme }, { onConflict: 'user_id' })
       .then(({ error }) => {
         if (error) console.error('Failed to save theme preference:', error);
       });
   };
 
-  // Detect location updates
-  const handleLocationUpdate = useCallback(
-    (data: LocationData) => {
-      setCurrentLocation((prev) => ({ ...prev, ...data }));
-
-      // Auto-save reading progress periodically
-      if (data.progressPercentage && data.progressPercentage % 10 === 0) {
-        // 1. Update reading_progress
-        supabase
-          .from('reading_progress')
-          .upsert(
-            {
-              book_id: bookId,
-              user_id: userId,
-              progress_percentage: data.progressPercentage,
-              current_page: data.currentPage,
-              updated_at: new Date().toISOString(),
-            },
-            {
-              onConflict: 'book_id,user_id',
-            }
-          )
-          .then(({ error }) => {
-            if (error) console.error('Failed to save reading progress:', error);
-          });
-
-        // 2. Sync to books
-        supabase
-          .from('books')
-          .update({
-            progress_percentage: data.progressPercentage,
-            current_page: data.currentPage,
-            last_read_at: new Date().toISOString(),
-          })
-          .eq('id', bookId)
-          .eq('user_id', userId)
-          .then(({ error }) => {
-            if (error) console.error('Failed to sync reading progress to books:', error);
-          });
-      }
-    },
-    [bookId, userId, supabase]
-  );
+  const handleLocationUpdate = useCallback((data: LocationData) => {
+    setCurrentLocation((prev) => ({ ...prev, ...data }));
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-background">
