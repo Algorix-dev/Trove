@@ -287,7 +287,7 @@ export function EpubViewer({
 
         {selection && onSaveHighlight && (
           <div
-            className="fixed z-50 -translate-x-1/2 -translate-y-full"
+            className="fixed z-[200] -translate-x-1/2 -translate-y-full"
             style={{ left: selection.x, top: selection.y }}
           >
             <HighlightMenu
