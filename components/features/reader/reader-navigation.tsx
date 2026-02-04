@@ -76,7 +76,7 @@ export function ReaderNavigation({
 
                 <div className="py-6 space-y-6">
                     {/* Page Jump */}
-                    {totalPages && (
+                    {(totalPages || currentPage) && (
                         <form onSubmit={handlePageSubmit} className="space-y-2">
                             <label className="text-sm font-medium">Go to page</label>
                             <div className="flex gap-2">

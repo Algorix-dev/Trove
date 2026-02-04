@@ -16,10 +16,9 @@ export function ReaderSettings({ onThemeChange, currentTheme }: ReaderSettingsPr
       <CardHeader className="pb-2">
         <CardTitle className="text-sm">Reader Settings</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        \n{' '}
+      <CardContent className="space-y-4 pt-4">
         <div className="space-y-2">
-          \n <label className="text-xs font-medium">Theme</label>
+          <label className="text-xs font-medium">Theme</label>
           <div className="flex gap-2">
             <Button
               variant={currentTheme === 'light' ? 'default' : 'outline'}

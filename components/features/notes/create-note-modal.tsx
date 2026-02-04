@@ -17,9 +17,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { Book } from '@/types/database';
 
 export function CreateNoteModal() {
@@ -31,7 +37,7 @@ export function CreateNoteModal() {
       fetchBooks();
     }
   };
-  const [bookTitle, setBookTitle] = useState('');
+  const [selectedBookId, setSelectedBookId] = useState<string>('general');
   const [highlight, setHighlight] = useState('');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,29 +51,21 @@ export function CreateNoteModal() {
 
   const [libraryBooks, setLibraryBooks] = useState<Pick<Book, 'id' | 'title'>[]>([]);
 
-  // Fetch library books for matching
+  // Fetch library books for selection
   const fetchBooks = async () => {
     if (!user) return;
     const { data } = await supabase.from('books').select('id, title').eq('user_id', user.id);
-
     if (data) setLibraryBooks(data);
   };
 
   const handleSubmit = async () => {
-    if (!user || !bookTitle || !note) return;
+    if (!user || !note) return;
 
     setLoading(true);
     try {
-      // Find book with flexible matching (ignore case and extra spaces)
-      const targetTitle = bookTitle.trim().toLowerCase().replace(/\s+/g, ' ');
-
-      const matchedBook = libraryBooks.find(
-        (b) => b.title.toLowerCase().trim().replace(/\s+/g, ' ') === targetTitle
-      );
-
       const { error } = await supabase.from('notes').insert({
         user_id: user.id,
-        book_id: matchedBook ? matchedBook.id : null,
+        book_id: selectedBookId === 'general' ? null : selectedBookId,
         content: note,
         highlight_text: highlight || null,
       });
@@ -75,14 +73,14 @@ export function CreateNoteModal() {
       if (error) throw error;
 
       setOpen(false);
-      setBookTitle('');
+      setSelectedBookId('general');
       setHighlight('');
       setNote('');
       router.refresh();
       toast.success(
-        matchedBook
-          ? 'Note added to ' + matchedBook.title
-          : 'General note created (Book not found in library)'
+        selectedBookId !== 'general'
+          ? 'Note added to book'
+          : 'General note created'
       );
     } catch (error) {
       console.error('Note creation error:', error);
@@ -107,13 +105,20 @@ export function CreateNoteModal() {
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="book">Book Title</Label>
-            <Input
-              id="book"
-              placeholder="Enter book title..."
-              value={bookTitle}
-              onChange={(e) => setBookTitle(e.target.value)}
-            />
+            <Label htmlFor="book">Select Book</Label>
+            <Select value={selectedBookId} onValueChange={setSelectedBookId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a book..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">General Note (No Book)</SelectItem>
+                {libraryBooks.map((book) => (
+                  <SelectItem key={book.id} value={book.id}>
+                    {book.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="highlight">Highlight (Optional)</Label>
@@ -137,7 +142,7 @@ export function CreateNoteModal() {
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSubmit} disabled={!bookTitle || !note || loading}>
+          <Button onClick={handleSubmit} disabled={!note || loading}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
