@@ -136,7 +136,10 @@ export default function TutorialPage() {
       if (error) throw error;
 
       toast.success('Tutorial completed! Welcome to Trove! 🎉');
-      router.push('/dashboard');
+      router.refresh();
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 500);
     } catch (error: any) {
       toast.error(error.message || 'Failed to complete tutorial');
     } finally {

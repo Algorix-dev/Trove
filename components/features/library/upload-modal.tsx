@@ -39,6 +39,8 @@ interface UploadModalProps {
   onSuccess?: () => void;
 }
 
+type UploadStep = 'SELECT' | 'REVIEW' | 'UPLOADING' | 'SUCCESS';
+
 export function UploadModal({
   open: controlledOpen,
   onOpenChange,
@@ -46,7 +48,10 @@ export function UploadModal({
 }: UploadModalProps = {}) {
   const [file, setFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadStep, setUploadStep] = useState<UploadStep>('SELECT');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [bookTitle, setBookTitle] = useState('');
+  const [bookAuthor, setBookAuthor] = useState('Unknown Author');
   const [internalOpen, setInternalOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -84,6 +89,18 @@ export function UploadModal({
       }
 
       setFile(selectedFile);
+      setUploadStep('REVIEW');
+
+      // Initial title cleaning
+      const cleaned = selectedFile.name
+        .replace(/\.(pdf|epub|txt)$/i, '')
+        .replace(/OceanofPDF\.com/gi, '')
+        .replace(/ – /g, ' ')
+        .replace(/ - /g, ' ')
+        .replace(/_/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      setBookTitle(cleaned);
     }
   };
 
@@ -131,19 +148,25 @@ export function UploadModal({
   const handleUpload = async () => {
     if (!file || !user) return;
 
-    setUploading(true);
+    setUploadStep('UPLOADING');
+    setUploadProgress(0);
 
     try {
       const fileExt = file.name.split('.').pop()?.toLowerCase();
-
-      // 1. Upload book file to storage
       const filePath = `${user.id}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('books').upload(filePath, file);
+
+      // 1. Upload book file with progress
+      const { error: uploadError } = await supabase.storage.from('books').upload(filePath, file, {
+        onUploadProgress: (progress) => {
+          const percent = (progress.loaded / progress.total) * 100;
+          setUploadProgress(Math.round(percent));
+        }
+      });
 
       if (uploadError) {
         toast.error('Failed to upload file. Please try again.');
         console.error(uploadError);
-        setUploading(false);
+        setUploadStep('REVIEW');
         return;
       }
 
@@ -185,18 +208,11 @@ export function UploadModal({
         }
       }
 
-      // 5. Clean up book title
-      const bookTitle = file.name
-        .replace(/\.(pdf|epub|txt)$/i, '')
-        .replace(/_/g, ' ')
-        .replace(/^.*?_/, '')
-        .trim();
-
-      // 6. Insert record into database
+      // 5. Insert record into database
       const { error: dbError } = await supabase.from('books').insert({
         user_id: user.id,
         title: bookTitle,
-        author: 'Unknown Author',
+        author: bookAuthor,
         file_url: publicUrl,
         file_path: filePath,
         cover_url: coverUrl,
@@ -221,9 +237,14 @@ export function UploadModal({
       }
 
       toast.success('Book uploaded successfully!');
-      setFile(null);
-      setCoverFile(null);
-      setOpen(false);
+      setUploadStep('SUCCESS');
+
+      setTimeout(() => {
+        setFile(null);
+        setCoverFile(null);
+        setOpen(false);
+        setUploadStep('SELECT');
+      }, 2000);
 
       // Trigger re-fetch if callback provided
       if (onSuccess) {
@@ -232,8 +253,7 @@ export function UploadModal({
     } catch (error) {
       toast.error('An unexpected error occurred. Please try again.');
       console.error(error);
-    } finally {
-      setUploading(false);
+      setUploadStep('REVIEW');
     }
   };
 
@@ -254,93 +274,150 @@ export function UploadModal({
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-6 py-8">
-            {/* Book File Upload */}
-            <div
-              className={`border-2 border-dashed rounded-[2rem] p-10 text-center transition-all cursor-pointer flex flex-col items-center justify-center group relative overflow-hidden ${isDragging ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/50'
-                }`}
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              {file ? (
-                <>
-                  <div className="bg-primary/10 p-4 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
-                    <FileText className="h-10 w-10 text-primary" />
-                  </div>
-                  <p className="text-lg font-bold truncate max-w-full px-4">{file.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="bg-muted p-4 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
-                    <Upload className="h-10 w-10 text-muted-foreground" />
-                  </div>
-                  <p className="text-lg font-bold">Drag & Drop</p>
-                  <p className="text-sm text-muted-foreground mt-1">PDF, EPUB, or TXT (Max 50MB)</p>
-                </>
-              )}
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept=".pdf,.epub,.txt"
-                onChange={handleFileSelect}
-              />
-            </div>
-
-            {/* Cover Image Upload (Optional) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between px-2">
-                <label className="text-sm font-semibold">Custom Cover</label>
-                <span className="text-xs text-muted-foreground italic">(Optional)</span>
-              </div>
-              <div className="flex items-center gap-4 bg-muted/50 p-3 rounded-2xl border border-border/50">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="rounded-xl h-10 px-4"
-                  onClick={() => coverInputRef.current?.click()}
-                >
-                  Choose Image
-                </Button>
-                <div className="flex-1 truncate">
-                  {coverFile ? (
-                    <div className="flex items-center gap-2 text-sm">
-                      <ImageIcon className="h-4 w-4 text-primary" />
-                      <span className="truncate">{coverFile.name}</span>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">Auto-generated gradient</span>
-                  )}
+            {uploadStep === 'SELECT' && (
+              <div
+                className={`border-2 border-dashed rounded-[2rem] p-10 text-center transition-all cursor-pointer flex flex-col items-center justify-center group relative overflow-hidden ${isDragging ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/50'
+                  }`}
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <div className="bg-muted p-4 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
+                  <Upload className="h-10 w-10 text-muted-foreground" />
                 </div>
+                <p className="text-lg font-bold">Drag & Drop</p>
+                <p className="text-sm text-muted-foreground mt-1">PDF, EPUB, or TXT (Max 50MB)</p>
                 <input
                   type="file"
-                  ref={coverInputRef}
+                  ref={fileInputRef}
                   className="hidden"
-                  accept="image/*"
-                  onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                  accept=".pdf,.epub,.txt"
+                  onChange={handleFileSelect}
                 />
               </div>
-            </div>
+            )}
+
+            {uploadStep === 'REVIEW' && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center gap-4 p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                  <div className="bg-primary/10 p-3 rounded-xl">
+                    <FileText className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-muted-foreground">Ready to upload</p>
+                    <p className="font-bold truncate">{file?.name}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold px-1">Book Title</label>
+                    <input
+                      type="text"
+                      value={bookTitle}
+                      onChange={(e) => setBookTitle(e.target.value)}
+                      className="w-full h-12 px-4 rounded-xl bg-muted/50 border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="Enter book title"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold px-1">Author</label>
+                    <input
+                      type="text"
+                      value={bookAuthor}
+                      onChange={(e) => setBookAuthor(e.target.value)}
+                      className="w-full h-12 px-4 rounded-xl bg-muted/50 border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="Enter author name"
+                    />
+                  </div>
+
+                  {/* Cover Image Upload (Optional) */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                      <label className="text-sm font-semibold">Custom Cover</label>
+                      <span className="text-xs text-muted-foreground italic">(Optional)</span>
+                    </div>
+                    <div className="flex items-center gap-4 bg-muted/50 p-3 rounded-2xl border border-border/50">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="rounded-xl h-10 px-4"
+                        onClick={() => coverInputRef.current?.click()}
+                      >
+                        Choose
+                      </Button>
+                      <div className="flex-1 truncate">
+                        {coverFile ? (
+                          <div className="flex items-center gap-2 text-sm">
+                            <ImageIcon className="h-4 w-4 text-primary" />
+                            <span className="truncate">{coverFile.name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Auto-gradient</span>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        ref={coverInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(uploadStep === 'UPLOADING' || uploadStep === 'SUCCESS') && (
+              <div className="py-10 flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-500">
+                <div className="relative w-32 h-32 flex items-center justify-center">
+                  <div className="absolute inset-0 border-4 border-primary/10 rounded-full" />
+                  <div
+                    className="absolute inset-0 border-4 border-primary rounded-full transition-all duration-300"
+                    style={{
+                      clipPath: `inset(${100 - uploadProgress}% 0 0 0)`,
+                      opacity: uploadStep === 'SUCCESS' ? 0 : 1
+                    }}
+                  />
+                  {uploadStep === 'SUCCESS' ? (
+                    <div className="bg-green-500 rounded-full p-4 animate-in zoom-in duration-300">
+                      <Check className="h-12 w-12 text-white" />
+                    </div>
+                  ) : (
+                    <div className="text-2xl font-bold text-primary">{uploadProgress}%</div>
+                  )}
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl font-bold">
+                    {uploadStep === 'SUCCESS' ? 'Treasure Secured!' : 'Securing Treasure...'}
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {uploadStep === 'SUCCESS' ? 'Adding to your collection now.' : 'Processing your book and extracting wisdom.'}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
-            <Button
-              onClick={handleUpload}
-              disabled={!file || uploading}
-              className="w-full h-14 rounded-2xl text-lg font-bold shadow-xl shadow-primary/20"
-            >
-              {uploading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  <span>Securing Treasure...</span>
-                </>
-              ) : (
-                'Add to Collection'
-              )}
-            </Button>
+            {uploadStep === 'REVIEW' && (
+              <div className="flex gap-3 w-full">
+                <Button
+                  variant="outline"
+                  onClick={() => setUploadStep('SELECT')}
+                  className="flex-1 h-14 rounded-2xl text-lg font-bold"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleUpload}
+                  className="flex-[2] h-14 rounded-2xl text-lg font-bold shadow-xl shadow-primary/20"
+                >
+                  Add to Collection
+                </Button>
+              </div>
+            )}
           </DialogFooter>
         </div>
       </DialogContent>

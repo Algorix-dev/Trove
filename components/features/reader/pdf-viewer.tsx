@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 
 import { Button } from '@/components/ui/button';
+import { HighlightMenu } from '@/components/features/reader/highlight-menu';
 import { GamificationService } from '@/lib/gamification';
 
 // Configure PDF.js worker
@@ -24,6 +25,9 @@ interface PDFViewerProps {
     currentCFI?: string;
     progressPercentage?: number;
   }) => void;
+  onMetadata?: (data: { toc: any[] }) => void;
+  onSaveHighlight?: (data: any) => Promise<void>;
+  bookTitle?: string;
   initialPage?: number;
 }
 
@@ -33,12 +37,16 @@ export function PDFViewer({
   userId,
   readerTheme = 'light',
   onLocationUpdate,
+  onMetadata,
+  onSaveHighlight,
+  bookTitle = 'Untitled',
   initialPage,
 }: PDFViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
   const [loading, setLoading] = useState(true);
+  const [selection, setSelection] = useState<{ text: string; x: number; y: number } | null>(null);
 
   const supabase = createBrowserClient(
     process.env['NEXT_PUBLIC_SUPABASE_URL']!,
@@ -68,6 +76,13 @@ export function PDFViewer({
     };
     loadProgress();
   }, [bookId, userId, initialPage]);
+
+  // Handle external page changes
+  useEffect(() => {
+    if (initialPage && initialPage !== pageNumber) {
+      setPageNumber(initialPage);
+    }
+  }, [initialPage]);
 
   // Save progress when page changes (DEBOUNCED)
   useEffect(() => {
@@ -146,10 +161,43 @@ export function PDFViewer({
     return () => clearInterval(interval);
   }, [userId, loading, numPages, bookId]);
 
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
+  async function onDocumentLoadSuccess(pdf: any) {
+    setNumPages(pdf.numPages);
     setLoading(false);
+
+    // Extract TOC (Outline)
+    if (onMetadata) {
+      try {
+        const outline = await pdf.getOutline();
+        if (outline) {
+          const formattedToc = outline.map((item: any, index: number) => ({
+            id: index,
+            label: item.title,
+            data: { page: null } // PDF outline needs more work to map to page numbers, but for now we list them
+          }));
+
+          onMetadata({ toc: formattedToc });
+        }
+      } catch (err) {
+        console.error('Failed to get PDF outline:', err);
+      }
+    }
   }
+
+  const handleMouseUp = () => {
+    const selected = window.getSelection();
+    if (selected && selected.toString().trim()) {
+      const range = selected.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      setSelection({
+        text: selected.toString().trim(),
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10,
+      });
+    } else {
+      setSelection(null);
+    }
+  };
 
   // Theme styles with CSS filters for PDF
   const themeStyles = {
@@ -198,7 +246,10 @@ export function PDFViewer({
       </div>
 
       {/* Viewer */}
-      <div className={`flex-1 overflow-auto flex justify-center p-8 ${currentTheme.background}`}>
+      <div
+        className={`flex-1 overflow-auto flex justify-center p-8 ${currentTheme.background} relative`}
+        onMouseUp={handleMouseUp}
+      >
         <div className="shadow-2xl">
           <Document
             file={fileUrl}
@@ -225,6 +276,22 @@ export function PDFViewer({
             </div>
           </Document>
         </div>
+
+        {selection && onSaveHighlight && (
+          <div
+            className="fixed z-50 -translate-x-1/2 -translate-y-full"
+            style={{ left: selection.x, top: selection.y }}
+          >
+            <HighlightMenu
+              selectedText={selection.text}
+              bookId={bookId}
+              bookTitle={bookTitle}
+              pageNumber={pageNumber}
+              onSave={onSaveHighlight}
+              onClose={() => setSelection(null)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Footer Controls */}

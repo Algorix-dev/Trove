@@ -6,6 +6,7 @@ import Link from 'next/link';
 import React, { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { ReaderNavigation } from '@/components/features/reader/reader-navigation';
 import { ReaderSettings } from '@/components/features/reader/reader-settings';
 import { Button } from '@/components/ui/button';
 
@@ -27,6 +28,10 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [readerTheme, setReaderTheme] = useState<'light' | 'dark' | 'sepia'>('light');
   const [currentLocation, setCurrentLocation] = useState<LocationData>({});
+  const [history, setHistory] = useState<any[]>([]);
+  const [bookmarks, setBookmarks] = useState<any[]>([]);
+  const [toc, setToc] = useState<any[]>([]);
+  const [jumpLocation, setJumpLocation] = useState<any>(null);
 
   const supabase = useMemo(
     () =>
@@ -52,16 +57,79 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         return;
       }
 
-      setIsBookmarked(!!data);
+      if (data) {
+        setIsBookmarked(true);
+      }
+
+      // Load all bookmarks for this book to show in navigation
+      const { data: allBookmarks } = await supabase
+        .from('bookmarks')
+        .select('*')
+        .eq('book_id', bookId)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (allBookmarks) {
+        setBookmarks(allBookmarks.map((b: any) => ({
+          id: b.id,
+          label: b.page_number ? `Page ${b.page_number}` : 'Bookmarked Location',
+          subLabel: b.note || new Date(b.created_at).toLocaleDateString(),
+          data: { page: b.page_number, cfi: b.epub_cfi, progress: b.progress_percentage }
+        })));
+      }
     } catch (error) {
       console.error('Failed to load bookmark:', error);
       toast.error('Failed to load bookmark status');
     }
   }, [bookId, userId, supabase]);
 
+  const handleMetadataUpdate = useCallback((data: { toc: any[] }) => {
+    if (data.toc) {
+      setToc(data.toc);
+    }
+  }, []);
+
   useEffect(() => {
     loadBookmark();
+    loadHistory();
   }, [loadBookmark]);
+
+  const loadHistory = async () => {
+    const { data } = await supabase
+      .from('reading_progress')
+      .select('last_pages')
+      .eq('book_id', bookId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (data?.last_pages) {
+      setHistory(data.last_pages);
+    }
+  };
+
+  const handleNavigate = (data: any) => {
+    setJumpLocation(data);
+    // Add to history
+    if (currentLocation.currentPage || currentLocation.currentCFI) {
+      const newHistoryItem = {
+        id: Date.now(),
+        label: currentLocation.currentPage ? `Page ${currentLocation.currentPage}` : 'Recent Location',
+        data: { ...currentLocation },
+        timestamp: new Date().toISOString()
+      };
+
+      const updatedHistory = [newHistoryItem, ...history.filter(h => h.label !== newHistoryItem.label)].slice(0, 10);
+      setHistory(updatedHistory);
+
+      // Persist history
+      supabase
+        .from('reading_progress')
+        .update({ last_pages: updatedHistory })
+        .eq('book_id', bookId)
+        .eq('user_id', userId)
+        .then();
+    }
+  };
 
   const handleBookmark = async () => {
     try {
@@ -102,6 +170,29 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     }
   };
 
+  const handleSaveHighlight = async (data: any) => {
+    try {
+      const { error } = await supabase.from('book_quotes').insert({
+        user_id: userId,
+        book_id: bookId,
+        quote_text: data.quote_text,
+        page_number: data.page_number || currentLocation.currentPage,
+        chapter: data.chapter,
+        note: data.note,
+        color: data.color,
+        highlight_type: data.highlight_type,
+        selection_data: data.selection_data,
+      });
+
+      if (error) throw error;
+      toast.success('Highlight saved!');
+      loadBookmark(); // Refresh if needed (though book_quotes isn't bookmarks)
+    } catch (error) {
+      console.error('Save highlight error:', error);
+      toast.error('Failed to save highlight');
+    }
+  };
+
   const handleThemeChange = (theme: 'light' | 'dark' | 'sepia') => {
     setReaderTheme(theme);
     // Optionally save theme preference to user settings
@@ -132,6 +223,14 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          <ReaderNavigation
+            currentPage={currentLocation.currentPage}
+            currentCFI={currentLocation.currentCFI}
+            bookmarks={bookmarks}
+            history={history}
+            toc={toc}
+            onNavigate={handleNavigate}
+          />
           <Button
             variant="ghost"
             size="icon"
@@ -158,9 +257,15 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       <main className="flex-1 overflow-hidden relative">
         {React.Children.map(children, (child) => {
           if (React.isValidElement(child)) {
-            return React.cloneElement(child as ReactElement<any>, {
+            const childElement = child as ReactElement<any>;
+            return React.cloneElement(childElement, {
               readerTheme,
               onLocationUpdate: handleLocationUpdate,
+              onMetadata: handleMetadataUpdate,
+              onSaveHighlight: handleSaveHighlight,
+              bookTitle: title,
+              initialPage: jumpLocation?.page || childElement.props.initialPage,
+              initialLocation: jumpLocation?.cfi || jumpLocation?.progress || childElement.props.initialLocation,
             });
           }
           return child;

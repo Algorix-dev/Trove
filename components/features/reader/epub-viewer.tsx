@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { HighlightMenu } from '@/components/features/reader/highlight-menu';
 import { GamificationService } from '@/lib/gamification';
 
 interface EpubViewerProps {
@@ -20,6 +21,9 @@ interface EpubViewerProps {
     currentCFI?: string;
     progressPercentage?: number;
   }) => void;
+  onMetadata?: (data: { toc: any[] }) => void;
+  onSaveHighlight?: (data: any) => Promise<void>;
+  bookTitle?: string;
 }
 
 export function EpubViewer({
@@ -29,7 +33,10 @@ export function EpubViewer({
   readerTheme = 'light',
   userId,
   bookId,
+  bookTitle = 'Untitled',
   onLocationUpdate,
+  onMetadata,
+  onSaveHighlight,
 }: EpubViewerProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const renditionRef = useRef<any>(null);
@@ -38,6 +45,7 @@ export function EpubViewer({
   const [isReady, setIsReady] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [selection, setSelection] = useState<{ text: string; x: number; y: number; cfi: string } | null>(null);
 
   const saveProgress = async (cfi: string, progressValue: number) => {
     const supabase = createBrowserClient(
@@ -141,6 +149,41 @@ export function EpubViewer({
           updateProgress();
         });
 
+        // Handle selection
+        rendition.on('selected', (cfiRange: string, contents: any) => {
+          const range = contents.range(cfiRange);
+          const rect = range.getBoundingClientRect();
+          const text = rendition.getRange(cfiRange).toString();
+
+          setSelection({
+            text: text.trim(),
+            cfi: cfiRange,
+            x: rect.left + rect.width / 2,
+            y: rect.top - 10,
+          });
+
+          // Add highlight to rendition immediately (client-side only)
+          rendition.annotations.add('highlight', cfiRange, {}, (e: any) => {
+            console.log('Highlight clicked', e);
+          });
+
+          // Clean up selection visual
+          contents.window.getSelection().removeAllRanges();
+        });
+
+        // Extract TOC
+        if (onMetadata) {
+          const navigation = book.navigation;
+          if (navigation && navigation.toc) {
+            const formattedToc = navigation.toc.map((item: any, index: number) => ({
+              id: index,
+              label: item.label,
+              data: { cfi: item.href }
+            }));
+            onMetadata({ toc: formattedToc });
+          }
+        }
+
         // Listen for relocation events
         rendition.on('relocated', () => {
           updateProgress();
@@ -159,6 +202,13 @@ export function EpubViewer({
       }
     };
   }, [url]);
+
+  // Handle external location changes
+  useEffect(() => {
+    if (initialLocation && renditionRef.current) {
+      renditionRef.current.display(initialLocation.toString());
+    }
+  }, [initialLocation]);
 
   // Handle Theme Changes
   useEffect(() => {
@@ -234,6 +284,21 @@ export function EpubViewer({
     <div className="flex flex-col h-full relative group">
       <div className="flex-1 relative">
         <div ref={viewerRef} className="h-full w-full" />
+
+        {selection && onSaveHighlight && (
+          <div
+            className="fixed z-50 -translate-x-1/2 -translate-y-full"
+            style={{ left: selection.x, top: selection.y }}
+          >
+            <HighlightMenu
+              selectedText={selection.text}
+              bookId={bookId}
+              bookTitle={bookTitle}
+              onSave={(data) => onSaveHighlight({ ...data, selection_data: { cfi: selection.cfi } })}
+              onClose={() => setSelection(null)}
+            />
+          </div>
+        )}
 
         {!isReady && !error && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-20">
