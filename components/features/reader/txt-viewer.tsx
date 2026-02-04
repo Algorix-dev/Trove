@@ -17,6 +17,7 @@ interface TxtViewerProps {
   bookTitle?: string;
   onLocationUpdate?: (data: {
     currentPage?: number;
+    totalPages?: number;
     currentCFI?: string;
     progressPercentage?: number;
   }) => void;

@@ -18,6 +18,7 @@ interface EpubViewerProps {
   bookId: string;
   onLocationUpdate?: (data: {
     currentPage?: number;
+    totalPages?: number;
     currentCFI?: string;
     progressPercentage?: number;
   }) => void;

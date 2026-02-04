@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 
 interface LocationData {
   currentPage?: number;
+  totalPages?: number;
   currentCFI?: string;
   progressPercentage?: number;
 }
@@ -224,6 +225,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         </div>
         <div className="flex items-center gap-2">
           <ReaderNavigation
+            totalPages={currentLocation.totalPages}
             currentPage={currentLocation.currentPage}
             currentCFI={currentLocation.currentCFI}
             bookmarks={bookmarks}

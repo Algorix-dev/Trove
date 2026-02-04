@@ -6,7 +6,7 @@ import {
     History,
     List
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,10 +47,17 @@ export function ReaderNavigation({
 }: ReaderNavigationProps) {
     const [pageInput, setPageInput] = useState(currentPage?.toString() || '');
 
+    useEffect(() => {
+        if (currentPage) {
+            setPageInput(currentPage.toString());
+        }
+    }, [currentPage]);
+
     const handlePageSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const page = parseInt(pageInput);
-        if (page > 0 && totalPages && page <= totalPages) {
+        if (page > 0) {
+            if (totalPages && page > totalPages) return;
             onNavigate({ page });
         }
     };
@@ -62,33 +69,35 @@ export function ReaderNavigation({
                     <List className="h-5 w-5" />
                 </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[350px] sm:w-[400px]">
+            <SheetContent side="right" className="w-[90%] sm:w-[400px]">
                 <SheetHeader>
                     <SheetTitle>Navigation</SheetTitle>
                 </SheetHeader>
 
                 <div className="py-6 space-y-6">
                     {/* Page Jump */}
-                    <form onSubmit={handlePageSubmit} className="space-y-2">
-                        <label className="text-sm font-medium">Go to page</label>
-                        <div className="flex gap-2">
-                            <Input
-                                type="number"
-                                placeholder={`1 - ${totalPages || '?'}`}
-                                value={pageInput}
-                                onChange={(e) => setPageInput(e.target.value)}
-                                min={1}
-                                max={totalPages}
-                            />
-                            <Button type="submit" size="sm">Go</Button>
-                        </div>
-                    </form>
+                    {totalPages && (
+                        <form onSubmit={handlePageSubmit} className="space-y-2">
+                            <label className="text-sm font-medium">Go to page</label>
+                            <div className="flex gap-2">
+                                <Input
+                                    type="number"
+                                    placeholder={`1 - ${totalPages}`}
+                                    value={pageInput}
+                                    onChange={(e) => setPageInput(e.target.value)}
+                                    min={1}
+                                    max={totalPages}
+                                />
+                                <Button type="submit" size="sm">Go</Button>
+                            </div>
+                        </form>
+                    )}
 
                     <Tabs defaultValue="toc" className="w-full">
                         <TabsList className="grid w-full grid-cols-3">
                             <TabsTrigger value="toc"><List className="h-4 w-4 mr-2" />ToC</TabsTrigger>
                             <TabsTrigger value="history"><History className="h-4 w-4 mr-2" />History</TabsTrigger>
-                            <TabsTrigger value="bookmarks"><BookMarked className="h-4 w-4 mr-2" />Books</TabsTrigger>
+                            <TabsTrigger value="bookmarks"><BookMarked className="h-4 w-4 mr-2" />Bookmarks</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="toc" className="mt-4">

@@ -22,6 +22,7 @@ interface PDFViewerProps {
   readerTheme?: 'light' | 'dark' | 'sepia';
   onLocationUpdate?: (data: {
     currentPage?: number;
+    totalPages?: number;
     currentCFI?: string;
     progressPercentage?: number;
   }) => void;
@@ -165,18 +166,31 @@ export function PDFViewer({
     setNumPages(pdf.numPages);
     setLoading(false);
 
+    if (onLocationUpdate) {
+      onLocationUpdate({ totalPages: pdf.numPages });
+    }
+
     // Extract TOC (Outline)
     if (onMetadata) {
       try {
         const outline = await pdf.getOutline();
         if (outline) {
-          const formattedToc = outline.map((item: any, index: number) => ({
-            id: index,
-            label: item.title,
-            data: { page: null } // PDF outline needs more work to map to page numbers, but for now we list them
+          const formattedToc = await Promise.all(outline.map(async (item: any, index: number) => {
+            let pageNum = null;
+            if (item.dest) {
+              const dest = await pdf.getDestination(item.dest);
+              if (dest) {
+                pageNum = await pdf.getPageIndex(dest[0]) + 1;
+              }
+            }
+            return {
+              id: index,
+              label: item.title,
+              data: { page: pageNum }
+            };
           }));
 
-          onMetadata({ toc: formattedToc });
+          onMetadata({ toc: formattedToc.filter(i => i.data.page !== null) });
         }
       } catch (err) {
         console.error('Failed to get PDF outline:', err);
