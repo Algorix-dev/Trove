@@ -4,8 +4,7 @@ import {
     BookMarked,
     ChevronRight,
     History,
-    List,
-    Search
+    List
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -63,7 +62,7 @@ export function ReaderNavigation({
                     <List className="h-5 w-5" />
                 </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[350px] sm:w-[400px]">
+            <SheetContent side="right" className="w-[350px] sm:w-[400px]">
                 <SheetHeader>
                     <SheetTitle>Navigation</SheetTitle>
                 </SheetHeader>

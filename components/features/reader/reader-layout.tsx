@@ -209,7 +209,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="fixed inset-0 z-[100] flex flex-col h-screen bg-background">
       {/* Header */}
       <header className="h-14 border-b flex items-center justify-between px-4 bg-background z-10">
         <div className="flex items-center gap-4">
