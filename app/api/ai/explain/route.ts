@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { explainHighlight } from '@/lib/ai';
 import { createClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
     try {
         const supabase = await createClient();

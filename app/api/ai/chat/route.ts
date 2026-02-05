@@ -4,6 +4,8 @@ import { openai, AI_MODELS } from '@/lib/ai';
 import { cleanText, extractTextFromBuffer } from '@/lib/extractor';
 import { createClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
     try {
         const supabase = await createClient();
