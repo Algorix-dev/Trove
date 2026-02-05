@@ -30,6 +30,7 @@ interface PDFViewerProps {
   onMetadata?: (data: { toc: any[] }) => void;
   onSaveHighlight?: (data: any) => Promise<void>;
   bookTitle?: string;
+  author?: string;
   initialPage?: number;
 }
 
@@ -42,6 +43,7 @@ export function PDFViewer({
   onMetadata,
   onSaveHighlight,
   bookTitle = 'Untitled',
+  author,
   initialPage,
 }: PDFViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
@@ -316,6 +318,7 @@ export function PDFViewer({
               selectedText={selection.text}
               bookId={bookId}
               bookTitle={bookTitle}
+              author={author}
               pageNumber={pageNumber}
               existingHighlight={(selection as any).id ? selection : undefined}
               onSave={(data) => onSaveHighlight({ ...data, page_number: pageNumber })}

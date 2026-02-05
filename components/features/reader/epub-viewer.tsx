@@ -26,6 +26,7 @@ interface EpubViewerProps {
   onMetadata?: (data: { toc: any[] }) => void;
   onSaveHighlight?: (data: any) => Promise<void>;
   bookTitle?: string;
+  author?: string;
 }
 
 export function EpubViewer({
@@ -39,6 +40,7 @@ export function EpubViewer({
   onLocationUpdate,
   onMetadata,
   onSaveHighlight,
+  author,
 }: EpubViewerProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const renditionRef = useRef<any>(null);
@@ -197,6 +199,41 @@ export function EpubViewer({
     }
   };
 
+  // Track reading time and award XP
+  useEffect(() => {
+    let sessionStart = Date.now();
+
+    const interval = setInterval(async () => {
+      // Check if actively reading
+      if (isReady && !error) {
+        const minutesRead = Math.round((Date.now() - sessionStart) / 60000);
+
+        if (minutesRead >= 1) {
+          const supabase = createBrowserClient(
+            process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+            process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+          );
+
+          // Create reading session record
+          await supabase.from('reading_sessions').insert({
+            user_id: userId,
+            book_id: bookId,
+            duration_minutes: 1,
+            session_date: new Date().toISOString().split('T')[0],
+          });
+
+          // Award XP
+          await GamificationService.awardXP(userId, 1, 'Reading Time', bookId);
+
+          // Reset session start
+          sessionStart = Date.now();
+        }
+      }
+    }, 60000); // Every minute
+
+    return () => clearInterval(interval);
+  }, [isReady, error, userId, bookId]);
+
   useEffect(() => {
     if (!viewerRef.current) return;
 
@@ -283,63 +320,28 @@ export function EpubViewer({
         bookRef.current.destroy();
       }
     };
-  }, [url]);
+  }, [url, initialLocation, onMetadata, loadHighlights]);
 
-  // Handle external location changes
+  // Apply theme to rendition when isReady or readerTheme changes
   useEffect(() => {
-    if (initialLocation && renditionRef.current) {
-      renditionRef.current.display(initialLocation.toString());
+    if (isReady && renditionRef.current) {
+      const styles: any = {
+        body: {
+          background: 'transparent !important',
+          color:
+            readerTheme === 'dark'
+              ? '#f3f4f6 !important'
+              : readerTheme === 'sepia'
+                ? '#5f4b32 !important'
+                : '#111827 !important',
+          'font-family': 'Inter, sans-serif !important',
+        },
+      };
+
+      renditionRef.current.themes.register('custom', styles);
+      renditionRef.current.themes.select('custom');
     }
-  }, [initialLocation]);
-
-  // Handle Theme Changes
-  useEffect(() => {
-    if (!renditionRef.current) return;
-
-    const themes = renditionRef.current.themes;
-
-    // Register themes
-    themes.register('light', { body: { color: '#000000', background: '#ffffff' } });
-    themes.register('dark', { body: { color: '#ffffff', background: '#1a1a1a' } });
-    themes.register('sepia', { body: { color: '#5f4b32', background: '#f6f1d1' } });
-
-    // Select theme
-    themes.select(readerTheme);
-  }, [readerTheme, isReady]);
-
-  // Track reading time and award XP
-  useEffect(() => {
-    let sessionStart = Date.now();
-
-    const interval = setInterval(async () => {
-      if (isReady) {
-        const minutesRead = Math.round((Date.now() - sessionStart) / 60000);
-
-        if (minutesRead >= 1) {
-          const supabase = createBrowserClient(
-            process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-            process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
-          );
-
-          // Create reading session record
-          await supabase.from('reading_sessions').insert({
-            user_id: userId,
-            book_id: bookId,
-            duration_minutes: 1,
-            session_date: new Date().toISOString().split('T')[0],
-          });
-
-          // Award XP
-          await GamificationService.awardXP(userId, 1, 'Reading Time', bookId);
-
-          // Reset session start
-          sessionStart = Date.now();
-        }
-      }
-    }, 60000); // Every minute
-
-    return () => clearInterval(interval);
-  }, [userId, isReady, bookId]);
+  }, [isReady, readerTheme]);
 
   const prevPage = () => {
     if (renditionRef.current) {
@@ -356,18 +358,21 @@ export function EpubViewer({
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-        <p className="text-destructive font-bold mb-4">{error}</p>
-        <Button onClick={() => window.location.reload()}>Retry</Button>
+        <div className="text-destructive mb-4">Error loading book</div>
+        <p className="text-muted-foreground">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full relative group">
-      <div className="flex-1 relative">
+    <div className={`flex flex-col h-full bg-background group relative`}>
+      <div className="flex-1 w-full relative" onMouseUp={() => {
+        // Fallback for selection if EPUB internal events fail
+        // But usually EPUB handles its own selection
+      }}>
         <div ref={viewerRef} className="h-full w-full" />
 
-        {selection && onSaveHighlight && (
+        {selection && (
           <div
             className="fixed z-[200] -translate-x-1/2 -translate-y-full"
             style={{ left: selection.x, top: selection.y }}
@@ -376,8 +381,12 @@ export function EpubViewer({
               selectedText={selection.text}
               bookId={bookId}
               bookTitle={bookTitle}
+              author={author}
               existingHighlight={(selection as any).id ? selection : undefined}
-              onSave={(data) => onSaveHighlight({ ...data, selection_data: { cfi: selection.cfi } }).then(() => loadHighlights())}
+              onSave={(data) => {
+                const promise = onSaveHighlight?.({ ...data, selection_data: { cfi: selection.cfi } });
+                return (promise || Promise.resolve()).then(() => loadHighlights());
+              }}
               onUpdate={handleUpdateHighlight}
               onDelete={handleDeleteHighlight}
               onClose={() => setSelection(null)}

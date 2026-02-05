@@ -62,10 +62,11 @@ export function DashboardStats() {
       // Calculate total and today's minutes
       const totalMinutes =
         sessionsData.data?.reduce((acc, session) => acc + session.duration_minutes, 0) || 0;
-      const today = new Date().toISOString().split('T')[0];
+
+      const localToday = new Date().toLocaleDateString('en-CA'); // yyyy-mm-dd
       const todayMinutes =
         sessionsData.data
-          ?.filter((session) => session.session_date === today)
+          ?.filter((session) => session.session_date === localToday)
           .reduce((acc, session) => acc + session.duration_minutes, 0) || 0;
 
       setStats({

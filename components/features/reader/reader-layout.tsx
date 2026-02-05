@@ -22,6 +22,7 @@ interface ReaderLayoutProps {
   title: string;
   bookId: string;
   userId: string;
+  author?: string;
 }
 
 export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutProps) {
@@ -238,6 +239,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     // When manually navigating, we add the current location to history immediately
     addToHistory(currentLocation);
     setJumpLocation(data);
+    loadBookmark(); // Refresh bookmarks after navigation
   };
 
   return (

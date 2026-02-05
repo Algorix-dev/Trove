@@ -117,13 +117,13 @@ export default async function ReaderPage({
     : undefined;
 
   return (
-    <ReaderLayout title={book.title} bookId={id} userId={user.id}>
+    <ReaderLayout title={book.title} bookId={id} userId={user.id} author={book.author}>
       {format === 'epub' ? (
-        <EpubViewer url={fileUrl} userId={user.id} bookId={id} initialLocation={bookmarkCFI} />
+        <EpubViewer url={fileUrl} userId={user.id} bookId={id} initialLocation={bookmarkCFI} bookTitle={book.title} author={book.author} />
       ) : format === 'txt' ? (
-        <TxtViewer url={fileUrl} userId={user.id} bookId={id} initialLocation={bookmarkProgress} />
+        <TxtViewer url={fileUrl} userId={user.id} bookId={id} initialLocation={bookmarkProgress} bookTitle={book.title} author={book.author} />
       ) : (
-        <PDFViewer fileUrl={fileUrl} bookId={id} userId={user.id} initialPage={bookmarkPage} />
+        <PDFViewer fileUrl={fileUrl} bookId={id} userId={user.id} initialPage={bookmarkPage} bookTitle={book.title} author={book.author} />
       )}
     </ReaderLayout>
   );

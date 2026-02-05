@@ -23,6 +23,7 @@ interface TxtViewerProps {
   }) => void;
   onMetadata?: (data: { toc: any[] }) => void;
   onSaveHighlight?: (data: any) => Promise<void>;
+  author?: string;
 }
 
 export function TxtViewer({
@@ -36,6 +37,7 @@ export function TxtViewer({
   onLocationUpdate,
   onMetadata,
   onSaveHighlight,
+  author,
 }: TxtViewerProps) {
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -159,6 +161,7 @@ export function TxtViewer({
             selectedText={selection.text}
             bookId={bookId}
             bookTitle={bookTitle}
+            author={author}
             existingHighlight={(selection as any).id ? selection : undefined}
             onSave={onSaveHighlight}
             onClose={() => setSelection(null)}

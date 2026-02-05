@@ -4,6 +4,7 @@ import {
     Highlighter,
     MessageSquare,
     Quote,
+    Share2,
     Sparkles,
     Trash2,
     X
@@ -14,6 +15,8 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+
+import { QuoteCard } from './quote-card';
 
 const COLORS = [
     { name: 'Yellow', value: '#fef08a' },
@@ -27,6 +30,7 @@ interface HighlightMenuProps {
     selectedText: string;
     bookId: string;
     bookTitle: string;
+    author?: string;
     pageNumber?: number;
     chapter?: string;
     existingHighlight?: any;
@@ -45,6 +49,8 @@ export function HighlightMenu({
     onClose,
     pageNumber,
     bookId,
+    bookTitle,
+    author,
     chapter,
     existingHighlight,
     surroundingContext,
@@ -55,8 +61,10 @@ export function HighlightMenu({
     const [loading, setLoading] = useState(false);
     const [explanation, setExplanation] = useState<string | null>(null);
     const [explaining, setExplaining] = useState(false);
+    const [showQuoteCard, setShowQuoteCard] = useState(false);
 
     const handleSave = async (type: 'highlight' | 'quote') => {
+        // ... (rest of the functions remain the same)
         setLoading(true);
         try {
             if (existingHighlight && onUpdate) {
@@ -170,16 +178,28 @@ export function HighlightMenu({
                 </Button>
 
                 {!existingHighlight && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="justify-start gap-2 h-9"
-                        onClick={() => handleSave('quote')}
-                        disabled={loading}
-                    >
-                        <Quote className="h-4 w-4" />
-                        <span>Save as Quote</span>
-                    </Button>
+                    <>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="justify-start gap-2 h-9"
+                            onClick={() => handleSave('quote')}
+                            disabled={loading}
+                        >
+                            <Quote className="h-4 w-4" />
+                            <span>Save as Quote</span>
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="justify-start gap-2 h-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => setShowQuoteCard(true)}
+                            disabled={loading}
+                        >
+                            <Share2 className="h-4 w-4" />
+                            <span>Create Quote Card</span>
+                        </Button>
+                    </>
                 )}
 
                 <Button
@@ -249,6 +269,14 @@ export function HighlightMenu({
                     </div>
                 </div>
             )}
+
+            <QuoteCard
+                isOpen={showQuoteCard}
+                onClose={() => setShowQuoteCard(false)}
+                quote={selectedText}
+                bookTitle={bookTitle}
+                author={author}
+            />
         </div>
     );
 }
