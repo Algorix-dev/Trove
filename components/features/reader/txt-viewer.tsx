@@ -24,6 +24,7 @@ interface TxtViewerProps {
   onMetadata?: (data: { toc: any[] }) => void;
   onSaveHighlight?: (data: any) => Promise<void>;
   author?: string;
+  fontSize?: number;
 }
 
 export function TxtViewer({
@@ -38,6 +39,7 @@ export function TxtViewer({
   onMetadata,
   onSaveHighlight,
   author,
+  fontSize = 100,
 }: TxtViewerProps) {
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -147,7 +149,10 @@ export function TxtViewer({
   return (
     <div className={`h-full w-full ${currentTheme.background} ${currentTheme.color} transition-colors duration-300 relative`} onMouseUp={handleMouseUp}>
       <ScrollArea className="h-full w-full px-4 md:px-8 py-8" ref={scrollRef} onScrollCapture={handleScroll}>
-        <div className="max-w-3xl mx-auto font-serif text-lg leading-relaxed whitespace-pre-wrap pb-20">
+        <div
+          className="max-w-3xl mx-auto font-serif leading-relaxed whitespace-pre-wrap pb-20"
+          style={{ fontSize: `${(fontSize / 100) * 1.125}rem` }}
+        >
           {content}
         </div>
       </ScrollArea>

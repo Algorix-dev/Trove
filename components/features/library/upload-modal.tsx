@@ -93,15 +93,19 @@ export function UploadModal({
       setUploadStep('REVIEW');
 
       // Initial title cleaning
+      // Extreme title cleaning
       const cleaned = selectedFile.name
-        .replace(/\.(pdf|epub|txt)$/i, '')
+        .replace(/\.(pdf|epub|txt)$/i, '') // Remove extensions
         .replace(/OceanofPDF\.com/gi, '')
         .replace(/Z-Library/gi, '')
         .replace(/EPUB-TO-PDF/gi, '')
-        .replace(/\[.*\]/g, '') // Remove [Tags]
-        .replace(/\(.*\)/g, '') // Remove (Info)
-        .replace(/ – /g, ' ')
+        .replace(/Standard Ebooks/gi, '')
+        .replace(/Project Gutenberg/gi, '')
+        .replace(/1Lib\.org/gi, '')
+        .replace(/\[.*?\]/g, '') // Remove [Tags]
+        .replace(/\(.*?\)/g, '') // Remove (Info)
         .replace(/ - /g, ' ')
+        .replace(/ – /g, ' ')
         .replace(/_/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
@@ -199,8 +203,6 @@ export function UploadModal({
 
       // 4. Extract metadata & page count for PDFs
       let totalPages = 0;
-      let extractedTitle = bookTitle;
-      let extractedAuthor = bookAuthor;
 
       if (fileExt === 'pdf') {
         setProcessingMessage('Analyzing PDF structure...');
@@ -218,11 +220,8 @@ export function UploadModal({
 
           if (meta.info) {
             const info = meta.info as any;
-            if (info.Title && (!bookTitle || bookTitle === file.name.replace(/\.(pdf|epub|txt)$/i, ''))) {
-              extractedTitle = info.Title;
-            }
             if (info.Author && (bookAuthor === 'Unknown Author' || !bookAuthor)) {
-              extractedAuthor = info.Author;
+              setBookAuthor(info.Author);
             }
           }
         } catch (error) {
@@ -234,10 +233,14 @@ export function UploadModal({
 
       // 5. Insert record into database
       setProcessingMessage('Securing in your vault...');
+
+      // Ensure no extensions survived in the final title
+      const finalTitle = bookTitle.replace(/\.(pdf|epub|txt)$/i, '').trim();
+
       const { error: dbError } = await supabase.from('books').insert({
         user_id: user.id,
-        title: extractedTitle || bookTitle,
-        author: extractedAuthor || bookAuthor,
+        title: finalTitle,
+        author: bookAuthor || 'Unknown Author',
         file_url: publicUrl,
         file_path: filePath,
         cover_url: coverUrl,

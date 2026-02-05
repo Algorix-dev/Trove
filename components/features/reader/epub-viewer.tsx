@@ -27,6 +27,7 @@ interface EpubViewerProps {
   onSaveHighlight?: (data: any) => Promise<void>;
   bookTitle?: string;
   author?: string;
+  fontSize?: number;
 }
 
 export function EpubViewer({
@@ -41,6 +42,7 @@ export function EpubViewer({
   onMetadata,
   onSaveHighlight,
   author,
+  fontSize = 100,
 }: EpubViewerProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const renditionRef = useRef<any>(null);
@@ -234,8 +236,9 @@ export function EpubViewer({
     return () => clearInterval(interval);
   }, [isReady, error, userId, bookId]);
 
+  // 1. Initialize Book & Rendition
   useEffect(() => {
-    if (!viewerRef.current) return;
+    if (!viewerRef.current || !url) return;
 
     const book = Epub(url);
     bookRef.current = book;
@@ -248,24 +251,24 @@ export function EpubViewer({
     });
     renditionRef.current = rendition;
 
-    const initBook = async () => {
+    const startBook = async () => {
       try {
         await book.ready;
 
-        // Display initial location or start
+        // Initial display
         if (initialLocation) {
           await rendition.display(initialLocation.toString());
         } else {
           await rendition.display();
         }
 
-        // Generate locations for progress tracking
+        // Generate locations
         book.locations.generate(1000).then(() => {
           setIsReady(true);
           updateProgress();
         });
 
-        // Handle selection
+        // Set up events
         rendition.on('selected', (cfiRange: string, contents: any) => {
           const range = contents.range(cfiRange);
           const rect = range.getBoundingClientRect();
@@ -278,19 +281,18 @@ export function EpubViewer({
             y: rect.top - 10,
           });
 
-          // Add highlight to rendition immediately (client-side only)
-          rendition.annotations.add('highlight', cfiRange, {}, (e: any) => {
-            console.log('Highlight clicked', e);
-          });
-
-          // Clean up selection visual
+          rendition.annotations.add('highlight', cfiRange, {}, () => { });
           contents.window.getSelection().removeAllRanges();
+        });
+
+        rendition.on('relocated', () => {
+          updateProgress();
         });
 
         // Extract TOC
         if (onMetadata) {
           const navigation = book.navigation;
-          if (navigation && navigation.toc) {
+          if (navigation?.toc) {
             const formattedToc = navigation.toc.map((item: any, index: number) => ({
               id: index,
               label: item.label,
@@ -300,29 +302,32 @@ export function EpubViewer({
           }
         }
 
-        // Listen for relocation events
-        rendition.on('relocated', () => {
-          updateProgress();
-        });
-
-        // Load existing highlights
         loadHighlights();
       } catch (err) {
-        console.error('Failed to initialize EPUB:', err);
-        setError('Failed to load EPUB. This might be due to a corrupted file or an expired link.');
+        console.error('EPUB Init Error:', err);
+        setError('Failed to load EPUB.');
       }
     };
 
-    initBook();
+    startBook();
 
     return () => {
-      if (bookRef.current) {
-        bookRef.current.destroy();
-      }
+      if (bookRef.current) bookRef.current.destroy();
     };
-  }, [url, initialLocation, onMetadata, loadHighlights]);
+  }, [url]); // ONLY RE-INIT IF URL CHANGES
 
-  // Apply theme to rendition when isReady or readerTheme changes
+  // 2. Reactive Navigation
+  useEffect(() => {
+    if (isReady && renditionRef.current && initialLocation) {
+      // Check if we are already at this location to prevent loops
+      const currentLocation = renditionRef.current.currentLocation();
+      if (currentLocation?.start?.cfi !== initialLocation) {
+        renditionRef.current.display(initialLocation.toString());
+      }
+    }
+  }, [isReady, initialLocation]);
+
+  // 3. Reactive Theme & Font Size
   useEffect(() => {
     if (isReady && renditionRef.current) {
       const styles: any = {
@@ -335,13 +340,18 @@ export function EpubViewer({
                 ? '#5f4b32 !important'
                 : '#111827 !important',
           'font-family': 'Inter, sans-serif !important',
+          'font-size': `${fontSize}% !important`,
+          'line-height': '1.6 !important',
         },
       };
 
       renditionRef.current.themes.register('custom', styles);
       renditionRef.current.themes.select('custom');
+
+      // Some EPUBs need explicit font size update on the themes object
+      renditionRef.current.themes.fontSize(`${fontSize}%`);
     }
-  }, [isReady, readerTheme]);
+  }, [isReady, readerTheme, fontSize]);
 
   const prevPage = () => {
     if (renditionRef.current) {

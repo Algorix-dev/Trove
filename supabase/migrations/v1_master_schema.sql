@@ -66,6 +66,21 @@ CREATE TABLE IF NOT EXISTS public.book_quotes (
 ALTER TABLE public.book_quotes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can manage own quotes" ON public.book_quotes;
 CREATE POLICY "Users can manage own quotes" ON public.book_quotes FOR ALL USING (auth.uid() = user_id);
+ 
+-- 4.5 STANDALONE NOTES
+CREATE TABLE IF NOT EXISTS public.notes (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+    book_id UUID REFERENCES public.books(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    highlight_text TEXT,
+    page_number INTEGER,
+    color TEXT DEFAULT '#fef08a',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage own notes" ON public.notes;
+CREATE POLICY "Users can manage own notes" ON public.notes FOR ALL USING (auth.uid() = user_id);
 
 -- 5. READING SESSIONS (For Dashboard Activity)
 CREATE TABLE IF NOT EXISTS public.reading_sessions (

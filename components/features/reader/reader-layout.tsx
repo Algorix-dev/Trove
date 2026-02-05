@@ -34,6 +34,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [toc, setToc] = useState<any[]>([]);
   const [jumpLocation, setJumpLocation] = useState<any>(null);
+  const [fontSize, setFontSize] = useState(100); // Percentage
   const locationChangeTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const supabase = useMemo(
@@ -235,11 +236,10 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     });
   }, [addToHistory]);
 
-  const handleNavigate = (data: any) => {
-    // When manually navigating, we add the current location to history immediately
-    addToHistory(currentLocation);
-    setJumpLocation(data);
-    loadBookmark(); // Refresh bookmarks after navigation
+  const handleNavigate = (location: any) => {
+    setJumpLocation(location);
+    // Refresh bookmarks if it's a bookmark navigation
+    loadBookmark();
   };
 
   return (
@@ -297,6 +297,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
             const childElement = child as ReactElement<any>;
             return React.cloneElement(childElement, {
               readerTheme,
+              fontSize,
               onLocationUpdate: handleLocationUpdate,
               onMetadata: handleMetadataUpdate,
               onSaveHighlight: handleSaveHighlight,
@@ -309,7 +310,12 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         })}
         {showSettings && (
           <div className="absolute top-4 right-4 z-50">
-            <ReaderSettings onThemeChange={handleThemeChange} currentTheme={readerTheme} />
+            <ReaderSettings
+              onThemeChange={handleThemeChange}
+              currentTheme={readerTheme}
+              onFontSizeChange={(size) => setFontSize(size)}
+              currentFontSize={fontSize}
+            />
           </div>
         )}
       </main>

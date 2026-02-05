@@ -32,6 +32,7 @@ interface PDFViewerProps {
   bookTitle?: string;
   author?: string;
   initialPage?: number;
+  fontSize?: number;
 }
 
 export function PDFViewer({
@@ -45,10 +46,11 @@ export function PDFViewer({
   bookTitle = 'Untitled',
   author,
   initialPage,
+  fontSize = 100,
 }: PDFViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
-  const [scale, setScale] = useState<number>(1.0);
+  const [scale, setScale] = useState<number>(fontSize / 100);
   const [loading, setLoading] = useState(true);
   const [selection, setSelection] = useState<{ text: string; x: number; y: number } | null>(null);
 
@@ -87,6 +89,11 @@ export function PDFViewer({
       setPageNumber(initialPage);
     }
   }, [initialPage]);
+
+  // Sync scale with fontSize prop
+  useEffect(() => {
+    setScale(fontSize / 100);
+  }, [fontSize]);
 
   // Save progress when page changes (DEBOUNCED)
   useEffect(() => {
