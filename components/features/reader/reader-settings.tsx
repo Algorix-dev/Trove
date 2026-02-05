@@ -1,6 +1,6 @@
 'use client';
 
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +31,7 @@ export function ReaderSettings({ onThemeChange, currentTheme }: ReaderSettingsPr
             <Button
               variant={currentTheme === 'dark' ? 'default' : 'outline'}
               size="sm"
-              className="flex-1"
+              className="flex-1 bg-[#1a1c1e] text-white hover:bg-[#2a2c2e]"
               onClick={() => onThemeChange('dark')}
             >
               <Moon className="h-4 w-4 mr-2" /> Dark
@@ -39,10 +39,22 @@ export function ReaderSettings({ onThemeChange, currentTheme }: ReaderSettingsPr
             <Button
               variant={currentTheme === 'sepia' ? 'default' : 'outline'}
               size="sm"
-              className="flex-1"
+              className="flex-1 bg-[#f4ecd8] text-[#5b4636] hover:bg-[#e4dcba]"
               onClick={() => onThemeChange('sepia')}
             >
-              <Monitor className="h-4 w-4" /> Sepia
+              <div className="w-4 h-4 rounded-full bg-[#f4ecd8] border border-[#5b4636] mr-2" /> Sepia
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-medium">Font Size</label>
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => {/* handle font size */ }}>
+              A-
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => {/* handle font size */ }}>
+              A+
             </Button>
           </div>
         </div>

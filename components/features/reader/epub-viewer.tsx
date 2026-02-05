@@ -3,7 +3,8 @@
 import { createBrowserClient } from '@supabase/ssr';
 import Epub from 'epubjs';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { HighlightMenu } from '@/components/features/reader/highlight-menu';
@@ -47,6 +48,7 @@ export function EpubViewer({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [selection, setSelection] = useState<{ text: string; x: number; y: number; cfi: string } | null>(null);
+  const [highlights, setHighlights] = useState<any[]>([]);
 
   const saveProgress = async (cfi: string, progressValue: number) => {
     const supabase = createBrowserClient(
@@ -89,6 +91,82 @@ export function EpubViewer({
     saveProgressDebounced.current = setTimeout(() => {
       saveProgress(cfi, progressValue);
     }, 2000); // Save 2 seconds after last location change
+  };
+
+  const loadHighlights = useCallback(async () => {
+    const supabase = createBrowserClient(
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+    );
+    const { data } = await supabase
+      .from('book_quotes')
+      .select('*')
+      .eq('book_id', bookId)
+      .eq('user_id', userId);
+
+    if (data && renditionRef.current) {
+      setHighlights(data);
+      const rendition = renditionRef.current;
+      data.forEach((h) => {
+        const cfi = (h.selection_data as any)?.cfi;
+        if (cfi) {
+          // Remove if exists to avoid duplicates
+          rendition.annotations.remove(cfi, 'highlight');
+
+          rendition.annotations.add(
+            'highlight',
+            cfi,
+            {},
+            () => {
+              const range = rendition.getRange(cfi);
+              const rect = range.getBoundingClientRect();
+              setSelection({
+                text: h.quote_text,
+                cfi: cfi,
+                x: rect.left + rect.width / 2,
+                y: rect.top - 10,
+                ...h,
+              } as any);
+            },
+            'hl',
+            { fill: h.color || '#fef08a', 'fill-opacity': '0.3' }
+          );
+        }
+      });
+    }
+  }, [bookId, userId]);
+
+  const handleUpdateHighlight = async (id: string, data: any) => {
+    const supabase = createBrowserClient(
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+    );
+    const { error } = await supabase.from('book_quotes').update(data).eq('id', id);
+
+    if (error) throw error;
+    toast.success('Highlight updated');
+    loadHighlights();
+  };
+
+  const handleDeleteHighlight = async (id: string) => {
+    const supabase = createBrowserClient(
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+    );
+
+    const hl = highlights.find((h) => h.id === id);
+    const cfi = (hl?.selection_data as any)?.cfi;
+
+    const { error } = await supabase.from('book_quotes').delete().eq('id', id);
+
+    if (error) throw error;
+
+    if (cfi && renditionRef.current) {
+      renditionRef.current.annotations.remove(cfi, 'highlight');
+    }
+
+    toast.success('Highlight removed');
+    loadHighlights();
   };
 
   const updateProgress = () => {
@@ -189,6 +267,9 @@ export function EpubViewer({
         rendition.on('relocated', () => {
           updateProgress();
         });
+
+        // Load existing highlights
+        loadHighlights();
       } catch (err) {
         console.error('Failed to initialize EPUB:', err);
         setError('Failed to load EPUB. This might be due to a corrupted file or an expired link.');
@@ -295,7 +376,10 @@ export function EpubViewer({
               selectedText={selection.text}
               bookId={bookId}
               bookTitle={bookTitle}
-              onSave={(data) => onSaveHighlight({ ...data, selection_data: { cfi: selection.cfi } })}
+              existingHighlight={(selection as any).id ? selection : undefined}
+              onSave={(data) => onSaveHighlight({ ...data, selection_data: { cfi: selection.cfi } }).then(() => loadHighlights())}
+              onUpdate={handleUpdateHighlight}
+              onDelete={handleDeleteHighlight}
               onClose={() => setSelection(null)}
             />
           </div>

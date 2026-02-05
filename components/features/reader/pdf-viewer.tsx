@@ -6,6 +6,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import { createBrowserClient } from '@supabase/ssr';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Document, Page, pdfjs } from 'react-pdf';
 
 import { Button } from '@/components/ui/button';
@@ -131,6 +132,21 @@ export function PDFViewer({
     }
     return undefined;
   }, [pageNumber, numPages, bookId, userId, onLocationUpdate]);
+
+
+  const handleUpdateHighlight = async (id: string, data: any) => {
+    const { error } = await supabase.from('book_quotes').update(data).eq('id', id);
+
+    if (error) throw error;
+    toast.success('Highlight updated');
+  };
+
+  const handleDeleteHighlight = async (id: string) => {
+    const { error } = await supabase.from('book_quotes').delete().eq('id', id);
+
+    if (error) throw error;
+    toast.success('Highlight removed');
+  };
 
   // Track reading time and award XP
   useEffect(() => {
@@ -301,7 +317,10 @@ export function PDFViewer({
               bookId={bookId}
               bookTitle={bookTitle}
               pageNumber={pageNumber}
-              onSave={onSaveHighlight}
+              existingHighlight={(selection as any).id ? selection : undefined}
+              onSave={(data) => onSaveHighlight({ ...data, page_number: pageNumber })}
+              onUpdate={handleUpdateHighlight}
+              onDelete={handleDeleteHighlight}
               onClose={() => setSelection(null)}
             />
           </div>

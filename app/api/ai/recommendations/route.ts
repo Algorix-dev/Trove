@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { openai, AI_MODELS } from '@/lib/ai';
 import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -24,36 +25,48 @@ export async function GET(_request: NextRequest) {
 
     const { data: readingHistory } = await supabase
       .from('reading_progress')
-      .select('book_id, progress_percentage, books(title, author)')
+      .select('progress_percentage, books(title, author, format)')
       .eq('user_id', user.id)
-      .gt('progress_percentage', 50);
+      .gt('progress_percentage', 10); // Books they've actually started
 
-    // Get user's completed books
-    const { data: completedBooks } = await supabase
-      .from('reading_progress')
-      .select('book_id, books(title, author)')
-      .eq('user_id', user.id)
-      .eq('progress_percentage', 100);
+    // Generate AI recommendations
+    const prompt = `
+      User Preferences:
+      - Favorite Genres: ${preferences?.favorite_genres?.join(', ') || 'Not specified'}
+      - Favorite Authors: ${preferences?.favorite_authors?.join(', ') || 'Not specified'}
+      
+      Reading History (Completed/In Progress):
+      ${readingHistory?.map(h => `- "${(h.books as any).title}" by ${(h.books as any).author || 'Unknown'} (${h.progress_percentage}% read)`).join('\n') || 'No history yet'}
+      
+      Based on this, suggest 5 books the user might enjoy. For each book, provide:
+      1. Title
+      2. Author
+      3. A short "Why you'll love it" reason (max 20 words).
+      
+      Format as a JSON array of objects with keys: title, author, reason.
+    `;
 
-    // Simple recommendation logic (can be enhanced with AI)
-    const genres = preferences?.favorite_genres || [];
-    const recommendations: Array<{
-      title: string;
-      author: string;
-      reason: string;
-    }> = [];
+    const response = await openai.chat.completions.create({
+      model: AI_MODELS.RECOMMENDATIONS,
+      messages: [
+        { role: 'system', content: 'You are a professional librarian and book recommender. Return only valid JSON.' },
+        { role: 'user', content: prompt }
+      ],
+      response_format: { type: 'json_object' }
+    });
 
-    // For now, return a structured response
-    // In production, you'd call OpenAI API here
+    const content = response.choices[0].message.content;
+    const recommendations = content ? JSON.parse(content).recommendations || JSON.parse(content) : [];
+
     return NextResponse.json({
-      recommendations: recommendations,
+      recommendations: Array.isArray(recommendations) ? recommendations : [recommendations],
       basedOn: {
-        genres: genres,
-        completedBooks: completedBooks?.length || 0,
-        readingHistory: readingHistory?.length || 0,
+        genres: preferences?.favorite_genres || [],
+        historyCount: readingHistory?.length || 0,
       },
     });
   } catch (error) {
+    console.error('Recommendations error:', error);
     return NextResponse.json({ error: 'Failed to generate recommendations' }, { status: 500 });
   }
 }

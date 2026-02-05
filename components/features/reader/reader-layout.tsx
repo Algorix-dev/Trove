@@ -44,16 +44,23 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     []
   );
 
-  const loadHistory = useCallback(async () => {
+  const loadInitialProgress = useCallback(async () => {
     const { data } = await supabase
       .from('reading_progress')
-      .select('last_pages')
+      .select('current_page, epub_cfi, progress_percentage, last_pages')
       .eq('book_id', bookId)
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (data?.last_pages) {
-      setHistory(data.last_pages);
+    if (data) {
+      if (data.last_pages) setHistory(data.last_pages);
+
+      // Auto-resume logic: only if no jump location is already set (e.g. from URL params)
+      setJumpLocation((prev: any) => prev || {
+        page: data.current_page,
+        cfi: data.epub_cfi,
+        progress: data.progress_percentage
+      });
     }
   }, [supabase, bookId, userId]);
 
@@ -106,8 +113,8 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
 
   useEffect(() => {
     loadBookmark();
-    loadHistory();
-  }, [loadBookmark, loadHistory]);
+    loadInitialProgress();
+  }, [loadBookmark, loadInitialProgress]);
 
   const addToHistory = useCallback((location: LocationData) => {
     if (!location.currentPage && !location.currentCFI) return;
@@ -256,6 +263,8 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
             history={history}
             toc={toc}
             onNavigate={handleNavigate}
+            bookId={bookId}
+            bookTitle={title}
           />
           <Button
             variant="ghost"

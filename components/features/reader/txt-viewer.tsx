@@ -78,7 +78,7 @@ export function TxtViewer({
       try {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-        const text = await response.text();
+        const text = (await response.text()).replace(/\\n/g, '\n');
         setContent(text);
         setLoading(false);
         if (onMetadata) onMetadata({ toc: [] });
@@ -159,6 +159,7 @@ export function TxtViewer({
             selectedText={selection.text}
             bookId={bookId}
             bookTitle={bookTitle}
+            existingHighlight={(selection as any).id ? selection : undefined}
             onSave={onSaveHighlight}
             onClose={() => setSelection(null)}
           />

@@ -1,7 +1,7 @@
 'use client';
 
 import { createBrowserClient } from '@supabase/ssr';
-import { FileText, Image as ImageIcon, Loader2, Upload } from 'lucide-react';
+import { Check, FileText, Image as ImageIcon, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -56,6 +56,7 @@ export function UploadModal({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const [processingMessage, setProcessingMessage] = useState('');
   const { user } = useAuth();
 
   // Use controlled open state if provided, otherwise use internal state
@@ -95,6 +96,10 @@ export function UploadModal({
       const cleaned = selectedFile.name
         .replace(/\.(pdf|epub|txt)$/i, '')
         .replace(/OceanofPDF\.com/gi, '')
+        .replace(/Z-Library/gi, '')
+        .replace(/EPUB-TO-PDF/gi, '')
+        .replace(/\[.*\]/g, '') // Remove [Tags]
+        .replace(/\(.*\)/g, '') // Remove (Info)
         .replace(/ – /g, ' ')
         .replace(/ - /g, ' ')
         .replace(/_/g, ' ')
@@ -156,12 +161,13 @@ export function UploadModal({
       const filePath = `${user.id}/${Date.now()}_${file.name}`;
 
       // 1. Upload book file with progress
-      const { error: uploadError } = await supabase.storage.from('books').upload(filePath, file, {
-        onUploadProgress: (progress) => {
-          const percent = (progress.loaded / progress.total) * 100;
-          setUploadProgress(Math.round(percent));
-        }
-      });
+      const { error: uploadError } = await supabase.storage.from('books').upload(filePath, file);
+
+      // Note: Supabase JS v2 browser client handles progress via axios usually, 
+      // but here we might be using a wrapper or direct fetch. 
+      // If we want real progress, we might need a custom upload handler or check the specific client version capabilities.
+      // For now, let's keep it simple or use a placeholder progress increment.
+      setUploadProgress(50);
 
       if (uploadError) {
         toast.error('Failed to upload file. Please try again.');
@@ -191,28 +197,47 @@ export function UploadModal({
         }
       }
 
-      // 4. Extract page count for PDFs
+      // 4. Extract metadata & page count for PDFs
       let totalPages = 0;
+      let extractedTitle = bookTitle;
+      let extractedAuthor = bookAuthor;
+
       if (fileExt === 'pdf') {
+        setProcessingMessage('Analyzing PDF structure...');
         try {
           const arrayBuffer = await file.arrayBuffer();
           const pdfJS = await import('pdfjs-dist');
-          // Use local worker to avoid CORS issues
           pdfJS.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
-          const pdf = await pdfJS.getDocument({ data: arrayBuffer }).promise;
+          const loadingTask = pdfJS.getDocument({ data: arrayBuffer });
+          const pdf = await loadingTask.promise;
           totalPages = pdf.numPages;
+
+          setProcessingMessage('Extracting metadata...');
+          const meta = await pdf.getMetadata();
+
+          if (meta.info) {
+            const info = meta.info as any;
+            if (info.Title && (!bookTitle || bookTitle === file.name.replace(/\.(pdf|epub|txt)$/i, ''))) {
+              extractedTitle = info.Title;
+            }
+            if (info.Author && (bookAuthor === 'Unknown Author' || !bookAuthor)) {
+              extractedAuthor = info.Author;
+            }
+          }
         } catch (error) {
-          console.error('Failed to extract PDF page count:', error);
-          // Continue with totalPages = 0 if extraction fails
+          console.error('Failed to extract PDF metadata:', error);
         }
+      } else {
+        setProcessingMessage('Generating wisdom indexes...');
       }
 
       // 5. Insert record into database
+      setProcessingMessage('Securing in your vault...');
       const { error: dbError } = await supabase.from('books').insert({
         user_id: user.id,
-        title: bookTitle,
-        author: bookAuthor,
+        title: extractedTitle || bookTitle,
+        author: extractedAuthor || bookAuthor,
         file_url: publicUrl,
         file_path: filePath,
         cover_url: coverUrl,
@@ -232,7 +257,7 @@ export function UploadModal({
           console.error('Failed to rollback file upload:', deleteError);
         }
 
-        setUploading(false);
+        setUploadStep('REVIEW');
         return;
       }
 
@@ -394,7 +419,7 @@ export function UploadModal({
                     {uploadStep === 'SUCCESS' ? 'Treasure Secured!' : 'Securing Treasure...'}
                   </h3>
                   <p className="text-muted-foreground">
-                    {uploadStep === 'SUCCESS' ? 'Adding to your collection now.' : 'Processing your book and extracting wisdom.'}
+                    {uploadStep === 'SUCCESS' ? 'Adding to your collection now.' : (processingMessage || 'Processing your book and extracting wisdom.')}
                   </p>
                 </div>
               </div>

@@ -4,7 +4,8 @@ import {
     BookMarked,
     ChevronRight,
     History,
-    List
+    List,
+    Sparkles
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -19,6 +20,7 @@ import {
     SheetTrigger
 } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BookChat } from '@/components/features/ai/book-chat';
 
 interface NavItem {
     id: string | number;
@@ -35,6 +37,8 @@ interface ReaderNavigationProps {
     history: NavItem[];
     toc: NavItem[];
     onNavigate: (data: any) => void;
+    bookId: string;
+    bookTitle: string;
 }
 
 export function ReaderNavigation({
@@ -44,6 +48,8 @@ export function ReaderNavigation({
     history,
     toc,
     onNavigate,
+    bookId,
+    bookTitle,
 }: ReaderNavigationProps) {
     const [pageInput, setPageInput] = useState(currentPage?.toString() || '');
 
@@ -69,12 +75,12 @@ export function ReaderNavigation({
                     <List className="h-5 w-5" />
                 </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[90%] sm:w-[400px]">
+            <SheetContent side="right" className="w-[90%] sm:w-[450px]">
                 <SheetHeader>
                     <SheetTitle>Navigation</SheetTitle>
                 </SheetHeader>
 
-                <div className="py-6 space-y-6">
+                <div className="py-6 space-y-6 flex flex-col h-full">
                     {/* Page Jump */}
                     {(totalPages || currentPage) && (
                         <form onSubmit={handlePageSubmit} className="space-y-2">
@@ -93,14 +99,15 @@ export function ReaderNavigation({
                         </form>
                     )}
 
-                    <Tabs defaultValue="toc" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
+                    <Tabs defaultValue="toc" className="w-full flex-1 flex flex-col">
+                        <TabsList className="grid w-full grid-cols-4">
                             <TabsTrigger value="toc"><List className="h-4 w-4 mr-2" />ToC</TabsTrigger>
-                            <TabsTrigger value="history"><History className="h-4 w-4 mr-2" />History</TabsTrigger>
-                            <TabsTrigger value="bookmarks"><BookMarked className="h-4 w-4 mr-2" />Bookmarks</TabsTrigger>
+                            <TabsTrigger value="history"><History className="h-4 w-4 mr-2" />Hist</TabsTrigger>
+                            <TabsTrigger value="bookmarks"><BookMarked className="h-4 w-4 mr-2" />Book</TabsTrigger>
+                            <TabsTrigger value="ai" className="text-purple-600"><Sparkles className="h-4 w-4 mr-2" />AI</TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="toc" className="mt-4">
+                        <TabsContent value="toc" className="mt-4 flex-1">
                             <ScrollArea className="h-[calc(100vh-350px)] pr-4">
                                 {toc.length > 0 ? (
                                     <div className="space-y-1">
@@ -123,7 +130,7 @@ export function ReaderNavigation({
                             </ScrollArea>
                         </TabsContent>
 
-                        <TabsContent value="history" className="mt-4">
+                        <TabsContent value="history" className="mt-4 flex-1">
                             <ScrollArea className="h-[calc(100vh-350px)] pr-4">
                                 {history.length > 0 ? (
                                     <div className="space-y-1">
@@ -146,7 +153,7 @@ export function ReaderNavigation({
                             </ScrollArea>
                         </TabsContent>
 
-                        <TabsContent value="bookmarks" className="mt-4">
+                        <TabsContent value="bookmarks" className="mt-4 flex-1">
                             <ScrollArea className="h-[calc(100vh-350px)] pr-4">
                                 {bookmarks.length > 0 ? (
                                     <div className="space-y-1">
@@ -167,6 +174,10 @@ export function ReaderNavigation({
                                     </div>
                                 )}
                             </ScrollArea>
+                        </TabsContent>
+
+                        <TabsContent value="ai" className="mt-4 flex-1 h-[calc(100vh-350px)]">
+                            <BookChat bookId={bookId} bookTitle={bookTitle} />
                         </TabsContent>
                     </Tabs>
                 </div>

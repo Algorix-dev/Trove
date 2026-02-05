@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { generateSummary } from '@/lib/ai';
+import { cleanText, extractTextFromBuffer } from '@/lib/extractor';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
@@ -31,20 +33,59 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 
-    // For now, return a placeholder summary
-    // In production, you'd:
+    // Check if summary already exists (caching)
+    if (book.summary) {
+      return NextResponse.json({
+        summary: book.summary,
+        book: {
+          title: book.title,
+          author: book.author,
+        },
+        cached: true,
+      });
+    }
+
     // 1. Extract text from the book file
+    let bookText = '';
+    try {
+      const response = await fetch(book.file_url);
+      if (!response.ok) throw new Error('Failed to fetch book file');
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      bookText = await extractTextFromBuffer(buffer, book.format);
+    } catch (extractionError) {
+      console.error('Text extraction failed:', extractionError);
+      return NextResponse.json({ error: 'Failed to extract text from book' }, { status: 500 });
+    }
+
+    if (!bookText || bookText.trim().length === 0) {
+      return NextResponse.json({ error: 'No text content found in book' }, { status: 400 });
+    }
+
     // 2. Call OpenAI API to generate summary
-    // 3. Cache the result
+    const summary = await generateSummary(cleanText(bookText), book.title, book.author);
+
+    if (!summary) {
+      throw new Error('AI failed to generate summary');
+    }
+
+    // 3. Cache the result in the database
+    await supabase
+      .from('books')
+      .update({ summary })
+      .eq('id', bookId);
 
     return NextResponse.json({
-      summary: `Summary for "${book.title}" by ${book.author || 'Unknown'}. This is a placeholder summary. In production, this would be generated using AI based on the book's content.`,
+      summary,
       book: {
         title: book.title,
         author: book.author,
       },
+      cached: false,
     });
   } catch (error) {
+    console.error('Summary generation error:', error);
     return NextResponse.json({ error: 'Failed to generate summary' }, { status: 500 });
   }
 }

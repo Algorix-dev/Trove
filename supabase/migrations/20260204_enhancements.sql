@@ -11,7 +11,8 @@ ALTER TABLE public.book_quotes ADD COLUMN IF NOT EXISTS selection_data JSONB; --
 -- 2. Update reading_progress to store recently visited pages
 ALTER TABLE public.reading_progress ADD COLUMN IF NOT EXISTS last_pages JSONB DEFAULT '[]'::jsonb;
 
--- 3. Ensure books table has last_read_at if not already there (it should be)
--- Done in previous migrations but double checking.
+-- 3. Ensure books table has last_read_at and summary if not already there
+ALTER TABLE public.books ADD COLUMN IF NOT EXISTS last_read_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());
+ALTER TABLE public.books ADD COLUMN IF NOT EXISTS summary TEXT;
 
 COMMIT;
