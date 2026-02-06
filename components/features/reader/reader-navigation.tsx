@@ -36,6 +36,7 @@ interface ReaderNavigationProps {
     bookmarks: NavItem[];
     history: NavItem[];
     toc: NavItem[];
+    quotes: NavItem[];
     onNavigate: (data: any) => void;
     bookId: string;
     bookTitle: string;
@@ -47,11 +48,13 @@ export function ReaderNavigation({
     bookmarks,
     history,
     toc,
+    quotes,
     onNavigate,
     bookId,
     bookTitle,
 }: ReaderNavigationProps) {
     const [pageInput, setPageInput] = useState(currentPage?.toString() || '');
+    const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
         if (currentPage) {
@@ -65,11 +68,17 @@ export function ReaderNavigation({
         if (page > 0) {
             if (totalPages && page > totalPages) return;
             onNavigate({ page });
+            setIsOpen(false);
         }
     };
 
+    const handleSelection = (data: any) => {
+        onNavigate(data);
+        setIsOpen(false);
+    };
+
     return (
-        <Sheet>
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" title="Navigation">
                     <List className="h-5 w-5" />
@@ -100,11 +109,12 @@ export function ReaderNavigation({
                     )}
 
                     <Tabs defaultValue="toc" className="w-full flex-1 flex flex-col">
-                        <TabsList className="grid w-full grid-cols-4">
-                            <TabsTrigger value="toc"><List className="h-4 w-4 mr-2" />ToC</TabsTrigger>
-                            <TabsTrigger value="history"><History className="h-4 w-4 mr-2" />Hist</TabsTrigger>
-                            <TabsTrigger value="bookmarks"><BookMarked className="h-4 w-4 mr-2" />Book</TabsTrigger>
-                            <TabsTrigger value="ai" className="text-purple-600"><Sparkles className="h-4 w-4 mr-2" />AI</TabsTrigger>
+                        <TabsList className="grid w-full grid-cols-5">
+                            <TabsTrigger value="toc"><List className="h-4 w-4" /></TabsTrigger>
+                            <TabsTrigger value="history"><History className="h-4 w-4" /></TabsTrigger>
+                            <TabsTrigger value="bookmarks"><BookMarked className="h-4 w-4" /></TabsTrigger>
+                            <TabsTrigger value="quotes"><Sparkles className="h-4 w-4" /></TabsTrigger>
+                            <TabsTrigger value="ai" className="text-purple-600"><Sparkles className="h-4 w-4" /></TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="toc" className="mt-4 flex-1">
@@ -114,7 +124,7 @@ export function ReaderNavigation({
                                         {toc.map((item) => (
                                             <button
                                                 key={item.id}
-                                                onClick={() => onNavigate(item.data)}
+                                                onClick={() => handleSelection(item.data)}
                                                 className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors flex items-center justify-between group"
                                             >
                                                 <span className="truncate">{item.label}</span>
@@ -137,7 +147,7 @@ export function ReaderNavigation({
                                         {history.map((item) => (
                                             <button
                                                 key={item.id}
-                                                onClick={() => onNavigate(item.data)}
+                                                onClick={() => handleSelection(item.data)}
                                                 className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
                                             >
                                                 <div className="font-medium">{item.label}</div>
@@ -160,7 +170,7 @@ export function ReaderNavigation({
                                         {bookmarks.map((item) => (
                                             <button
                                                 key={item.id}
-                                                onClick={() => onNavigate(item.data)}
+                                                onClick={() => handleSelection(item.data)}
                                                 className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
                                             >
                                                 <div className="font-medium">{item.label}</div>
@@ -171,6 +181,32 @@ export function ReaderNavigation({
                                 ) : (
                                     <div className="text-center py-8 text-muted-foreground">
                                         No bookmarks saved
+                                    </div>
+                                )}
+                            </ScrollArea>
+                        </TabsContent>
+
+                        <TabsContent value="quotes" className="mt-4 flex-1">
+                            <ScrollArea className="h-[calc(100vh-350px)] pr-4">
+                                {quotes.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {quotes.map((item) => (
+                                            <button
+                                                key={item.id}
+                                                onClick={() => handleSelection(item.data)}
+                                                className="w-full text-left p-3 text-sm rounded-md border bg-card hover:bg-muted transition-colors"
+                                            >
+                                                <p className="line-clamp-3 italic mb-2 text-muted-foreground font-serif">"{item.data.quote_text}"</p>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary">{item.label}</span>
+                                                    <span className="text-[10px] text-muted-foreground">{item.subLabel}</span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        No quotes or highlights yet
                                     </div>
                                 )}
                             </ScrollArea>

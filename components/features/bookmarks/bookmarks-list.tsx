@@ -201,7 +201,7 @@ export function BookmarksList({ userId }: { userId: string }) {
 
             {/* Bookmarks List */}
             <div className="space-y-3">
-              {bookBookmarks.map((bookmark) => (
+              {bookBookmarks.slice(0, 1).map((bookmark) => (
                 <div
                   key={bookmark.id}
                   className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"

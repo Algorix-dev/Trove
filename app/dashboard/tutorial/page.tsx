@@ -138,7 +138,7 @@ export default function TutorialPage() {
       toast.success('Tutorial completed! Welcome to Trove! 🎉');
       router.refresh();
       setTimeout(() => {
-        router.push('/dashboard');
+        window.location.href = '/dashboard';
       }, 500);
     } catch (error: any) {
       toast.error(error.message || 'Failed to complete tutorial');

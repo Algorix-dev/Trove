@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { ReaderNavigation } from '@/components/features/reader/reader-navigation';
 import { ReaderSettings } from '@/components/features/reader/reader-settings';
 import { Button } from '@/components/ui/button';
+import { cleanBookTitle } from '@/lib/utils';
 
 interface LocationData {
   currentPage?: number;
@@ -32,9 +33,9 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   const [currentLocation, setCurrentLocation] = useState<LocationData>({});
   const [history, setHistory] = useState<any[]>([]);
   const [bookmarks, setBookmarks] = useState<any[]>([]);
+  const [quotes, setQuotes] = useState<any[]>([]);
   const [toc, setToc] = useState<any[]>([]);
   const [jumpLocation, setJumpLocation] = useState<any>(null);
-  const [fontSize, setFontSize] = useState(100); // Percentage
   const locationChangeTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const supabase = useMemo(
@@ -45,6 +46,18 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       ),
     []
   );
+
+  const loadInitialSettings = useCallback(async () => {
+    const { data } = await supabase
+      .from('user_preferences')
+      .select('reader_theme')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (data?.reader_theme) {
+      setReaderTheme(data.reader_theme as any);
+    }
+  }, [supabase, userId]);
 
   const loadInitialProgress = useCallback(async () => {
     const { data } = await supabase
@@ -66,44 +79,68 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     }
   }, [supabase, bookId, userId]);
 
-  // Load bookmark status
-  const loadBookmark = useCallback(async () => {
+  // Load bookmark status and all bookmarks
+  const loadBookmarks = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('bookmarks')
-        .select('id')
-        .eq('book_id', bookId)
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error loading bookmark:', error);
-        return;
-      }
-
-      if (data) {
-        setIsBookmarked(true);
-      }
-
-      // Load all bookmarks for this book to show in navigation
-      const { data: allBookmarks } = await supabase
+      const { data: allBookmarks, error } = await supabase
         .from('bookmarks')
         .select('*')
         .eq('book_id', bookId)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
+      if (error) {
+        console.error('Error loading bookmarks:', error);
+        return;
+      }
+
+      const bookmarkExists = allBookmarks && allBookmarks.length > 0;
+      setIsBookmarked(bookmarkExists);
+
       if (allBookmarks) {
-        setBookmarks(allBookmarks.map((b: any) => ({
-          id: b.id,
-          label: b.page_number ? `Page ${b.page_number}` : 'Bookmarked Location',
-          subLabel: b.note || new Date(b.created_at).toLocaleDateString(),
-          data: { page: b.page_number, cfi: b.epub_cfi, progress: b.progress_percentage }
-        })));
+        setBookmarks(allBookmarks.map((b: any) => {
+          const date = new Date(b.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          });
+          const label = b.page_number ? `Page ${b.page_number}` : b.progress_percentage ? `${b.progress_percentage}%` : 'Bookmarked Location';
+
+          return {
+            id: b.id,
+            label: `${label} - ${date}`,
+            subLabel: b.note || 'Saved bookmark',
+            data: { page: b.page_number, cfi: b.epub_cfi, progress: b.progress_percentage }
+          };
+        }));
       }
     } catch (error) {
       console.error('Failed to load bookmark:', error);
-      toast.error('Failed to load bookmark status');
+    }
+  }, [bookId, userId, supabase]);
+
+  const loadQuotes = useCallback(async () => {
+    const { data } = await supabase
+      .from('book_quotes')
+      .select('*')
+      .eq('book_id', bookId)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (data) {
+      setQuotes(data.map((q: any) => {
+        const date = new Date(q.created_at).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric'
+        });
+        const label = q.page_number ? `Page ${q.page_number}` : q.chapter || 'Highlight';
+
+        return {
+          id: q.id,
+          label: `${label} - ${date}`,
+          subLabel: q.note || 'Saved from reader',
+          data: q
+        };
+      }));
     }
   }, [bookId, userId, supabase]);
 
@@ -114,17 +151,18 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   }, []);
 
   useEffect(() => {
-    loadBookmark();
+    loadInitialSettings();
+    loadBookmarks();
+    loadQuotes();
     loadInitialProgress();
-  }, [loadBookmark, loadInitialProgress]);
+  }, [loadInitialSettings, loadBookmarks, loadQuotes, loadInitialProgress]);
 
   const addToHistory = useCallback((location: LocationData) => {
-    if (!location.currentPage && !location.currentCFI) return;
+    if (!location.currentPage && !location.currentCFI && !location.progressPercentage) return;
 
-    const label = location.currentPage ? `Page ${location.currentPage}` : 'Recent Location';
+    const label = location.currentPage ? `Page ${location.currentPage}` : location.progressPercentage ? `${location.progressPercentage}% Progress` : 'Recent Location';
 
     setHistory(prev => {
-      // Don't add if same as last history item
       if (prev.length > 0 && prev[0].label === label) return prev;
 
       const newHistoryItem = {
@@ -136,7 +174,6 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
 
       const updatedHistory = [newHistoryItem, ...prev.filter(h => h.label !== label)].slice(0, 10);
 
-      // Persist
       supabase
         .from('reading_progress')
         .update({ last_pages: updatedHistory })
@@ -151,6 +188,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   const handleBookmark = async () => {
     try {
       if (isBookmarked) {
+        // Find if we have exactly one bookmark to remove or if we should toggle off
         const { error } = await supabase
           .from('bookmarks')
           .delete()
@@ -158,30 +196,22 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
           .eq('user_id', userId);
 
         if (error) throw error;
-
         setIsBookmarked(false);
-        toast.success('Bookmark removed');
+        toast.success('Bookmarks removed');
       } else {
-        const { error } = await supabase.from('bookmarks').upsert(
-          {
-            book_id: bookId,
-            user_id: userId,
-            page_number: currentLocation.currentPage,
-            epub_cfi: currentLocation.currentCFI,
-            progress_percentage: currentLocation.progressPercentage,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: 'book_id,user_id',
-          }
-        );
+        const { error } = await supabase.from('bookmarks').insert({
+          book_id: bookId,
+          user_id: userId,
+          page_number: currentLocation.currentPage,
+          epub_cfi: currentLocation.currentCFI,
+          progress_percentage: currentLocation.progressPercentage,
+        });
 
         if (error) throw error;
-
         setIsBookmarked(true);
         toast.success('Bookmark saved');
       }
-      loadBookmark(); // Refresh navigation lists
+      loadBookmarks();
     } catch (error) {
       console.error('Bookmark operation failed:', error);
       toast.error(`Failed to ${isBookmarked ? 'remove' : 'save'} bookmark`);
@@ -204,6 +234,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
 
       if (error) throw error;
       toast.success('Highlight saved!');
+      loadQuotes(); // Refresh quotes navigation
     } catch (error) {
       console.error('Save highlight error:', error);
       toast.error('Failed to save highlight');
@@ -214,7 +245,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     setReaderTheme(theme);
     supabase
       .from('user_preferences')
-      .upsert({ user_id: userId, reader_theme: theme }, { onConflict: 'user_id' })
+      .upsert({ user_id: userId, reader_theme: theme, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => {
         if (error) console.error('Failed to save theme preference:', error);
       });
@@ -224,12 +255,11 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     setCurrentLocation((prev) => {
       const next = { ...prev, ...data };
 
-      // Only update history if page/cfi actually changed
-      if (next.currentPage !== prev.currentPage || next.currentCFI !== prev.currentCFI) {
+      if (next.currentPage !== prev.currentPage || next.currentCFI !== prev.currentCFI || next.progressPercentage !== prev.progressPercentage) {
         if (locationChangeTimeout.current) clearTimeout(locationChangeTimeout.current);
         locationChangeTimeout.current = setTimeout(() => {
           addToHistory(next);
-        }, 5000); // 5 seconds on a page counts as "visited"
+        }, 5000);
       }
 
       return next;
@@ -238,12 +268,12 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
 
   const handleNavigate = (location: any) => {
     setJumpLocation(location);
-    // Refresh bookmarks if it's a bookmark navigation
-    loadBookmark();
+    loadBookmarks();
+    loadQuotes();
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col h-screen bg-background">
+    <div className="fixed inset-0 z-[100] flex flex-col h-screen bg-background text-foreground transition-colors duration-300">
       {/* Header */}
       <header className="h-14 border-b flex items-center justify-between px-4 bg-background z-10">
         <div className="flex items-center gap-4">
@@ -253,7 +283,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
             </Button>
           </Link>
           <h1 className="font-semibold truncate max-w-[200px] md:max-w-md" title={title}>
-            {title}
+            {cleanBookTitle(title)}
           </h1>
         </div>
         <div className="flex items-center gap-2">
@@ -264,6 +294,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
             bookmarks={bookmarks}
             history={history}
             toc={toc}
+            quotes={quotes}
             onNavigate={handleNavigate}
             bookId={bookId}
             bookTitle={title}
@@ -273,7 +304,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
             size="icon"
             onClick={handleBookmark}
             className={isBookmarked ? 'text-primary' : ''}
-            aria-label={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
+            title={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
           >
             <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-current' : ''}`} />
           </Button>
@@ -283,7 +314,6 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
             size="icon"
             onClick={() => setShowSettings(!showSettings)}
             aria-label="Reader settings"
-            aria-expanded={showSettings}
           >
             <Settings className="h-5 w-5" />
           </Button>
@@ -297,7 +327,6 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
             const childElement = child as ReactElement<any>;
             return React.cloneElement(childElement, {
               readerTheme,
-              fontSize,
               onLocationUpdate: handleLocationUpdate,
               onMetadata: handleMetadataUpdate,
               onSaveHighlight: handleSaveHighlight,
@@ -309,12 +338,10 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
           return child;
         })}
         {showSettings && (
-          <div className="absolute top-4 right-4 z-50">
+          <div className="absolute top-4 right-4 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
             <ReaderSettings
               onThemeChange={handleThemeChange}
               currentTheme={readerTheme}
-              onFontSizeChange={(size) => setFontSize(size)}
-              currentFontSize={fontSize}
             />
           </div>
         )}

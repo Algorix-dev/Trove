@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
+import { cn, cleanBookTitle } from '@/lib/utils';
 import { type BookWithProgress } from '@/types/database';
 
 // Simple Skeleton if not available
@@ -188,6 +188,7 @@ export function BookGrid({
     return 'bg-green-500';
   };
 
+
   const renderBookCard = (book: ExtendedBook) => {
     const isGradient = book.cover_url?.startsWith('gradient:');
     const gradientStyle = isGradient ? book.cover_url?.replace('gradient:', '') : null;
@@ -290,7 +291,7 @@ export function BookGrid({
             <CardFooter className="p-4 flex-1 flex flex-col items-start">
               <div className="w-full">
                 <h3 className="font-medium text-sm line-clamp-2 mb-1 group-hover:text-primary transition-colors">
-                  {book.title}
+                  {cleanBookTitle(book.title)}
                 </h3>
                 <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
                   {book.author || 'Unknown Author'}
@@ -379,7 +380,7 @@ export function BookGrid({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <h3 className="font-medium text-base line-clamp-1 group-hover:text-primary">
-                {book.title}
+                {cleanBookTitle(book.title)}
               </h3>
               <p className="text-sm text-muted-foreground line-clamp-1">
                 {book.author || 'Unknown Author'}

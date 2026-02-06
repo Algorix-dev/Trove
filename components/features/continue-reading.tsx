@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { cleanBookTitle } from '@/lib/utils';
 
 interface ContinueReadingBook {
   id: string;
@@ -19,14 +20,7 @@ interface ContinueReadingBook {
   progress_percentage?: number;
 }
 
-// Helper function to clean up book titles
-function cleanTitle(title: string): string {
-  return title
-    .replace(/_/g, ' ') // Replace underscores with spaces
-    .replace(/\.(pdf|epub|txt)$/i, '') // Remove file extensions
-    .replace(/^.*?_/, '') // Remove prefix like "OceanofPDF.com_"
-    .trim();
-}
+
 
 export function ContinueReading() {
   const [book, setBook] = useState<ContinueReadingBook | null>(null);
@@ -143,7 +137,7 @@ export function ContinueReading() {
         </div>
         <div className="flex flex-col justify-between flex-1">
           <div>
-            <h3 className="text-lg font-semibold line-clamp-2">{cleanTitle(book.title)}</h3>
+            <h3 className="text-lg font-semibold line-clamp-2">{cleanBookTitle(book.title)}</h3>
             <p className="text-sm text-muted-foreground">{book.author}</p>
           </div>
           <div className="space-y-2">
