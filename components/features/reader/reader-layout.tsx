@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { ReaderNavigation } from '@/components/features/reader/reader-navigation';
 import { ReaderSettings } from '@/components/features/reader/reader-settings';
 import { Button } from '@/components/ui/button';
-import { cleanBookTitle } from '@/lib/utils';
+import { cleanBookTitle, cn } from '@/lib/utils';
 
 interface LocationData {
   currentPage?: number;
@@ -29,6 +29,7 @@ interface ReaderLayoutProps {
 export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
   const [readerTheme, setReaderTheme] = useState<'light' | 'dark' | 'sepia'>('light');
   const [currentLocation, setCurrentLocation] = useState<LocationData>({});
   const [history, setHistory] = useState<any[]>([]);
@@ -70,7 +71,6 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     if (data) {
       if (data.last_pages) setHistory(data.last_pages);
 
-      // Auto-resume logic: only if no jump location is already set (e.g. from URL params)
       setJumpLocation((prev: any) => prev || {
         page: data.current_page,
         cfi: data.epub_cfi,
@@ -94,10 +94,10 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         return;
       }
 
-      const bookmarkExists = allBookmarks && allBookmarks.length > 0;
-      setIsBookmarked(bookmarkExists);
+      setIsBookmarked(allBookmarks && allBookmarks.length > 0);
 
       if (allBookmarks) {
+        // Show all in the list for now, but Navigation tab will show latest only
         setBookmarks(allBookmarks.map((b: any) => {
           const date = new Date(b.created_at).toLocaleDateString('en-US', {
             month: 'short',
@@ -187,34 +187,27 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
 
   const handleBookmark = async () => {
     try {
-      if (isBookmarked) {
-        // Find if we have exactly one bookmark to remove or if we should toggle off
-        const { error } = await supabase
-          .from('bookmarks')
-          .delete()
-          .eq('book_id', bookId)
-          .eq('user_id', userId);
+      setIsBookmarking(true);
 
-        if (error) throw error;
-        setIsBookmarked(false);
-        toast.success('Bookmarks removed');
-      } else {
-        const { error } = await supabase.from('bookmarks').insert({
-          book_id: bookId,
-          user_id: userId,
-          page_number: currentLocation.currentPage,
-          epub_cfi: currentLocation.currentCFI,
-          progress_percentage: currentLocation.progressPercentage,
-        });
+      const { error } = await supabase.from('bookmarks').insert({
+        book_id: bookId,
+        user_id: userId,
+        page_number: currentLocation.currentPage,
+        epub_cfi: currentLocation.currentCFI,
+        progress_percentage: currentLocation.progressPercentage,
+      });
 
-        if (error) throw error;
-        setIsBookmarked(true);
-        toast.success('Bookmark saved');
-      }
+      if (error) throw error;
+      setIsBookmarked(true);
+      toast.success('Bookmark saved');
       loadBookmarks();
+
+      // Momentary feedback
+      setTimeout(() => setIsBookmarking(false), 2000);
     } catch (error) {
       console.error('Bookmark operation failed:', error);
-      toast.error(`Failed to ${isBookmarked ? 'remove' : 'save'} bookmark`);
+      toast.error('Failed to save bookmark');
+      setIsBookmarking(false);
     }
   };
 
@@ -255,7 +248,11 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     setCurrentLocation((prev) => {
       const next = { ...prev, ...data };
 
-      if (next.currentPage !== prev.currentPage || next.currentCFI !== prev.currentCFI || next.progressPercentage !== prev.progressPercentage) {
+      // CRITICAL: Only reset dwell timer if PAGE or CFI changed. 
+      // Progress (%) change (scrolling) should NOT reset the dwell timer.
+      const hasPageChanged = next.currentPage !== prev.currentPage || next.currentCFI !== prev.currentCFI;
+
+      if (hasPageChanged) {
         if (locationChangeTimeout.current) clearTimeout(locationChangeTimeout.current);
         locationChangeTimeout.current = setTimeout(() => {
           addToHistory(next);
@@ -273,9 +270,19 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col h-screen bg-background text-foreground transition-colors duration-300">
+    <div className={cn(
+      "fixed inset-0 z-[100] flex flex-col h-screen transition-colors duration-300",
+      readerTheme === 'dark' ? 'bg-gray-950 text-gray-100' :
+        readerTheme === 'sepia' ? 'bg-[#f4ecd8] text-[#5b4636]' :
+          'bg-background text-foreground'
+    )}>
       {/* Header */}
-      <header className="h-14 border-b flex items-center justify-between px-4 bg-background z-10">
+      <header className={cn(
+        "h-14 border-b flex items-center justify-between px-4 z-10 transition-colors",
+        readerTheme === 'dark' ? 'bg-gray-900 border-gray-800' :
+          readerTheme === 'sepia' ? 'bg-[#efe6ce] border-[#e0d6bc]' :
+            'bg-background'
+      )}>
         <div className="flex items-center gap-4">
           <Link href="/dashboard/library" passHref>
             <Button variant="ghost" size="icon" aria-label="Back to library">
@@ -303,10 +310,13 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
             variant="ghost"
             size="icon"
             onClick={handleBookmark}
-            className={isBookmarked ? 'text-primary' : ''}
-            title={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
+            className={isBookmarking ? 'text-blue-500 bg-blue-50/10' : ''}
+            title="Bookmark this page"
           >
-            <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-current' : ''}`} />
+            <Bookmark className={cn(
+              "h-5 w-5 transition-all duration-300",
+              isBookmarking ? "fill-current scale-125" : (isBookmarked ? "fill-current opacity-80" : "")
+            )} />
           </Button>
 
           <Button
@@ -338,7 +348,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
           return child;
         })}
         {showSettings && (
-          <div className="absolute top-4 right-4 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="absolute top-4 right-4 z-50 animate-in fade-in slide-in-from-top-4 duration-300 shadow-2xl">
             <ReaderSettings
               onThemeChange={handleThemeChange}
               currentTheme={readerTheme}

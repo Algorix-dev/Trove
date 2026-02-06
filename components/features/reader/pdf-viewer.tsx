@@ -12,6 +12,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
 import { HighlightMenu } from '@/components/features/reader/highlight-menu';
 import { GamificationService } from '@/lib/gamification';
+import { cn } from '@/lib/utils';
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -157,35 +158,29 @@ export function PDFViewer({
     toast.success('Highlight removed');
   };
 
-  // Track reading time and award XP
+  // Track reading time and award XP (Robust Heartbeat)
   useEffect(() => {
-    let sessionStart = Date.now();
+    if (loading || numPages === 0) return;
+
+    let startTime = Date.now();
 
     const interval = setInterval(async () => {
-      // Check if actively reading
-      if (!loading && numPages > 0) {
-        const minutesRead = Math.round((Date.now() - sessionStart) / 60000);
+      const elapsed = Date.now() - startTime;
+      if (elapsed >= 55000) { // Approx 1 min
+        await supabase.from('reading_sessions').insert({
+          user_id: userId,
+          book_id: bookId,
+          duration_minutes: 1,
+          session_date: new Date().toISOString().split('T')[0],
+        });
 
-        if (minutesRead >= 1) {
-          // Create reading session record
-          await supabase.from('reading_sessions').insert({
-            user_id: userId,
-            book_id: bookId,
-            duration_minutes: 1,
-            session_date: new Date().toISOString().split('T')[0],
-          });
-
-          // Award XP
-          await GamificationService.awardXP(userId, 1, 'Reading Time', bookId);
-
-          // Reset session start
-          sessionStart = Date.now();
-        }
+        await GamificationService.awardXP(userId, 1, 'Reading Time', bookId);
+        startTime = Date.now();
       }
-    }, 60000); // Every minute
+    }, 30000); // Check every 30s
 
     return () => clearInterval(interval);
-  }, [userId, loading, numPages, bookId]);
+  }, [loading, numPages, userId, bookId]);
 
   async function onDocumentLoadSuccess(pdf: any) {
     setNumPages(pdf.numPages);
@@ -244,25 +239,33 @@ export function PDFViewer({
       background: 'bg-muted/30',
       pageBackground: 'bg-white',
       filter: 'none',
+      textColor: 'text-foreground'
     },
     dark: {
-      background: 'bg-gray-900',
-      pageBackground: 'bg-gray-800',
-      filter: 'invert(1) hue-rotate(180deg)', // Invert colors for dark mode
+      background: 'bg-slate-950',
+      pageBackground: 'bg-slate-900',
+      filter: 'invert(0.9) hue-rotate(180deg)',
+      textColor: 'text-slate-100'
     },
     sepia: {
       background: 'bg-amber-50',
-      pageBackground: 'bg-amber-100',
-      filter: 'sepia(0.5) brightness(1.1)', // Apply sepia tone
+      pageBackground: 'bg-[#f4ecd8]',
+      filter: 'sepia(0.3) contrast(1.1) brightness(0.95)',
+      textColor: 'text-[#5b4636]'
     },
   };
 
   const currentTheme = themeStyles[readerTheme];
 
   return (
-    <div className="flex flex-col h-full">
+    <div className={cn("flex flex-col h-full", currentTheme.textColor)}>
       {/* Toolbar */}
-      <div className="h-12 border-b bg-background flex items-center justify-between px-4">
+      <div className={cn(
+        "h-12 border-b flex items-center justify-between px-4 transition-colors",
+        readerTheme === 'dark' ? 'bg-slate-900 border-slate-800' :
+          readerTheme === 'sepia' ? 'bg-[#efe6ce] border-[#e0d6bc]' :
+            'bg-background'
+      )}>
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -286,7 +289,10 @@ export function PDFViewer({
 
       {/* Viewer */}
       <div
-        className={`flex-1 overflow-auto flex justify-center p-8 ${currentTheme.background} relative`}
+        className={cn(
+          "flex-1 overflow-auto flex justify-center p-8 relative transition-colors",
+          currentTheme.background
+        )}
         onMouseUp={handleMouseUp}
       >
         <div className="shadow-2xl">
@@ -304,13 +310,13 @@ export function PDFViewer({
               </div>
             }
           >
-            <div style={{ filter: currentTheme.filter }}>
+            <div style={{ filter: currentTheme.filter }} className="transition-all duration-300">
               <Page
                 pageNumber={pageNumber}
                 scale={scale}
                 renderTextLayer={true}
                 renderAnnotationLayer={true}
-                className={currentTheme.pageBackground}
+                className={cn("shadow-lg", currentTheme.pageBackground)}
               />
             </div>
           </Document>

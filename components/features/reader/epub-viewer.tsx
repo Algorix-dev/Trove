@@ -201,37 +201,31 @@ export function EpubViewer({
     }
   };
 
-  // Track reading time and award XP
+  // Track reading time and award XP (Robust Heartbeat)
   useEffect(() => {
-    let sessionStart = Date.now();
+    if (!isReady || !!error) return;
+
+    let startTime = Date.now();
 
     const interval = setInterval(async () => {
-      // Check if actively reading
-      if (isReady && !error) {
-        const minutesRead = Math.round((Date.now() - sessionStart) / 60000);
+      const elapsed = Date.now() - startTime;
+      if (elapsed >= 55000) { // Approx 1 min
+        const supabase = createBrowserClient(
+          process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+          process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+        );
 
-        if (minutesRead >= 1) {
-          const supabase = createBrowserClient(
-            process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-            process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
-          );
+        await supabase.from('reading_sessions').insert({
+          user_id: userId,
+          book_id: bookId,
+          duration_minutes: 1,
+          session_date: new Date().toISOString().split('T')[0],
+        });
 
-          // Create reading session record
-          await supabase.from('reading_sessions').insert({
-            user_id: userId,
-            book_id: bookId,
-            duration_minutes: 1,
-            session_date: new Date().toISOString().split('T')[0],
-          });
-
-          // Award XP
-          await GamificationService.awardXP(userId, 1, 'Reading Time', bookId);
-
-          // Reset session start
-          sessionStart = Date.now();
-        }
+        await GamificationService.awardXP(userId, 1, 'Reading Time', bookId);
+        startTime = Date.now();
       }
-    }, 60000); // Every minute
+    }, 30000); // Check every 30s
 
     return () => clearInterval(interval);
   }, [isReady, error, userId, bookId]);
@@ -330,6 +324,8 @@ export function EpubViewer({
   // 3. Reactive Theme & Font Size
   useEffect(() => {
     if (isReady && renditionRef.current) {
+      const themes = renditionRef.current.themes;
+
       const styles: any = {
         body: {
           background: 'transparent !important',
@@ -343,13 +339,22 @@ export function EpubViewer({
           'font-size': `${fontSize}% !important`,
           'line-height': '1.6 !important',
         },
+        '::selection': {
+          background: 'rgba(59, 130, 246, 0.3) !important',
+        }
       };
 
-      renditionRef.current.themes.register('custom', styles);
-      renditionRef.current.themes.select('custom');
+      themes.register('custom', styles);
+      themes.select('custom');
+      themes.fontSize(`${fontSize}%`);
 
-      // Some EPUBs need explicit font size update on the themes object
-      renditionRef.current.themes.fontSize(`${fontSize}%`);
+      // Force background update on the viewer container
+      if (viewerRef.current) {
+        viewerRef.current.style.backgroundColor =
+          readerTheme === 'dark' ? '#030712' :
+            readerTheme === 'sepia' ? '#f4ecd8' :
+              '#ffffff';
+      }
     }
   }, [isReady, readerTheme, fontSize]);
 
