@@ -5,7 +5,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 
 import { createBrowserClient } from '@supabase/ssr';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Document, Page, pdfjs } from 'react-pdf';
 
@@ -21,7 +21,7 @@ interface PDFViewerProps {
   fileUrl: string;
   bookId: string;
   userId: string;
-  readerTheme?: 'light' | 'dark' | 'sepia';
+  readerTheme?: 'light' | 'dark' | 'sepia' | 'night' | 'custom';
   onLocationUpdate?: (data: {
     currentPage?: number;
     totalPages?: number;
@@ -218,53 +218,82 @@ export function PDFViewer({
     }
   }
 
-  const handleMouseUp = () => {
-    const selected = window.getSelection();
-    if (selected && selected.toString().trim()) {
-      const range = selected.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      setSelection({
-        text: selected.toString().trim(),
-        x: rect.left + rect.width / 2,
-        y: rect.top - 10,
-      });
-    } else {
+  const handleSelectionChange = useCallback(() => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.toString().trim()) {
       setSelection(null);
+      return;
     }
-  };
+
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const text = selection.toString().trim();
+
+    // Only proceed if selection is within the PDF content
+    const container = range.commonAncestorContainer;
+    const isInside = container.nodeType === 3 ? container.parentElement?.closest('.react-pdf__Document') : (container as HTMLElement).closest('.react-pdf__Document');
+
+    if (!isInside) {
+      setSelection(null);
+      return;
+    }
+
+    setSelection({
+      text,
+      x: rect.left + rect.width / 2,
+      y: rect.top, // Anchored to top of range
+    });
+  }, []);
+
+  // Use native listeners for professional selection
+  useEffect(() => {
+    document.addEventListener('mouseup', handleSelectionChange);
+    document.addEventListener('touchend', handleSelectionChange);
+    return () => {
+      document.removeEventListener('mouseup', handleSelectionChange);
+      document.removeEventListener('touchend', handleSelectionChange);
+    };
+  }, [handleSelectionChange]);
 
   // Theme styles with CSS filters for PDF
   const themeStyles = {
     light: {
-      background: 'bg-muted/30',
-      pageBackground: 'bg-white',
+      background: 'bg-[#ffffff]',
+      pageBackground: 'bg-[#ffffff]',
       filter: 'none',
-      textColor: 'text-foreground'
+      textColor: 'text-[#1a1c1e]'
     },
     dark: {
-      background: 'bg-slate-950',
-      pageBackground: 'bg-slate-900',
-      filter: 'invert(0.9) hue-rotate(180deg)',
-      textColor: 'text-slate-100'
+      background: 'bg-[#1a1b1e]',
+      pageBackground: 'bg-[#1e1f23]',
+      filter: 'invert(0.9) hue-rotate(180deg) brightness(1.05) contrast(0.95)',
+      textColor: 'text-[#d1d5db]'
     },
     sepia: {
-      background: 'bg-amber-50',
-      pageBackground: 'bg-[#f4ecd8]',
-      filter: 'sepia(0.3) contrast(1.1) brightness(0.95)',
-      textColor: 'text-[#5b4636]'
+      background: 'bg-[#f4efe1]',
+      pageBackground: 'bg-[#f4efe1]',
+      filter: 'sepia(0.4) contrast(1.1) brightness(0.95) multiply(1.1)',
+      textColor: 'text-[#433422]'
+    },
+    night: {
+      background: 'bg-[#0a0a0b]',
+      pageBackground: 'bg-[#0d0d0f]',
+      filter: 'invert(0.95) hue-rotate(180deg) brightness(0.8) contrast(0.9)',
+      textColor: 'text-[#9ca3af]'
     },
   };
 
-  const currentTheme = themeStyles[readerTheme];
+  const currentTheme = themeStyles[readerTheme as keyof typeof themeStyles] || themeStyles.light;
 
   return (
     <div className={cn("flex flex-col h-full", currentTheme.textColor)}>
       {/* Toolbar */}
       <div className={cn(
         "h-12 border-b flex items-center justify-between px-4 transition-colors",
-        readerTheme === 'dark' ? 'bg-slate-900 border-slate-800' :
-          readerTheme === 'sepia' ? 'bg-[#efe6ce] border-[#e0d6bc]' :
-            'bg-background'
+        readerTheme === 'dark' ? 'bg-[#1e1f23] border-[#2d2e32]' :
+          readerTheme === 'sepia' ? 'bg-[#ebe3cf] border-[#dcd6bc]' :
+            readerTheme === 'night' ? 'bg-[#0d0d0f] border-[#1f1f23]' :
+              'bg-[#ffffff] border-[#e2e8f0]'
       )}>
         <div className="flex items-center gap-2">
           <Button
@@ -293,7 +322,6 @@ export function PDFViewer({
           "flex-1 overflow-auto flex justify-center p-8 relative transition-colors",
           currentTheme.background
         )}
-        onMouseUp={handleMouseUp}
       >
         <div className="shadow-2xl">
           <Document
@@ -324,7 +352,7 @@ export function PDFViewer({
 
         {selection && onSaveHighlight && (
           <div
-            className="fixed z-[200] -translate-x-1/2 -translate-y-full"
+            className="fixed z-[200] -translate-x-1/2 -translate-y-4"
             style={{ left: selection.x, top: selection.y }}
           >
             <HighlightMenu
@@ -334,10 +362,17 @@ export function PDFViewer({
               author={author}
               pageNumber={pageNumber}
               existingHighlight={(selection as any).id ? selection : undefined}
-              onSave={(data) => onSaveHighlight({ ...data, page_number: pageNumber })}
+              onSave={async (data) => {
+                await onSaveHighlight({ ...data, page_number: pageNumber });
+                setSelection(null);
+                window.getSelection()?.removeAllRanges();
+              }}
               onUpdate={handleUpdateHighlight}
               onDelete={handleDeleteHighlight}
-              onClose={() => setSelection(null)}
+              onClose={() => {
+                setSelection(null);
+                window.getSelection()?.removeAllRanges();
+              }}
             />
           </div>
         )}

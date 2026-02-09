@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { HighlightMenu } from '@/components/features/reader/highlight-menu';
@@ -95,23 +95,33 @@ export function TxtViewer({
 
   const themeStyles = {
     light: {
-      background: 'bg-white',
-      text: 'text-slate-900',
-      border: 'border-slate-200'
-    },
-    dark: {
-      background: 'bg-slate-950',
-      text: 'text-slate-100',
-      border: 'border-slate-800'
+      background: 'bg-[#ffffff]',
+      text: 'text-[#1a1c1e]',
+      border: 'border-[#e2e8f0]'
     },
     sepia: {
-      background: 'bg-[#f4ecd8]',
-      text: 'text-[#5b4636]',
-      border: 'border-[#e0d6bc]'
+      background: 'bg-[#f4efe1]',
+      text: 'text-[#433422]',
+      border: 'border-[#dcd6bc]'
+    },
+    dark: {
+      background: 'bg-[#1a1b1e]',
+      text: 'text-[#d1d5db]',
+      border: 'border-[#2d2e32]'
+    },
+    night: {
+      background: 'bg-[#0a0a0b]',
+      text: 'text-[#9ca3af]',
+      border: 'border-[#1f1f23]'
+    },
+    custom: {
+      background: 'bg-background',
+      text: 'text-foreground',
+      border: 'border-border'
     }
   };
 
-  const currentTheme = themeStyles[readerTheme];
+  const currentStyles = themeStyles[readerTheme as keyof typeof themeStyles] || themeStyles.light;
 
   // Robust Heartbeat Activity Tracking
   useEffect(() => {
@@ -142,20 +152,42 @@ export function TxtViewer({
     return () => clearInterval(interval);
   }, [userId, bookId, content]);
 
-  const handleMouseUp = () => {
-    const selected = window.getSelection();
-    if (selected && selected.toString().trim()) {
-      const range = selected.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      setSelection({
-        text: selected.toString().trim(),
-        x: rect.left + rect.width / 2,
-        y: rect.top - 10,
-      });
-    } else {
+  const handleSelectionChange = useCallback(() => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.toString().trim()) {
       setSelection(null);
+      return;
     }
-  };
+
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const text = selection.toString().trim();
+
+    // Only proceed if selection is within our content area
+    const container = range.commonAncestorContainer;
+    const isInside = container.nodeType === 3 ? container.parentElement?.closest('.txt-content-area') : (container as HTMLElement).closest('.txt-content-area');
+
+    if (!isInside) {
+      setSelection(null);
+      return;
+    }
+
+    setSelection({
+      text,
+      x: rect.left + rect.width / 2,
+      y: rect.top, // Anchored to top of range
+    });
+  }, []);
+
+  // Use native listeners for professional selection
+  useEffect(() => {
+    document.addEventListener('mouseup', handleSelectionChange);
+    document.addEventListener('touchend', handleSelectionChange);
+    return () => {
+      document.removeEventListener('mouseup', handleSelectionChange);
+      document.removeEventListener('touchend', handleSelectionChange);
+    };
+  }, [handleSelectionChange]);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
@@ -179,14 +211,14 @@ export function TxtViewer({
   );
 
   return (
-    <div className={cn("flex flex-col h-full transition-colors duration-300", currentTheme.background)}>
+  return (
+    <div className={cn("flex flex-col h-full transition-colors duration-300", currentStyles.background)}>
       <ScrollArea
         className="flex-1 px-8 py-10"
         onScrollCapture={handleScroll}
-        onMouseUp={handleMouseUp}
       >
         <div
-          className={cn("max-w-3xl mx-auto leading-relaxed whitespace-pre-wrap font-serif text-lg", currentTheme.text)}
+          className={cn("txt-content-area max-w-3xl mx-auto leading-relaxed whitespace-pre-wrap font-serif text-lg", currentStyles.text)}
           style={{ fontSize: `${(fontSize / 100) * 1.125}rem` }}
         >
           {content}
@@ -194,7 +226,7 @@ export function TxtViewer({
 
         {selection && onSaveHighlight && (
           <div
-            className="fixed z-[200] -translate-x-1/2 -translate-y-full"
+            className="fixed z-[200] -translate-x-1/2 -translate-y-4"
             style={{ left: selection.x, top: selection.y }}
           >
             <HighlightMenu
@@ -205,8 +237,12 @@ export function TxtViewer({
               onSave={async (data) => {
                 await onSaveHighlight({ ...data, progress_percentage: progress });
                 setSelection(null);
+                window.getSelection()?.removeAllRanges();
               }}
-              onClose={() => setSelection(null)}
+              onClose={() => {
+                setSelection(null);
+                window.getSelection()?.removeAllRanges();
+              }}
             />
           </div>
         )}

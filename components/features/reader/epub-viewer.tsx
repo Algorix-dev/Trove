@@ -14,7 +14,7 @@ interface EpubViewerProps {
   url: string;
   initialLocation?: string | number;
   onLocationChange?: (location: string, progress: number) => void;
-  readerTheme?: 'light' | 'dark' | 'sepia';
+  readerTheme?: 'light' | 'dark' | 'sepia' | 'night' | 'custom';
   userId: string;
   bookId: string;
   onLocationUpdate?: (data: {
@@ -263,6 +263,7 @@ export function EpubViewer({
         });
 
         // Set up events
+        // Professional Selection API within Iframe
         rendition.on('selected', (cfiRange: string, contents: any) => {
           const range = contents.range(cfiRange);
           const rect = range.getBoundingClientRect();
@@ -272,11 +273,19 @@ export function EpubViewer({
             text: text.trim(),
             cfi: cfiRange,
             x: rect.left + rect.width / 2,
-            y: rect.top - 10,
+            y: rect.top, // Anchored to top
           });
 
+          // Visual highlight (optional, but requested for feedback)
           rendition.annotations.add('highlight', cfiRange, {}, () => { });
-          contents.window.getSelection().removeAllRanges();
+        });
+
+        // Ensure clicking outside clears selection
+        rendition.on('click', () => {
+          setSelection(null);
+          if (selection?.cfi) {
+            rendition.annotations.remove(selection.cfi, 'highlight');
+          }
         });
 
         rendition.on('relocated', () => {
@@ -331,13 +340,17 @@ export function EpubViewer({
           background: 'transparent !important',
           color:
             readerTheme === 'dark'
-              ? '#f3f4f6 !important'
+              ? '#d1d5db !important'
               : readerTheme === 'sepia'
-                ? '#5f4b32 !important'
-                : '#111827 !important',
+                ? '#433422 !important'
+                : readerTheme === 'night'
+                  ? '#9ca3af !important'
+                  : '#1a1c1e !important',
           'font-family': 'Inter, sans-serif !important',
           'font-size': `${fontSize}% !important`,
-          'line-height': '1.6 !important',
+          'line-height': '1.8 !important',
+          'letter-spacing': '0.015em !important',
+          'padding': '0 20px !important'
         },
         '::selection': {
           background: 'rgba(59, 130, 246, 0.3) !important',
@@ -381,15 +394,12 @@ export function EpubViewer({
 
   return (
     <div className={`flex flex-col h-full bg-background group relative`}>
-      <div className="flex-1 w-full relative" onMouseUp={() => {
-        // Fallback for selection if EPUB internal events fail
-        // But usually EPUB handles its own selection
-      }}>
+      <div className="flex-1 w-full relative">
         <div ref={viewerRef} className="h-full w-full" />
 
         {selection && (
           <div
-            className="fixed z-[200] -translate-x-1/2 -translate-y-full"
+            className="fixed z-[200] -translate-x-1/2 -translate-y-4"
             style={{ left: selection.x, top: selection.y }}
           >
             <HighlightMenu
@@ -398,13 +408,19 @@ export function EpubViewer({
               bookTitle={bookTitle}
               author={author}
               existingHighlight={(selection as any).id ? selection : undefined}
-              onSave={(data) => {
+              onSave={async (data) => {
                 const promise = onSaveHighlight?.({ ...data, selection_data: { cfi: selection.cfi } });
-                return (promise || Promise.resolve()).then(() => loadHighlights());
+                await (promise || Promise.resolve());
+                loadHighlights();
+                setSelection(null);
+                renditionRef.current?.getContents().forEach((c: any) => c.window.getSelection().removeAllRanges());
               }}
               onUpdate={handleUpdateHighlight}
               onDelete={handleDeleteHighlight}
-              onClose={() => setSelection(null)}
+              onClose={() => {
+                setSelection(null);
+                renditionRef.current?.getContents().forEach((c: any) => c.window.getSelection().removeAllRanges());
+              }}
             />
           </div>
         )}

@@ -35,6 +35,9 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   const [history, setHistory] = useState<any[]>([]);
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [quotes, setQuotes] = useState<any[]>([]);
+  const [isTabVisible, setIsTabVisible] = useState(true);
+  const [showRestorePrompt, setShowRestorePrompt] = useState(false);
+  const [pendingRestore, setPendingRestore] = useState<any>(null);
   const [jumpLocation, setJumpLocation] = useState<any>(null);
   const locationChangeTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
 
@@ -46,6 +49,15 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       ),
     []
   );
+
+  // Use visibility API
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsTabVisible(document.visibilityState === 'visible');
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   const loadInitialSettings = useCallback(async () => {
     const { data } = await supabase
@@ -70,11 +82,17 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     if (data) {
       if (data.last_pages) setHistory(data.last_pages);
 
-      setJumpLocation((prev: any) => prev || {
+      const savedPos = {
         page: data.current_page,
         cfi: data.epub_cfi,
         progress: data.progress_percentage
-      });
+      };
+
+      // If we have saved progress, ask to restore
+      if (savedPos.page || savedPos.cfi || savedPos.progress) {
+        setPendingRestore(savedPos);
+        setShowRestorePrompt(true);
+      }
     }
   }, [supabase, bookId, userId]);
 
@@ -152,14 +170,14 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   }, [loadInitialSettings, loadBookmarks, loadQuotes, loadInitialProgress]);
 
   const addToHistory = useCallback((location: LocationData) => {
-    if (!location.currentPage && !location.currentCFI && !location.progressPercentage) return;
+    // Only save if tab is active and we have meaningful data
+    if (!isTabVisible || (!location.currentPage && !location.currentCFI && !location.progressPercentage)) return;
 
     const label = location.currentPage ? `Page ${location.currentPage}` :
       location.progressPercentage ? `${Math.round(location.progressPercentage)}% Progress` :
         'Recent Location';
 
     setHistory(prev => {
-      // Find if we already have an entry for this location to avoid duplicates
       const existingIndex = prev.findIndex(h => h.label === label);
 
       let updatedHistory;
@@ -171,33 +189,71 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       };
 
       if (existingIndex !== -1) {
-        // Update timestamp of existing item and move to top
         const existingItem = { ...prev[existingIndex], timestamp: newHistoryItem.timestamp };
         updatedHistory = [existingItem, ...prev.filter((_, i) => i !== existingIndex)].slice(0, 20);
       } else {
         updatedHistory = [newHistoryItem, ...prev].slice(0, 20);
       }
 
+      // COMMIT STABLE PROGRESS
       supabase
         .from('reading_progress')
-        .update({
+        .upsert({
+          book_id: bookId,
+          user_id: userId,
           last_pages: updatedHistory,
           current_page: location.currentPage,
           epub_cfi: location.currentCFI,
-          progress_percentage: location.progressPercentage
+          progress_percentage: location.progressPercentage,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'book_id,user_id' })
+        .then();
+
+      // Mirror to books table for library view
+      supabase
+        .from('books')
+        .update({
+          progress_percentage: location.progressPercentage,
+          current_page: location.currentPage,
+          last_read_at: new Date().toISOString(),
         })
-        .eq('book_id', bookId)
+        .eq('id', bookId)
         .eq('user_id', userId)
         .then();
 
       return updatedHistory;
     });
-  }, [bookId, userId, supabase]);
+  }, [bookId, userId, supabase, isTabVisible]);
+
+  const handleLocationUpdate = useCallback((data: LocationData) => {
+    setCurrentLocation((prev) => {
+      const next = { ...prev, ...data };
+
+      // STABILITY RULE:
+      // If position changes, clear the commit timer.
+      // Re-start 5s timer. Only commit if user stays still.
+      if (locationChangeTimeout.current) clearTimeout(locationChangeTimeout.current);
+
+      if (isTabVisible && !showSettings) {
+        locationChangeTimeout.current = setTimeout(() => {
+          addToHistory(next);
+        }, 5000);
+      }
+
+      return next;
+    });
+  }, [addToHistory, isTabVisible, showSettings]);
+
+  const handleNavigate = (location: any) => {
+    setJumpLocation(location);
+    setShowRestorePrompt(false);
+    loadBookmarks();
+    loadQuotes();
+  };
 
   const handleBookmark = async () => {
     try {
       setIsBookmarking(true);
-
       const { error } = await supabase.from('bookmarks').insert({
         book_id: bookId,
         user_id: userId,
@@ -210,8 +266,6 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       setIsBookmarked(true);
       toast.success('Bookmark saved');
       loadBookmarks();
-
-      // Momentary feedback
       setTimeout(() => setIsBookmarking(false), 2000);
     } catch (error) {
       console.error('Bookmark operation failed:', error);
@@ -237,7 +291,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
 
       if (error) throw error;
       toast.success('Highlight saved!');
-      loadQuotes(); // Refresh quotes navigation
+      loadQuotes();
     } catch (error) {
       console.error('Save highlight error:', error);
       toast.error('Failed to save highlight');
@@ -254,44 +308,21 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       });
   };
 
-  const handleLocationUpdate = useCallback((data: LocationData) => {
-    setCurrentLocation((prev) => {
-      const next = { ...prev, ...data };
-
-      // CRITICAL: Only reset dwell timer if PAGE or CFI changed. 
-      // Progress (%) change (scrolling) should NOT reset the dwell timer.
-      const hasPageChanged = next.currentPage !== prev.currentPage || next.currentCFI !== prev.currentCFI;
-
-      if (hasPageChanged) {
-        if (locationChangeTimeout.current) clearTimeout(locationChangeTimeout.current);
-        locationChangeTimeout.current = setTimeout(() => {
-          addToHistory(next);
-        }, 5000);
-      }
-
-      return next;
-    });
-  }, [addToHistory]);
-
-  const handleNavigate = (location: any) => {
-    setJumpLocation(location);
-    loadBookmarks();
-    loadQuotes();
-  };
-
   return (
     <div className={cn(
       "fixed inset-0 z-[100] flex flex-col h-screen transition-colors duration-300",
-      readerTheme === 'dark' ? 'bg-gray-950 text-gray-100' :
-        readerTheme === 'sepia' ? 'bg-[#f4ecd8] text-[#5b4636]' :
-          'bg-background text-foreground'
+      readerTheme === 'dark' ? 'bg-[#1a1b1e] text-[#d1d5db]' :
+        readerTheme === 'sepia' ? 'bg-[#f4efe1] text-[#433422]' :
+          readerTheme === 'night' ? 'bg-[#0a0a0b] text-[#9ca3af]' :
+            'bg-[#ffffff] text-[#1a1c1e]'
     )}>
       {/* Header */}
       <header className={cn(
         "h-14 border-b flex items-center justify-between px-4 z-10 transition-colors",
-        readerTheme === 'dark' ? 'bg-gray-900 border-gray-800' :
-          readerTheme === 'sepia' ? 'bg-[#efe6ce] border-[#e0d6bc]' :
-            'bg-background'
+        readerTheme === 'dark' ? 'bg-[#1e1f23] border-[#2d2e32]' :
+          readerTheme === 'sepia' ? 'bg-[#ebe3cf] border-[#dcd6bc]' :
+            readerTheme === 'night' ? 'bg-[#0d0d0f] border-[#1f1f23]' :
+              'bg-[#ffffff] border-[#e2e8f0]'
       )}>
         <div className="flex items-center gap-4">
           <Link href="/dashboard/library" passHref>
@@ -362,6 +393,40 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
               onThemeChange={handleThemeChange}
               currentTheme={readerTheme}
             />
+          </div>
+        )}
+
+        {/* Restore Progress Prompt */}
+        {showRestorePrompt && pendingRestore && (
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-primary text-primary-foreground px-4 py-3 rounded-xl shadow-2xl border border-primary/20 animate-in slide-in-from-bottom-8 fade-in duration-500">
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold leading-tight">Pick up where you left off?</span>
+              <span className="text-[10px] opacity-80 uppercase tracking-wider font-bold">
+                {pendingRestore.page ? `Page ${pendingRestore.page}` :
+                  pendingRestore.progress ? `${Math.round(pendingRestore.progress)}% done` : 'Last Position'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 ml-4">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-8 px-4 text-xs font-bold rounded-lg shadow-sm hover:scale-105 transition-transform"
+                onClick={() => {
+                  handleNavigate(pendingRestore);
+                  setShowRestorePrompt(false);
+                }}
+              >
+                Restore
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 px-2 text-xs opacity-60 hover:opacity-100"
+                onClick={() => setShowRestorePrompt(false)}
+              >
+                Dismiss
+              </Button>
+            </div>
           </div>
         )}
       </main>
