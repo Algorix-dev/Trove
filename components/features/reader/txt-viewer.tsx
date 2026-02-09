@@ -211,7 +211,6 @@ export function TxtViewer({
   );
 
   return (
-  return (
     <div className={cn("flex flex-col h-full transition-colors duration-300", currentStyles.background)}>
       <ScrollArea
         className="flex-1 px-8 py-10"
@@ -230,14 +229,16 @@ export function TxtViewer({
             style={{ left: selection.x, top: selection.y }}
           >
             <HighlightMenu
-              selectedText={selection.text}
+              selectedText={selection?.text || ''}
               bookId={bookId}
               bookTitle={bookTitle}
               author={author}
               onSave={async (data) => {
-                await onSaveHighlight({ ...data, progress_percentage: progress });
-                setSelection(null);
-                window.getSelection()?.removeAllRanges();
+                if (selection) {
+                  await onSaveHighlight({ ...data, progress_percentage: progress });
+                  setSelection(null);
+                  window.getSelection()?.removeAllRanges();
+                }
               }}
               onClose={() => {
                 setSelection(null);
@@ -248,7 +249,7 @@ export function TxtViewer({
         )}
       </ScrollArea>
 
-      <div className={cn("h-8 border-t flex items-center justify-center text-xs transition-colors", currentTheme.background, currentTheme.text, currentTheme.border, "opacity-70")}>
+      <div className={cn("h-8 border-t flex items-center justify-center text-xs transition-colors", currentStyles.background, currentStyles.text, currentStyles.border, "opacity-70")}>
         {progress}% Read
       </div>
     </div>
