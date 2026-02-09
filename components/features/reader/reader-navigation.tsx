@@ -4,10 +4,10 @@ import {
     BookMarked,
     History,
     List,
-    Search,
     Sparkles
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { ReaderAiAssistant } from './reader-ai-assistant';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,10 +35,10 @@ interface ReaderNavigationProps {
     currentCFI?: string;
     bookmarks: NavItem[];
     history: NavItem[];
-    toc: NavItem[];
     quotes: NavItem[];
     onNavigate: (data: any) => void;
     bookId: string;
+    userId: string;
     bookTitle: string;
 }
 
@@ -49,11 +49,13 @@ export function ReaderNavigation({
     history,
     quotes,
     onNavigate,
+    userId,
+    bookId,
+    bookTitle,
+    currentCFI,
 }: ReaderNavigationProps) {
     const [pageInput, setPageInput] = useState(currentPage?.toString() || '');
     const [isOpen, setIsOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState('history');
 
     useEffect(() => {
         if (currentPage) {
@@ -79,7 +81,7 @@ export function ReaderNavigation({
     return (
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Table of contents and navigation">
+                <Button variant="ghost" size="icon" aria-label="Reader navigation">
                     <List className="h-5 w-5" />
                 </Button>
             </SheetTrigger>
@@ -88,21 +90,6 @@ export function ReaderNavigation({
                     <SheetHeader className="px-6 py-4 border-b">
                         <SheetTitle>Navigation</SheetTitle>
                     </SheetHeader>
-
-                    {/* Search - simplified for now */}
-                    {activeTab === 'toc' && (
-                        <form className="px-4 py-3" onSubmit={(e) => e.preventDefault()}>
-                            <div className="relative">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search in book..."
-                                    className="pl-9 h-9"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                        </form>
-                    )}
 
                     {/* Page Jump */}
                     {(totalPages || currentPage) && (
@@ -122,13 +109,13 @@ export function ReaderNavigation({
                         </form>
                     )}
 
-                    <Tabs defaultValue="history" className="h-full flex flex-col" onValueChange={(v) => setActiveTab(v)}>
+                    <Tabs defaultValue="history" className="h-full flex flex-col">
                         <div className="px-4 py-2 border-b">
                             <TabsList className="grid w-full grid-cols-4">
-                                <TabsTrigger value="history"><History className="h-4 w-4" /></TabsTrigger>
-                                <TabsTrigger value="bookmarks"><BookMarked className="h-4 w-4" /></TabsTrigger>
-                                <TabsTrigger value="quotes"><Sparkles className="h-4 w-4" /></TabsTrigger>
-                                <TabsTrigger value="ai" className="text-purple-600"><Sparkles className="h-4 w-4" /></TabsTrigger>
+                                <TabsTrigger value="history" title="History"><History className="h-4 w-4" /></TabsTrigger>
+                                <TabsTrigger value="bookmarks" title="Bookmarks"><BookMarked className="h-4 w-4" /></TabsTrigger>
+                                <TabsTrigger value="quotes" title="Saved Quotes"><Sparkles className="h-4 w-4" /></TabsTrigger>
+                                <TabsTrigger value="ai" className="text-purple-600" title="AI Assistant"><Sparkles className="h-4 w-4" /></TabsTrigger>
                             </TabsList>
                         </div>
 
@@ -170,14 +157,14 @@ export function ReaderNavigation({
                                             <p className="text-sm">No bookmarks yet</p>
                                         </div>
                                     ) : (
-                                        bookmarks.slice(0, 1).map((item) => (
+                                        bookmarks.map((item) => (
                                             <button
                                                 key={item.id}
                                                 onClick={() => handleSelection(item.data)}
                                                 className="w-full text-left p-3 rounded-lg border bg-card hover:bg-accent transition-colors"
                                             >
                                                 <p className="font-medium text-sm mb-1">{item.label}</p>
-                                                <p className="text-xs text-muted-foreground">Latest Bookmark</p>
+                                                <p className="text-xs text-muted-foreground truncate">{item.subLabel}</p>
                                             </button>
                                         ))
                                     )}
@@ -223,18 +210,15 @@ export function ReaderNavigation({
                                 </div>
                             </TabsContent>
 
-                            <TabsContent value="ai" className="m-0 p-4">
-                                <div className="space-y-4">
-                                    <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-800">
-                                        <div className="flex items-center gap-2 mb-2 text-purple-700 dark:text-purple-400">
-                                            <Sparkles className="h-4 w-4" />
-                                            <span className="text-sm font-bold uppercase tracking-wider">Trove AI Insights</span>
-                                        </div>
-                                        <p className="text-sm text-purple-900/70 dark:text-purple-300/70 leading-relaxed">
-                                            I can help you understand complex concepts, summarize chapters, or find connections between ideas. Just highlight some text to get started!
-                                        </p>
-                                    </div>
-                                </div>
+                            <TabsContent value="ai" className="m-0 p-4 h-full">
+                                <ReaderAiAssistant
+                                    bookTitle={bookTitle}
+                                    currentPage={currentPage}
+                                    currentCFI={currentCFI}
+                                    progressPercentage={history[0]?.data?.progressPercentage}
+                                    userId={userId}
+                                    bookId={bookId}
+                                />
                             </TabsContent>
                         </ScrollArea>
                     </Tabs>

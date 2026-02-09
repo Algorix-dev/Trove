@@ -133,35 +133,40 @@ export function HighlightMenu({
 
     if (view === 'prompt') {
         return (
-            <div className="flex flex-col gap-3 bg-background border shadow-xl rounded-xl p-3 min-w-[180px] animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex flex-col gap-3 bg-background border shadow-xl rounded-xl p-3 min-w-[200px] animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                         Save as quote?
                     </span>
-                    <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-muted" onClick={onClose}>
-                        <X className="h-3.5 w-3.5" />
-                    </Button>
                 </div>
                 <div className="flex gap-2">
                     <Button
                         variant="default"
                         size="sm"
-                        className="flex-1 h-8 rounded-lg font-bold"
+                        className="flex-1 h-8 rounded-lg font-bold bg-primary hover:bg-primary/90"
                         onClick={() => handleSave('quote')}
                         disabled={loading}
                     >
-                        {loading ? 'Saving...' : 'Yes'}
+                        {loading ? 'Saving...' : 'Save'}
                     </Button>
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         className="flex-1 h-8 rounded-lg font-bold"
-                        onClick={() => setView('full')}
+                        onClick={onClose}
                         disabled={loading}
                     >
-                        Options
+                        Cancel
                     </Button>
                 </div>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full h-7 text-[10px] font-bold text-muted-foreground hover:text-foreground"
+                    onClick={() => setView('full')}
+                >
+                    More Options
+                </Button>
             </div>
         );
     }

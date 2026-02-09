@@ -30,12 +30,11 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   const [showSettings, setShowSettings] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
-  const [readerTheme, setReaderTheme] = useState<'light' | 'dark' | 'sepia'>('light');
+  const [readerTheme, setReaderTheme] = useState<'light' | 'dark' | 'sepia' | 'night' | 'custom'>('light');
   const [currentLocation, setCurrentLocation] = useState<LocationData>({});
   const [history, setHistory] = useState<any[]>([]);
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [quotes, setQuotes] = useState<any[]>([]);
-  const [toc, setToc] = useState<any[]>([]);
   const [jumpLocation, setJumpLocation] = useState<any>(null);
   const locationChangeTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
 
@@ -144,11 +143,6 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     }
   }, [bookId, userId, supabase]);
 
-  const handleMetadataUpdate = useCallback((data: { toc: any[] }) => {
-    if (data.toc) {
-      setToc(data.toc);
-    }
-  }, []);
 
   useEffect(() => {
     loadInitialSettings();
@@ -160,11 +154,15 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   const addToHistory = useCallback((location: LocationData) => {
     if (!location.currentPage && !location.currentCFI && !location.progressPercentage) return;
 
-    const label = location.currentPage ? `Page ${location.currentPage}` : location.progressPercentage ? `${location.progressPercentage}% Progress` : 'Recent Location';
+    const label = location.currentPage ? `Page ${location.currentPage}` :
+      location.progressPercentage ? `${Math.round(location.progressPercentage)}% Progress` :
+        'Recent Location';
 
     setHistory(prev => {
-      if (prev.length > 0 && prev[0].label === label) return prev;
+      // Find if we already have an entry for this location to avoid duplicates
+      const existingIndex = prev.findIndex(h => h.label === label);
 
+      let updatedHistory;
       const newHistoryItem = {
         id: Date.now(),
         label,
@@ -172,11 +170,22 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         timestamp: new Date().toISOString()
       };
 
-      const updatedHistory = [newHistoryItem, ...prev.filter(h => h.label !== label)].slice(0, 10);
+      if (existingIndex !== -1) {
+        // Update timestamp of existing item and move to top
+        const existingItem = { ...prev[existingIndex], timestamp: newHistoryItem.timestamp };
+        updatedHistory = [existingItem, ...prev.filter((_, i) => i !== existingIndex)].slice(0, 20);
+      } else {
+        updatedHistory = [newHistoryItem, ...prev].slice(0, 20);
+      }
 
       supabase
         .from('reading_progress')
-        .update({ last_pages: updatedHistory })
+        .update({
+          last_pages: updatedHistory,
+          current_page: location.currentPage,
+          epub_cfi: location.currentCFI,
+          progress_percentage: location.progressPercentage
+        })
         .eq('book_id', bookId)
         .eq('user_id', userId)
         .then();
@@ -235,7 +244,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     }
   };
 
-  const handleThemeChange = (theme: 'light' | 'dark' | 'sepia') => {
+  const handleThemeChange = (theme: 'light' | 'dark' | 'sepia' | 'night' | 'custom') => {
     setReaderTheme(theme);
     supabase
       .from('user_preferences')
@@ -301,9 +310,9 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
             currentCFI={currentLocation.currentCFI}
             bookmarks={bookmarks}
             history={history}
-            toc={toc}
             quotes={quotes}
             onNavigate={handleNavigate}
+            userId={userId}
             bookId={bookId}
             bookTitle={title}
           />
@@ -339,7 +348,6 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
             return React.cloneElement(childElement, {
               readerTheme,
               onLocationUpdate: handleLocationUpdate,
-              onMetadata: handleMetadataUpdate,
               onSaveHighlight: handleSaveHighlight,
               bookTitle: title,
               initialPage: jumpLocation?.page || childElement.props.initialPage,
