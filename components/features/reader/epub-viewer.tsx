@@ -97,6 +97,39 @@ export function EpubViewer({
     }, 2000); // Save 2 seconds after last location change
   };
 
+  const themeStyles = {
+    light: {
+      background: 'bg-[#ffffff]',
+      text: 'text-[#1a1c1e]',
+      border: 'border-[#e2e8f0]',
+      footerText: 'text-[#64748b]',
+      overlayBg: 'bg-[#ffffff]/80'
+    },
+    sepia: {
+      background: 'bg-[#f4efe1]',
+      text: 'text-[#433422]',
+      border: 'border-[#dcd6bc]',
+      footerText: 'text-[#8c7a66]',
+      overlayBg: 'bg-[#f4efe1]/80'
+    },
+    dark: {
+      background: 'bg-[#1a1b1e]',
+      text: 'text-[#d1d5db]',
+      border: 'border-[#2d2e32]',
+      footerText: 'text-[#94a3b8]',
+      overlayBg: 'bg-[#1a1b1e]/80'
+    },
+    night: {
+      background: 'bg-[#0a0a0b]',
+      text: 'text-[#9ca3af]',
+      border: 'border-[#1f1f23]',
+      footerText: 'text-[#6b7280]',
+      overlayBg: 'bg-[#0a0a0b]/80'
+    }
+  };
+
+  const currentStyles = themeStyles[readerTheme as keyof typeof themeStyles] || themeStyles.light;
+
   const loadHighlights = useCallback(async () => {
     const supabase = createBrowserClient(
       process.env['NEXT_PUBLIC_SUPABASE_URL']!,
@@ -393,7 +426,7 @@ export function EpubViewer({
   }
 
   return (
-    <div className={`flex flex-col h-full bg-background group relative`}>
+    <div className={cn("flex flex-col h-full transition-colors duration-300 group relative", currentStyles.background)}>
       <div className="flex-1 w-full relative">
         <div ref={viewerRef} className="h-full w-full" />
 
@@ -426,7 +459,7 @@ export function EpubViewer({
         )}
 
         {!isReady && !error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-20">
+          <div className={cn("absolute inset-0 flex items-center justify-center backdrop-blur-sm z-20", currentStyles.background, "bg-opacity-50")}>
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         )}
@@ -436,25 +469,25 @@ export function EpubViewer({
           <Button
             variant="ghost"
             size="icon"
-            className="h-12 w-12 rounded-full bg-background/80 shadow-md ml-4"
+            className={cn("h-12 w-12 rounded-full shadow-md ml-4", currentStyles.overlayBg)}
             onClick={prevPage}
           >
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft className={cn("h-6 w-6", currentStyles.text)} />
           </Button>
         </div>
         <div className="absolute inset-y-0 right-0 w-16 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
           <Button
             variant="ghost"
             size="icon"
-            className="h-12 w-12 rounded-full bg-background/80 shadow-md mr-4"
+            className={cn("h-12 w-12 rounded-full shadow-md mr-4", currentStyles.overlayBg)}
             onClick={nextPage}
           >
-            <ChevronRight className="h-6 w-6" />
+            <ChevronRight className={cn("h-6 w-6", currentStyles.text)} />
           </Button>
         </div>
       </div>
 
-      <div className="h-8 border-t bg-background flex items-center justify-center text-xs text-muted-foreground">
+      <div className={cn("h-8 border-t flex items-center justify-center text-xs transition-colors", currentStyles.background, currentStyles.footerText, currentStyles.border)}>
         {progress}% Read
       </div>
     </div>

@@ -261,25 +261,29 @@ export function PDFViewer({
       background: 'bg-[#ffffff]',
       pageBackground: 'bg-[#ffffff]',
       filter: 'none',
-      textColor: 'text-[#1a1c1e]'
+      textColor: 'text-[#1a1c1e]',
+      border: 'border-[#e2e8f0]'
     },
     dark: {
       background: 'bg-[#1a1b1e]',
       pageBackground: 'bg-[#1e1f23]',
       filter: 'invert(0.9) hue-rotate(180deg) brightness(1.05) contrast(0.95)',
-      textColor: 'text-[#d1d5db]'
+      textColor: 'text-[#d1d5db]',
+      border: 'border-[#2d2e32]'
     },
     sepia: {
       background: 'bg-[#f4efe1]',
       pageBackground: 'bg-[#f4efe1]',
       filter: 'sepia(0.4) contrast(1.1) brightness(0.95) multiply(1.1)',
-      textColor: 'text-[#433422]'
+      textColor: 'text-[#433422]',
+      border: 'border-[#dcd6bc]'
     },
     night: {
       background: 'bg-[#0a0a0b]',
       pageBackground: 'bg-[#0d0d0f]',
       filter: 'invert(0.95) hue-rotate(180deg) brightness(0.8) contrast(0.9)',
-      textColor: 'text-[#9ca3af]'
+      textColor: 'text-[#9ca3af]',
+      border: 'border-[#1f1f23]'
     },
   };
 
@@ -379,16 +383,17 @@ export function PDFViewer({
       </div>
 
       {/* Footer Controls */}
-      <div className="h-16 border-t bg-background flex items-center justify-center gap-4 px-4 z-10">
+      <div className={cn("h-16 border-t flex items-center justify-center gap-4 px-4 z-10 transition-colors", currentTheme.background, currentTheme.border)}>
         <Button
           variant="outline"
           size="icon"
           onClick={() => setPageNumber((prev) => Math.max(prev - 1, 1))}
           disabled={pageNumber <= 1}
+          className={cn("bg-transparent", currentTheme.textColor, currentTheme.border)}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm font-medium">
+        <span className={cn("text-sm font-medium", currentTheme.textColor)}>
           Page {pageNumber} of {numPages || '--'}
         </span>
         <Button
@@ -396,6 +401,7 @@ export function PDFViewer({
           size="icon"
           onClick={() => setPageNumber((prev) => Math.min(prev + 1, numPages))}
           disabled={pageNumber >= numPages}
+          className={cn("bg-transparent", currentTheme.textColor, currentTheme.border)}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
