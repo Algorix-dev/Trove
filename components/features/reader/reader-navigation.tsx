@@ -2,7 +2,6 @@
 
 import {
     BookMarked,
-    ChevronRight,
     History,
     List,
     Search,
@@ -21,7 +20,6 @@ import {
     SheetTrigger
 } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookChat } from '@/components/features/ai/book-chat';
 
 interface NavItem {
     id: string | number;
@@ -47,14 +45,10 @@ interface ReaderNavigationProps {
 export function ReaderNavigation({
     totalPages,
     currentPage,
-    currentCFI,
     bookmarks,
     history,
-    toc,
     quotes,
     onNavigate,
-    bookId,
-    bookTitle,
 }: ReaderNavigationProps) {
     const [pageInput, setPageInput] = useState(currentPage?.toString() || '');
     const [isOpen, setIsOpen] = useState(false);

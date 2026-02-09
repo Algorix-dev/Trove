@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { HighlightMenu } from '@/components/features/reader/highlight-menu';
@@ -8,39 +8,59 @@ import { GamificationService } from '@/lib/gamification';
 import { cn } from '@/lib/utils';
 
 export interface TxtViewerProps {
-  content: string;
+  url: string;
   bookId: string;
   userId: string;
   bookTitle: string;
   author?: string;
-  fontSize: number;
-  readerTheme: 'light' | 'dark' | 'sepia';
+  fontSize?: number;
+  readerTheme?: 'light' | 'dark' | 'sepia';
+  initialLocation?: number;
   onLocationUpdate?: (data: { progressPercentage: number }) => void;
   onSaveHighlight?: (data: any) => void;
 }
 
 export function TxtViewer({
-  content,
+  url,
   bookId,
   userId,
   bookTitle,
   author,
-  fontSize,
-  readerTheme,
+  fontSize = 100,
+  readerTheme = 'light',
+  initialLocation,
   onLocationUpdate,
   onSaveHighlight,
 }: TxtViewerProps) {
+  const [content, setContent] = useState('');
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selection, setSelection] = useState<{ text: string; x: number; y: number } | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (content) {
-      setLoading(false);
-      loadInitialProgress();
-    }
-  }, [content, bookId, userId]);
+    const fetchContent = async () => {
+      if (!url) return;
+      try {
+        setLoading(true);
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch TXT content');
+        const text = await response.text();
+        setContent(text);
+
+        if (initialLocation !== undefined) {
+          setProgress(initialLocation);
+        } else {
+          await loadInitialProgress();
+        }
+      } catch (err) {
+        console.error('Error fetching TXT:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContent();
+  }, [url, bookId, userId]);
 
   const loadInitialProgress = async () => {
     const supabase = createBrowserClient(

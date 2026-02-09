@@ -223,6 +223,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         color: data.color,
         highlight_type: data.highlight_type,
         selection_data: data.selection_data,
+        progress_percentage: data.progress_percentage || currentLocation.progressPercentage,
       });
 
       if (error) throw error;

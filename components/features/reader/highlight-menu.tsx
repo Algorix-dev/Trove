@@ -62,9 +62,9 @@ export function HighlightMenu({
     const [explanation, setExplanation] = useState<string | null>(null);
     const [explaining, setExplaining] = useState(false);
     const [showQuoteCard, setShowQuoteCard] = useState(false);
+    const [view, setView] = useState<'prompt' | 'full'>(existingHighlight ? 'full' : 'prompt');
 
     const handleSave = async (type: 'highlight' | 'quote') => {
-        // ... (rest of the functions remain the same)
         setLoading(true);
         try {
             if (existingHighlight && onUpdate) {
@@ -82,10 +82,12 @@ export function HighlightMenu({
                     page_number: pageNumber,
                     chapter: chapter,
                 });
+                toast.success(type === 'quote' ? 'Quote saved!' : 'Highlight saved!');
             }
             onClose();
         } catch (error) {
             console.error('Failed to save highlight:', error);
+            toast.error('Failed to save. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -120,6 +122,7 @@ export function HighlightMenu({
             if (!response.ok) throw new Error('Failed to get explanation');
             const data = await response.json();
             setExplanation(data.explanation);
+            if (view === 'prompt') setView('full');
         } catch (error) {
             console.error('AI Explanation failed:', error);
             toast.error('Failed to get AI explanation');
@@ -128,11 +131,46 @@ export function HighlightMenu({
         }
     };
 
+    if (view === 'prompt') {
+        return (
+            <div className="flex flex-col gap-3 bg-background border shadow-xl rounded-xl p-3 min-w-[180px] animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                        Save as quote?
+                    </span>
+                    <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-muted" onClick={onClose}>
+                        <X className="h-3.5 w-3.5" />
+                    </Button>
+                </div>
+                <div className="flex gap-2">
+                    <Button
+                        variant="default"
+                        size="sm"
+                        className="flex-1 h-8 rounded-lg font-bold"
+                        onClick={() => handleSave('quote')}
+                        disabled={loading}
+                    >
+                        {loading ? 'Saving...' : 'Yes'}
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex-1 h-8 rounded-lg font-bold"
+                        onClick={() => setView('full')}
+                        disabled={loading}
+                    >
+                        Options
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col gap-2 bg-background border shadow-xl rounded-xl p-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between px-2 py-1">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {existingHighlight ? 'Edit Highlight' : 'Highlight'}
+                    {existingHighlight ? 'Edit Highlight' : 'Selection Options'}
                 </span>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
                     <X className="h-3 w-3" />
