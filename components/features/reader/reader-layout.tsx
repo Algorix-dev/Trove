@@ -184,23 +184,26 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       timestamp: new Date().toISOString()
     };
 
+    let updatedHistory: any[] = [];
     setHistory(prev => {
       const existingIndex = prev.findIndex(h => h.label === label);
       if (existingIndex !== -1) {
         const existingItem = { ...prev[existingIndex], timestamp: newHistoryItem.timestamp };
-        return [existingItem, ...prev.filter((_, i) => i !== existingIndex)].slice(0, 20);
+        updatedHistory = [existingItem, ...prev.filter((_, i) => i !== existingIndex)].slice(0, 20);
       } else {
-        return [newHistoryItem, ...prev].slice(0, 20);
+        updatedHistory = [newHistoryItem, ...prev].slice(0, 20);
       }
+      return updatedHistory;
     });
 
-    // COMMIT STABLE PROGRESS
+    // PERSIST UPDATED HISTORY & PROGRESS TO DB
     try {
       await supabase
         .from('reading_progress')
         .upsert({
           book_id: bookId,
           user_id: userId,
+          last_pages: updatedHistory,
           current_page: location.currentPage,
           epub_cfi: location.currentCFI,
           progress_percentage: location.progressPercentage,
@@ -218,7 +221,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         .eq('id', bookId)
         .eq('user_id', userId);
     } catch (error) {
-      console.error('Failed to commit progress:', error);
+      console.error('Failed to commit progress to database:', error);
     }
   }, [bookId, userId, supabase, isTabVisible]);
 
@@ -369,7 +372,13 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden relative">
+      <main className={cn(
+        "flex-1 overflow-hidden relative transition-colors duration-300",
+        readerTheme === 'dark' ? 'bg-[#1a1b1e]' :
+          readerTheme === 'sepia' ? 'bg-[#f4efe1]' :
+            readerTheme === 'night' ? 'bg-[#0a0a0b]' :
+              'bg-[#ffffff]'
+      )}>
         {React.Children.map(children, (child) => {
           if (React.isValidElement(child)) {
             const childElement = child as ReactElement<any>;

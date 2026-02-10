@@ -219,6 +219,7 @@ export function TxtViewer({
               bookId={bookId}
               bookTitle={bookTitle}
               author={author}
+              readerTheme={readerTheme}
               onSave={async (data) => {
                 if (selection) {
                   await onSaveHighlight({ ...data, progress_percentage: progress });

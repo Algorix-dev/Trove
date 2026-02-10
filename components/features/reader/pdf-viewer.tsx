@@ -262,24 +262,24 @@ export function PDFViewer({
       {/* Toolbar */}
       <div className={cn(
         "h-12 border-b flex items-center justify-between px-4 transition-colors",
-        readerTheme === 'dark' ? 'bg-[#1e1f23] border-[#2d2e32]' :
-          readerTheme === 'sepia' ? 'bg-[#ebe3cf] border-[#dcd6bc]' :
-            readerTheme === 'night' ? 'bg-[#0d0d0f] border-[#1f1f23]' :
-              'bg-[#ffffff] border-[#e2e8f0]'
+        currentTheme.background,
+        currentTheme.border
       )}>
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
+            className={currentTheme.textColor}
             onClick={() => setScale((prev) => Math.max(prev - 0.1, 0.5))}
             disabled={scale <= 0.5}
           >
             <ZoomOut className="h-4 w-4" />
           </Button>
-          <span className="text-xs font-medium w-12 text-center">{Math.round(scale * 100)}%</span>
+          <span className={cn("text-xs font-medium w-12 text-center", currentTheme.textColor)}>{Math.round(scale * 100)}%</span>
           <Button
             variant="ghost"
             size="icon"
+            className={currentTheme.textColor}
             onClick={() => setScale((prev) => Math.min(prev + 0.1, 2.0))}
             disabled={scale >= 2.0}
           >
@@ -333,6 +333,7 @@ export function PDFViewer({
               bookTitle={bookTitle}
               author={author}
               pageNumber={pageNumber}
+              readerTheme={readerTheme}
               existingHighlight={(selection as any).id ? selection : undefined}
               onSave={async (data) => {
                 await onSaveHighlight({ ...data, page_number: pageNumber });

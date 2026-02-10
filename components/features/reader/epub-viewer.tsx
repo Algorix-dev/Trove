@@ -262,11 +262,14 @@ export function EpubViewer({
           const rect = range.getBoundingClientRect();
           const text = rendition.getRange(cfiRange).toString();
 
+          // Account for iframe offset in the viewport
+          const iframeRect = contents.window.frameElement.getBoundingClientRect();
+
           setSelection({
             text: text.trim(),
             cfi: cfiRange,
-            x: rect.left + rect.width / 2,
-            y: rect.top, // Anchored to top
+            x: iframeRect.left + rect.left + rect.width / 2,
+            y: iframeRect.top + rect.top, // Anchored to top in viewport
           });
 
           // Visual highlight (optional, but requested for feedback)
@@ -359,7 +362,8 @@ export function EpubViewer({
         viewerRef.current.style.backgroundColor =
           readerTheme === 'dark' ? '#030712' :
             readerTheme === 'sepia' ? '#f4ecd8' :
-              '#ffffff';
+              readerTheme === 'night' ? '#0a0a0b' :
+                '#ffffff';
       }
     }
   }, [isReady, readerTheme, fontSize]);
@@ -400,6 +404,7 @@ export function EpubViewer({
               bookId={bookId}
               bookTitle={bookTitle}
               author={author}
+              readerTheme={readerTheme}
               existingHighlight={(selection as any).id ? selection : undefined}
               onSave={async (data) => {
                 const promise = onSaveHighlight?.({ ...data, selection_data: { cfi: selection.cfi } });

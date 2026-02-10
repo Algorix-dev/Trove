@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 import { QuoteCard } from './quote-card';
 
@@ -39,6 +40,7 @@ interface HighlightMenuProps {
     onUpdate?: (id: string, data: any) => Promise<void>;
     onDelete?: (id: string) => Promise<void>;
     onClose: () => void;
+    readerTheme?: string;
 }
 
 export function HighlightMenu({
@@ -54,6 +56,7 @@ export function HighlightMenu({
     chapter,
     existingHighlight,
     surroundingContext,
+    readerTheme = 'light',
 }: HighlightMenuProps) {
     const [note, setNote] = useState(existingHighlight?.note || '');
     const [selectedColor, setSelectedColor] = useState(existingHighlight?.color || COLORS[0].value);
@@ -63,6 +66,15 @@ export function HighlightMenu({
     const [explaining, setExplaining] = useState(false);
     const [showQuoteCard, setShowQuoteCard] = useState(false);
     const [view, setView] = useState<'prompt' | 'full'>(existingHighlight ? 'full' : 'prompt');
+
+    const themeStyles = {
+        light: "bg-[#ffffff] border-[#e2e8f0] text-[#1a1c1e]",
+        sepia: "bg-[#f4efe1] border-[#dcd6bc] text-[#433422]",
+        dark: "bg-[#1e1f23] border-[#2d2e32] text-[#d1d5db]",
+        night: "bg-[#0d0d0f] border-[#1f1f23] text-[#9ca3af]",
+    };
+
+    const currentThemeStyle = themeStyles[readerTheme as keyof typeof themeStyles] || themeStyles.light;
 
     const handleSave = async (type: 'highlight' | 'quote') => {
         setLoading(true);
@@ -133,7 +145,7 @@ export function HighlightMenu({
 
     if (view === 'prompt') {
         return (
-            <div className="flex flex-col gap-3 bg-background border shadow-xl rounded-xl p-3 min-w-[200px] animate-in fade-in zoom-in-95 duration-200">
+            <div className={cn("flex flex-col gap-3 border shadow-xl rounded-xl p-3 min-w-[200px] animate-in fade-in zoom-in-95 duration-200", currentThemeStyle)}>
                 <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                         Save as quote?
@@ -152,27 +164,25 @@ export function HighlightMenu({
                     <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 h-8 rounded-lg font-bold"
+                        className={cn("flex-1 h-8 rounded-lg font-bold border-current opacity-70 hover:opacity-100 bg-transparent")}
                         onClick={onClose}
                         disabled={loading}
                     >
                         Cancel
                     </Button>
                 </div>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full h-7 text-[10px] font-bold text-muted-foreground hover:text-foreground"
+                <button
+                    className="w-full text-center py-1 text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors"
                     onClick={() => setView('full')}
                 >
                     More Options
-                </Button>
+                </button>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col gap-2 bg-background border shadow-xl rounded-xl p-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-200">
+        <div className={cn("flex flex-col gap-2 border shadow-xl rounded-xl p-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-200", currentThemeStyle)}>
             <div className="flex items-center justify-between px-2 py-1">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     {existingHighlight ? 'Edit Highlight' : 'Selection Options'}
