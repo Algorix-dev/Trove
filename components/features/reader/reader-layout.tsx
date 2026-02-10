@@ -169,7 +169,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     loadInitialProgress();
   }, [loadInitialSettings, loadBookmarks, loadQuotes, loadInitialProgress]);
 
-  const addToHistory = useCallback((location: LocationData) => {
+  const addToHistory = useCallback(async (location: LocationData) => {
     // Only save if tab is active and we have meaningful data
     if (!isTabVisible || (!location.currentPage && !location.currentCFI && !location.progressPercentage)) return;
 
@@ -177,40 +177,38 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       location.progressPercentage ? `${Math.round(location.progressPercentage)}% Progress` :
         'Recent Location';
 
+    const newHistoryItem = {
+      id: Date.now(),
+      label,
+      data: { ...location },
+      timestamp: new Date().toISOString()
+    };
+
     setHistory(prev => {
       const existingIndex = prev.findIndex(h => h.label === label);
-
-      let updatedHistory;
-      const newHistoryItem = {
-        id: Date.now(),
-        label,
-        data: { ...location },
-        timestamp: new Date().toISOString()
-      };
-
       if (existingIndex !== -1) {
         const existingItem = { ...prev[existingIndex], timestamp: newHistoryItem.timestamp };
-        updatedHistory = [existingItem, ...prev.filter((_, i) => i !== existingIndex)].slice(0, 20);
+        return [existingItem, ...prev.filter((_, i) => i !== existingIndex)].slice(0, 20);
       } else {
-        updatedHistory = [newHistoryItem, ...prev].slice(0, 20);
+        return [newHistoryItem, ...prev].slice(0, 20);
       }
+    });
 
-      // COMMIT STABLE PROGRESS
-      supabase
+    // COMMIT STABLE PROGRESS
+    try {
+      await supabase
         .from('reading_progress')
         .upsert({
           book_id: bookId,
           user_id: userId,
-          last_pages: updatedHistory,
           current_page: location.currentPage,
           epub_cfi: location.currentCFI,
           progress_percentage: location.progressPercentage,
           updated_at: new Date().toISOString()
-        }, { onConflict: 'book_id,user_id' })
-        .then();
+        }, { onConflict: 'book_id,user_id' });
 
       // Mirror to books table for library view
-      supabase
+      await supabase
         .from('books')
         .update({
           progress_percentage: location.progressPercentage,
@@ -218,31 +216,30 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
           last_read_at: new Date().toISOString(),
         })
         .eq('id', bookId)
-        .eq('user_id', userId)
-        .then();
-
-      return updatedHistory;
-    });
+        .eq('user_id', userId);
+    } catch (error) {
+      console.error('Failed to commit progress:', error);
+    }
   }, [bookId, userId, supabase, isTabVisible]);
 
-  const handleLocationUpdate = useCallback((data: LocationData) => {
-    setCurrentLocation((prev) => {
-      const next = { ...prev, ...data };
+  // STABILITY TIMER (5s)
+  useEffect(() => {
+    if (locationChangeTimeout.current) clearTimeout(locationChangeTimeout.current);
 
-      // STABILITY RULE:
-      // If position changes, clear the commit timer.
-      // Re-start 5s timer. Only commit if user stays still.
+    if (isTabVisible && !showSettings && (currentLocation.currentPage || currentLocation.currentCFI || currentLocation.progressPercentage)) {
+      locationChangeTimeout.current = setTimeout(() => {
+        addToHistory(currentLocation);
+      }, 5000);
+    }
+
+    return () => {
       if (locationChangeTimeout.current) clearTimeout(locationChangeTimeout.current);
+    };
+  }, [currentLocation, isTabVisible, showSettings, addToHistory]);
 
-      if (isTabVisible && !showSettings) {
-        locationChangeTimeout.current = setTimeout(() => {
-          addToHistory(next);
-        }, 5000);
-      }
-
-      return next;
-    });
-  }, [addToHistory, isTabVisible, showSettings]);
+  const handleLocationUpdate = useCallback((data: LocationData) => {
+    setCurrentLocation((prev) => ({ ...prev, ...data }));
+  }, []);
 
   const handleNavigate = (location: any) => {
     setJumpLocation(location);

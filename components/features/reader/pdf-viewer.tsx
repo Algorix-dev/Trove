@@ -108,40 +108,8 @@ export function PDFViewer({
           progressPercentage,
         });
       }
-
-      // Debounced save - only save after user stops changing pages
-      const saveTimeout = setTimeout(async () => {
-        // 1. Update reading_progress table
-        await supabase.from('reading_progress').upsert(
-          {
-            book_id: bookId,
-            user_id: userId,
-            current_page: pageNumber,
-            total_pages: numPages,
-            progress_percentage: progressPercentage,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: 'book_id,user_id',
-          }
-        );
-
-        // 2. Sync to books table for library/dashboard overview
-        await supabase
-          .from('books')
-          .update({
-            progress_percentage: progressPercentage,
-            current_page: pageNumber,
-            last_read_at: new Date().toISOString(),
-          })
-          .eq('id', bookId)
-          .eq('user_id', userId);
-      }, 1000); // Save 1 second after last page change
-
-      return () => clearTimeout(saveTimeout);
     }
-    return undefined;
-  }, [pageNumber, numPages, bookId, userId, onLocationUpdate]);
+  }, [pageNumber, numPages, onLocationUpdate]);
 
 
   const handleUpdateHighlight = async (id: string, data: any) => {

@@ -80,19 +80,6 @@ export function TxtViewer({
     }
   };
 
-  const saveProgress = async (val: number) => {
-    const supabase = createBrowserClient(
-      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-      process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
-    );
-    await supabase.from('reading_progress').upsert({
-      user_id: userId,
-      book_id: bookId,
-      progress_percentage: val,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,book_id' });
-  };
-
   const themeStyles = {
     light: {
       background: 'bg-[#ffffff]',
@@ -200,7 +187,6 @@ export function TxtViewer({
       if (onLocationUpdate) {
         onLocationUpdate({ progressPercentage: scrollPercent });
       }
-      saveProgress(scrollPercent);
     }
   };
 
