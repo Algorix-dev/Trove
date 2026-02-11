@@ -56,7 +56,6 @@ export function HighlightMenu({
     chapter,
     existingHighlight,
     surroundingContext,
-    readerTheme = 'light',
 }: HighlightMenuProps) {
     const [note, setNote] = useState(existingHighlight?.note || '');
     const [selectedColor, setSelectedColor] = useState(existingHighlight?.color || COLORS[0].value);
@@ -67,14 +66,6 @@ export function HighlightMenu({
     const [showQuoteCard, setShowQuoteCard] = useState(false);
     const [view, setView] = useState<'prompt' | 'full'>(existingHighlight ? 'full' : 'prompt');
 
-    const themeStyles = {
-        light: "bg-[#ffffff] border-[#e2e8f0] text-[#1a1c1e]",
-        sepia: "bg-[#f4efe1] border-[#dcd6bc] text-[#433422]",
-        dark: "bg-[#1e1f23] border-[#2d2e32] text-[#d1d5db]",
-        night: "bg-[#0d0d0f] border-[#1f1f23] text-[#9ca3af]",
-    };
-
-    const currentThemeStyle = themeStyles[readerTheme as keyof typeof themeStyles] || themeStyles.light;
 
     const handleSave = async (type: 'highlight' | 'quote') => {
         setLoading(true);
@@ -145,49 +136,58 @@ export function HighlightMenu({
 
     if (view === 'prompt') {
         return (
-            <div className={cn("flex flex-col gap-3 border shadow-xl rounded-xl p-3 min-w-[200px] animate-in fade-in zoom-in-95 duration-200", currentThemeStyle)}>
-                <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                        Save as quote?
-                    </span>
-                </div>
-                <div className="flex gap-2">
+            <div className={cn(
+                "flex flex-col gap-2 border shadow-2xl rounded-2xl p-2 min-w-[220px] animate-in fade-in zoom-in-95 duration-200 border-[var(--reader-border)] bg-[var(--reader-bg)]",
+            )}>
+                <div className="flex flex-col gap-1">
                     <Button
-                        variant="default"
+                        variant="ghost"
                         size="sm"
-                        className="flex-1 h-8 rounded-lg font-bold bg-primary hover:bg-primary/90"
+                        className="justify-start gap-3 h-10 rounded-xl hover:bg-[var(--reader-accent)]/10 text-[var(--reader-text)]"
                         onClick={() => handleSave('quote')}
                         disabled={loading}
                     >
-                        {loading ? 'Saving...' : 'Save'}
+                        <Quote className="h-4 w-4 text-[var(--reader-accent)]" />
+                        <span className="font-semibold text-xs">Save as Quote</span>
                     </Button>
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className={cn("flex-1 h-8 rounded-lg font-bold border-current opacity-70 hover:opacity-100 bg-transparent")}
+                        className="justify-start gap-3 h-10 rounded-xl hover:bg-[var(--reader-accent)]/10 text-[var(--reader-text)]"
+                        onClick={() => {
+                            setView('full');
+                            setShowNoteInput(true);
+                        }}
+                        disabled={loading}
+                    >
+                        <MessageSquare className="h-4 w-4 text-[var(--reader-accent)]" />
+                        <span className="font-semibold text-xs">Add Note</span>
+                    </Button>
+                    <div className="h-px bg-[var(--reader-border)] my-1 mx-1" />
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="justify-start gap-3 h-10 rounded-xl hover:bg-neutral-500/10 text-[var(--reader-text-muted)]"
                         onClick={onClose}
                         disabled={loading}
                     >
-                        Cancel
+                        <X className="h-4 w-4" />
+                        <span className="font-medium text-xs">Cancel</span>
                     </Button>
                 </div>
-                <button
-                    className="w-full text-center py-1 text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setView('full')}
-                >
-                    More Options
-                </button>
             </div>
         );
     }
 
     return (
-        <div className={cn("flex flex-col gap-2 border shadow-xl rounded-xl p-2 min-w-[200px] animate-in fade-in zoom-in-95 duration-200", currentThemeStyle)}>
+        <div className={cn(
+            "flex flex-col gap-2 border shadow-2xl rounded-2xl p-2 min-w-[240px] animate-in fade-in zoom-in-95 duration-200 border-[var(--reader-border)] bg-[var(--reader-bg)]",
+        )}>
             <div className="flex items-center justify-between px-2 py-1">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {existingHighlight ? 'Edit Highlight' : 'Selection Options'}
+                <span className="text-[10px] font-bold text-[var(--reader-text-muted)] uppercase tracking-widest">
+                    {existingHighlight ? 'Edit Highlight' : 'Options'}
                 </span>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-[var(--reader-text-muted)]" onClick={onClose}>
                     <X className="h-3 w-3" />
                 </Button>
             </div>

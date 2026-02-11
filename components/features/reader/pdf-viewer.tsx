@@ -12,7 +12,6 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
 import { HighlightMenu } from '@/components/features/reader/highlight-menu';
 import { GamificationService } from '@/lib/gamification';
-import { cn } from '@/lib/utils';
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -139,6 +138,8 @@ export function PDFViewer({
           user_id: userId,
           book_id: bookId,
           duration_minutes: 1,
+          start_page: pageNumber,
+          end_page: pageNumber,
           session_date: new Date().toISOString().split('T')[0],
         });
 
@@ -223,63 +224,33 @@ export function PDFViewer({
     };
   }, [handleSelectionChange]);
 
-  // Theme styles with CSS filters for PDF
-  const themeStyles = {
-    light: {
-      background: 'bg-[#ffffff]',
-      pageBackground: 'bg-[#ffffff]',
-      filter: 'none',
-      textColor: 'text-[#1a1c1e]',
-      border: 'border-[#e2e8f0]'
-    },
-    dark: {
-      background: 'bg-[#1a1b1e]',
-      pageBackground: 'bg-[#1e1f23]',
-      filter: 'invert(0.9) hue-rotate(180deg) brightness(1.05) contrast(0.95)',
-      textColor: 'text-[#d1d5db]',
-      border: 'border-[#2d2e32]'
-    },
-    sepia: {
-      background: 'bg-[#f4efe1]',
-      pageBackground: 'bg-[#f4efe1]',
-      filter: 'sepia(0.4) contrast(1.1) brightness(0.95) multiply(1.1)',
-      textColor: 'text-[#433422]',
-      border: 'border-[#dcd6bc]'
-    },
-    night: {
-      background: 'bg-[#0a0a0b]',
-      pageBackground: 'bg-[#0d0d0f]',
-      filter: 'invert(0.95) hue-rotate(180deg) brightness(0.8) contrast(0.9)',
-      textColor: 'text-[#9ca3af]',
-      border: 'border-[#1f1f23]'
-    },
+  const currentTheme = {
+    filter: readerTheme === 'dark' ? 'invert(0.9) hue-rotate(180deg) brightness(1.05) contrast(0.95)' :
+      readerTheme === 'sepia' ? 'sepia(0.4) contrast(1.1) brightness(0.95) multiply(1.1)' :
+        readerTheme === 'night' ? 'invert(0.95) hue-rotate(180deg) brightness(0.8) contrast(0.9)' :
+          'none'
   };
-
-  const currentTheme = themeStyles[readerTheme as keyof typeof themeStyles] || themeStyles.light;
+  // The filter is a special case for PDF rendering to preserve image quality while inverting text.
 
   return (
-    <div className={cn("flex flex-col h-full", currentTheme.textColor)}>
+    <div className="flex flex-col h-full text-[var(--reader-text)] transition-colors duration-300">
       {/* Toolbar */}
-      <div className={cn(
-        "h-12 border-b flex items-center justify-between px-4 transition-colors",
-        currentTheme.background,
-        currentTheme.border
-      )}>
+      <div className="h-12 border-b border-[var(--reader-border)] flex items-center justify-between px-4 transition-colors bg-[var(--reader-bg-secondary)]">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
-            className={currentTheme.textColor}
+            className="text-[var(--reader-text)] hover:bg-[var(--reader-accent)]/10"
             onClick={() => setScale((prev) => Math.max(prev - 0.1, 0.5))}
             disabled={scale <= 0.5}
           >
             <ZoomOut className="h-4 w-4" />
           </Button>
-          <span className={cn("text-xs font-medium w-12 text-center", currentTheme.textColor)}>{Math.round(scale * 100)}%</span>
+          <span className="text-xs font-medium w-12 text-center text-[var(--reader-text)]">{Math.round(scale * 100)}%</span>
           <Button
             variant="ghost"
             size="icon"
-            className={currentTheme.textColor}
+            className="text-[var(--reader-text)] hover:bg-[var(--reader-accent)]/10"
             onClick={() => setScale((prev) => Math.min(prev + 0.1, 2.0))}
             disabled={scale >= 2.0}
           >
@@ -290,10 +261,7 @@ export function PDFViewer({
 
       {/* Viewer */}
       <div
-        className={cn(
-          "flex-1 overflow-auto flex justify-center p-8 relative transition-colors",
-          currentTheme.background
-        )}
+        className="flex-1 overflow-auto flex justify-center p-8 relative transition-colors bg-[var(--reader-bg)]"
       >
         <div className="shadow-2xl">
           <Document
@@ -301,7 +269,7 @@ export function PDFViewer({
             onLoadSuccess={onDocumentLoadSuccess}
             loading={
               <div className="flex items-center justify-center h-96 w-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--reader-accent)]"></div>
               </div>
             }
             error={
@@ -316,7 +284,7 @@ export function PDFViewer({
                 scale={scale}
                 renderTextLayer={true}
                 renderAnnotationLayer={true}
-                className={cn("shadow-lg", currentTheme.pageBackground)}
+                className="shadow-lg bg-[var(--reader-bg-secondary)]"
               />
             </div>
           </Document>
@@ -352,17 +320,17 @@ export function PDFViewer({
       </div>
 
       {/* Footer Controls */}
-      <div className={cn("h-16 border-t flex items-center justify-center gap-4 px-4 z-10 transition-colors", currentTheme.background, currentTheme.border)}>
+      <div className="h-16 border-t border-[var(--reader-border)] flex items-center justify-center gap-4 px-4 z-10 transition-colors bg-[var(--reader-bg-secondary)]">
         <Button
           variant="outline"
           size="icon"
           onClick={() => setPageNumber((prev) => Math.max(prev - 1, 1))}
           disabled={pageNumber <= 1}
-          className={cn("bg-transparent", currentTheme.textColor, currentTheme.border)}
+          className="bg-transparent text-[var(--reader-text)] border-[var(--reader-border)] hover:bg-[var(--reader-accent)]/10"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className={cn("text-sm font-medium", currentTheme.textColor)}>
+        <span className="text-sm font-medium text-[var(--reader-text)]">
           Page {pageNumber} of {numPages || '--'}
         </span>
         <Button
@@ -370,7 +338,7 @@ export function PDFViewer({
           size="icon"
           onClick={() => setPageNumber((prev) => Math.min(prev + 1, numPages))}
           disabled={pageNumber >= numPages}
-          className={cn("bg-transparent", currentTheme.textColor, currentTheme.border)}
+          className="bg-transparent text-[var(--reader-text)] border-[var(--reader-border)] hover:bg-[var(--reader-accent)]/10"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>

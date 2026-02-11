@@ -308,25 +308,57 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       });
   };
 
+  const themeStyles = useMemo(() => {
+    switch (readerTheme) {
+      case 'dark':
+        return {
+          '--reader-bg': '#1a1b1e',
+          '--reader-bg-secondary': '#1e1f23',
+          '--reader-text': '#d1d5db',
+          '--reader-text-muted': '#9ca3af',
+          '--reader-border': '#2d2e32',
+          '--reader-accent': '#3b82f6',
+        } as React.CSSProperties;
+      case 'sepia':
+        return {
+          '--reader-bg': '#f4efe1',
+          '--reader-bg-secondary': '#ebe3cf',
+          '--reader-text': '#433422',
+          '--reader-text-muted': '#705d45',
+          '--reader-border': '#dcd6bc',
+          '--reader-accent': '#92400e',
+        } as React.CSSProperties;
+      case 'night':
+        return {
+          '--reader-bg': '#0a0a0b',
+          '--reader-bg-secondary': '#0d0d0f',
+          '--reader-text': '#9ca3af',
+          '--reader-text-muted': '#6b7280',
+          '--reader-border': '#1f1f23',
+          '--reader-accent': '#6366f1',
+        } as React.CSSProperties;
+      default:
+        return {
+          '--reader-bg': '#ffffff',
+          '--reader-bg-secondary': '#ffffff',
+          '--reader-text': '#1a1c1e',
+          '--reader-text-muted': '#64748b',
+          '--reader-border': '#e2e8f0',
+          '--reader-accent': '#2563eb',
+        } as React.CSSProperties;
+    }
+  }, [readerTheme]);
+
   return (
-    <div className={cn(
-      "fixed inset-0 z-[100] flex flex-col h-screen transition-colors duration-300",
-      readerTheme === 'dark' ? 'bg-[#1a1b1e] text-[#d1d5db]' :
-        readerTheme === 'sepia' ? 'bg-[#f4efe1] text-[#433422]' :
-          readerTheme === 'night' ? 'bg-[#0a0a0b] text-[#9ca3af]' :
-            'bg-[#ffffff] text-[#1a1c1e]'
-    )}>
+    <div
+      style={themeStyles}
+      className="fixed inset-0 z-[100] flex flex-col h-screen transition-colors duration-300 bg-[var(--reader-bg)] text-[var(--reader-text)]"
+    >
       {/* Header */}
-      <header className={cn(
-        "h-14 border-b flex items-center justify-between px-4 z-10 transition-colors",
-        readerTheme === 'dark' ? 'bg-[#1e1f23] border-[#2d2e32]' :
-          readerTheme === 'sepia' ? 'bg-[#ebe3cf] border-[#dcd6bc]' :
-            readerTheme === 'night' ? 'bg-[#0d0d0f] border-[#1f1f23]' :
-              'bg-[#ffffff] border-[#e2e8f0]'
-      )}>
+      <header className="h-14 border-b border-[var(--reader-border)] flex items-center justify-between px-4 z-10 transition-colors bg-[var(--reader-bg-secondary)]">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/library" passHref>
-            <Button variant="ghost" size="icon" aria-label="Back to library">
+            <Button variant="ghost" size="icon" aria-label="Back to library" className="hover:bg-[var(--reader-accent)]/10">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
@@ -351,7 +383,10 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
             variant="ghost"
             size="icon"
             onClick={handleBookmark}
-            className={isBookmarking ? 'text-blue-500 bg-blue-50/10' : ''}
+            className={cn(
+              "hover:bg-[var(--reader-accent)]/10",
+              isBookmarking ? 'text-blue-500 bg-blue-50/10' : ''
+            )}
             title="Bookmark this page"
           >
             <Bookmark className={cn(
@@ -365,6 +400,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
             size="icon"
             onClick={() => setShowSettings(!showSettings)}
             aria-label="Reader settings"
+            className="hover:bg-[var(--reader-accent)]/10"
           >
             <Settings className="h-5 w-5" />
           </Button>
@@ -372,13 +408,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       </header>
 
       {/* Main Content */}
-      <main className={cn(
-        "flex-1 overflow-hidden relative transition-colors duration-300",
-        readerTheme === 'dark' ? 'bg-[#1a1b1e]' :
-          readerTheme === 'sepia' ? 'bg-[#f4efe1]' :
-            readerTheme === 'night' ? 'bg-[#0a0a0b]' :
-              'bg-[#ffffff]'
-      )}>
+      <main className="flex-1 overflow-hidden relative transition-colors duration-300 bg-[var(--reader-bg)]">
         {React.Children.map(children, (child) => {
           if (React.isValidElement(child)) {
             const childElement = child as ReactElement<any>;
@@ -404,7 +434,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
 
         {/* Restore Progress Prompt */}
         {showRestorePrompt && pendingRestore && (
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-primary text-primary-foreground px-4 py-3 rounded-xl shadow-2xl border border-primary/20 animate-in slide-in-from-bottom-8 fade-in duration-500">
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[var(--reader-accent)] text-white px-4 py-3 rounded-xl shadow-2xl border border-white/10 animate-in slide-in-from-bottom-8 fade-in duration-500">
             <div className="flex flex-col">
               <span className="text-sm font-semibold leading-tight">Pick up where you left off?</span>
               <span className="text-[10px] opacity-80 uppercase tracking-wider font-bold">
@@ -416,7 +446,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-8 px-4 text-xs font-bold rounded-lg shadow-sm hover:scale-105 transition-transform"
+                className="h-8 px-4 text-xs font-bold rounded-lg shadow-sm hover:scale-105 transition-transform bg-white text-[var(--reader-accent)] hover:bg-white/90"
                 onClick={() => {
                   handleNavigate(pendingRestore);
                   setShowRestorePrompt(false);
@@ -427,7 +457,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-8 px-2 text-xs opacity-60 hover:opacity-100"
+                className="h-8 px-2 text-xs opacity-60 hover:opacity-100 text-white hover:bg-white/10"
                 onClick={() => setShowRestorePrompt(false)}
               >
                 Dismiss

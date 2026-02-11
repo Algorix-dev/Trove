@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { HighlightMenu } from '@/components/features/reader/highlight-menu';
 import { GamificationService } from '@/lib/gamification';
-import { cn } from '@/lib/utils';
 
 interface EpubViewerProps {
   url: string;
@@ -58,38 +57,6 @@ export function EpubViewer({
   // The instruction implies removing the persistence mechanism, not just local storage.
   // The provided "Code Edit" snippet was malformed, so I'm interpreting the intent.
 
-  const themeStyles = {
-    light: {
-      background: 'bg-[#ffffff]',
-      text: 'text-[#1a1c1e]',
-      border: 'border-[#e2e8f0]',
-      footerText: 'text-[#64748b]',
-      overlayBg: 'bg-[#ffffff]/80'
-    },
-    sepia: {
-      background: 'bg-[#f4efe1]',
-      text: 'text-[#433422]',
-      border: 'border-[#dcd6bc]',
-      footerText: 'text-[#8c7a66]',
-      overlayBg: 'bg-[#f4efe1]/80'
-    },
-    dark: {
-      background: 'bg-[#1a1b1e]',
-      text: 'text-[#d1d5db]',
-      border: 'border-[#2d2e32]',
-      footerText: 'text-[#94a3b8]',
-      overlayBg: 'bg-[#1a1b1e]/80'
-    },
-    night: {
-      background: 'bg-[#0a0a0b]',
-      text: 'text-[#9ca3af]',
-      border: 'border-[#1f1f23]',
-      footerText: 'text-[#6b7280]',
-      overlayBg: 'bg-[#0a0a0b]/80'
-    }
-  };
-
-  const currentStyles = themeStyles[readerTheme as keyof typeof themeStyles] || themeStyles.light;
 
   const loadHighlights = useCallback(async () => {
     const supabase = createBrowserClient(
@@ -208,10 +175,15 @@ export function EpubViewer({
           process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
         );
 
+        const currentLocation = renditionRef.current?.currentLocation();
+        const page = currentLocation?.start?.index || 0;
+
         await supabase.from('reading_sessions').insert({
           user_id: userId,
           book_id: bookId,
           duration_minutes: 1,
+          start_page: page, // Using as a snapshot of current page
+          end_page: page,
           session_date: new Date().toISOString().split('T')[0],
         });
 
@@ -326,22 +298,16 @@ export function EpubViewer({
     }
   }, [isReady, initialLocation]);
 
-  // 3. Reactive Theme & Font Size
+  // Reactive Theme & Font Size
   useEffect(() => {
     if (isReady && renditionRef.current) {
       const themes = renditionRef.current.themes;
 
+      // Use the CSS variables from ReaderLayout
       const styles: any = {
         body: {
           background: 'transparent !important',
-          color:
-            readerTheme === 'dark'
-              ? '#d1d5db !important'
-              : readerTheme === 'sepia'
-                ? '#433422 !important'
-                : readerTheme === 'night'
-                  ? '#9ca3af !important'
-                  : '#1a1c1e !important',
+          color: 'var(--reader-text) !important',
           'font-family': 'Inter, sans-serif !important',
           'font-size': `${fontSize}% !important`,
           'line-height': '1.8 !important',
@@ -359,11 +325,7 @@ export function EpubViewer({
 
       // Force background update on the viewer container
       if (viewerRef.current) {
-        viewerRef.current.style.backgroundColor =
-          readerTheme === 'dark' ? '#030712' :
-            readerTheme === 'sepia' ? '#f4ecd8' :
-              readerTheme === 'night' ? '#0a0a0b' :
-                '#ffffff';
+        viewerRef.current.style.backgroundColor = 'var(--reader-bg)';
       }
     }
   }, [isReady, readerTheme, fontSize]);
@@ -390,7 +352,7 @@ export function EpubViewer({
   }
 
   return (
-    <div className={cn("flex flex-col h-full transition-colors duration-300 group relative", currentStyles.background)}>
+    <div className="flex flex-col h-full group relative bg-[var(--reader-bg)] text-[var(--reader-text)] transition-colors duration-300">
       <div className="flex-1 w-full relative">
         <div ref={viewerRef} className="h-full w-full" />
 
@@ -416,6 +378,9 @@ export function EpubViewer({
               onUpdate={handleUpdateHighlight}
               onDelete={handleDeleteHighlight}
               onClose={() => {
+                if (selection?.cfi) {
+                  renditionRef.current?.annotations.remove(selection.cfi, 'highlight');
+                }
                 setSelection(null);
                 renditionRef.current?.getContents().forEach((c: any) => c.window.getSelection().removeAllRanges());
               }}
@@ -424,7 +389,7 @@ export function EpubViewer({
         )}
 
         {!isReady && !error && (
-          <div className={cn("absolute inset-0 flex items-center justify-center backdrop-blur-sm z-20", currentStyles.background, "bg-opacity-50")}>
+          <div className="absolute inset-0 flex items-center justify-center backdrop-blur-sm z-20 bg-[var(--reader-bg)]/50">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         )}
@@ -434,25 +399,25 @@ export function EpubViewer({
           <Button
             variant="ghost"
             size="icon"
-            className={cn("h-12 w-12 rounded-full shadow-md ml-4", currentStyles.overlayBg)}
+            className="h-12 w-12 rounded-full shadow-md ml-4 bg-[var(--reader-bg-secondary)]/80 hover:bg-[var(--reader-accent)]/20"
             onClick={prevPage}
           >
-            <ChevronLeft className={cn("h-6 w-6", currentStyles.text)} />
+            <ChevronLeft className="h-6 w-6 text-[var(--reader-text)]" />
           </Button>
         </div>
         <div className="absolute inset-y-0 right-0 w-16 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
           <Button
             variant="ghost"
             size="icon"
-            className={cn("h-12 w-12 rounded-full shadow-md mr-4", currentStyles.overlayBg)}
+            className="h-12 w-12 rounded-full shadow-md mr-4 bg-[var(--reader-bg-secondary)]/80 hover:bg-[var(--reader-accent)]/20"
             onClick={nextPage}
           >
-            <ChevronRight className={cn("h-6 w-6", currentStyles.text)} />
+            <ChevronRight className="h-6 w-6 text-[var(--reader-text)]" />
           </Button>
         </div>
       </div>
 
-      <div className={cn("h-8 border-t flex items-center justify-center text-xs transition-colors", currentStyles.background, currentStyles.footerText, currentStyles.border)}>
+      <div className="h-8 border-t border-[var(--reader-border)] flex items-center justify-center text-xs transition-colors bg-[var(--reader-bg-secondary)] text-[var(--reader-text-muted)]">
         {progress}% Read
       </div>
     </div>

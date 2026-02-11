@@ -64,7 +64,7 @@ export function QuoteCard({ quote, bookTitle, author, isOpen, onClose }: QuoteCa
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-transparent border-none">
+            <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-[var(--reader-bg-secondary)] border-[var(--reader-border)]">
                 <div className="flex flex-col gap-6 p-6">
                     <Card
                         ref={cardRef}
