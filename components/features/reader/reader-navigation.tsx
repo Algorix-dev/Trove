@@ -5,7 +5,8 @@ import {
     List,
     Sparkles,
     Clock,
-    BookOpen
+    BookOpen,
+    Trash2
 } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { ReaderAiAssistant } from './reader-ai-assistant';
@@ -38,6 +39,7 @@ interface ReaderNavigationProps {
     history: NavItem[];
     quotes: NavItem[];
     onNavigate: (data: any) => void;
+    onDeleteBookmark?: (id: string) => void;
     bookId: string;
     userId: string;
     bookTitle: string;
@@ -61,6 +63,7 @@ export function ReaderNavigation({
     bookId,
     bookTitle,
     currentCFI,
+    onDeleteBookmark,
 }: ReaderNavigationProps) {
     const [pageInput, setPageInput] = useState(currentPage?.toString() || '');
     const [isOpen, setIsOpen] = useState(false);
@@ -270,14 +273,29 @@ export function ReaderNavigation({
                                         </div>
                                     ) : (
                                         bookmarks.map((item) => (
-                                            <button
+                                            <div
                                                 key={item.id}
-                                                onClick={() => handleSelection(item.data)}
-                                                className="w-full text-left p-3 rounded-lg border border-[var(--reader-border)] bg-[var(--reader-bg-secondary)]/50 hover:bg-[var(--reader-accent)]/5 transition-colors"
+                                                className="group relative flex items-center w-full"
                                             >
-                                                <p className="font-medium text-sm mb-1 text-[var(--reader-text)]">{item.label}</p>
-                                                <p className="text-xs text-[var(--reader-text-muted)] truncate">{item.subLabel}</p>
-                                            </button>
+                                                <button
+                                                    onClick={() => handleSelection(item.data)}
+                                                    className="flex-1 text-left p-3 rounded-lg border border-[var(--reader-border)] bg-[var(--reader-bg-secondary)]/50 hover:bg-[var(--reader-accent)]/5 transition-colors pr-10"
+                                                >
+                                                    <p className="font-medium text-sm mb-1 text-[var(--reader-text)]">{item.label}</p>
+                                                    <p className="text-xs text-[var(--reader-text-muted)] truncate">{item.subLabel}</p>
+                                                </button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="absolute right-1 text-[var(--reader-text-muted)] hover:text-destructive hover:bg-destructive/10 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDeleteBookmark?.(item.id.toString());
+                                                    }}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         ))
                                     )}
                                 </div>

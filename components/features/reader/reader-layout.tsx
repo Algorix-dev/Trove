@@ -111,10 +111,16 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         return;
       }
 
-      setIsBookmarked(allBookmarks && allBookmarks.length > 0);
+      // Check if CURRENT page is bookmarked
+      const hasCurrentBookmark = allBookmarks && allBookmarks.some((b: any) => {
+        if (currentLocation.currentPage && b.page_number === currentLocation.currentPage) return true;
+        if (currentLocation.currentCFI && b.epub_cfi === currentLocation.currentCFI) return true;
+        return false;
+      });
+
+      setIsBookmarked(!!hasCurrentBookmark);
 
       if (allBookmarks) {
-        // Show all in the list for now, but Navigation tab will show latest only
         setBookmarks(allBookmarks.map((b: any) => {
           const date = new Date(b.created_at).toLocaleDateString('en-US', {
             month: 'short',
@@ -134,7 +140,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     } catch (error) {
       console.error('Failed to load bookmark:', error);
     }
-  }, [bookId, userId, supabase]);
+  }, [bookId, userId, supabase, currentLocation.currentPage, currentLocation.currentCFI]);
 
   const loadQuotes = useCallback(async () => {
     const { data } = await supabase
@@ -155,7 +161,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
           id: q.id,
           label: `${label} - ${date}`,
           subLabel: q.note || 'Saved from reader',
-          data: q
+          data: { ...q, progress: q.progress_percentage, cfi: (q.selection_data as any)?.cfi }
         };
       }));
     }
@@ -254,23 +260,59 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   const handleBookmark = async () => {
     try {
       setIsBookmarking(true);
-      const { error } = await supabase.from('bookmarks').insert({
-        book_id: bookId,
-        user_id: userId,
-        page_number: currentLocation.currentPage,
-        epub_cfi: currentLocation.currentCFI,
-        progress_percentage: currentLocation.progressPercentage,
+
+      // 1. Check if we already have a bookmark for THIS specific location
+      const existing = bookmarks.find(b => {
+        if (currentLocation.currentPage && b.data.page === currentLocation.currentPage) return true;
+        if (currentLocation.currentCFI && b.data.cfi === currentLocation.currentCFI) return true;
+        return false;
       });
 
-      if (error) throw error;
-      setIsBookmarked(true);
-      toast.success('Bookmark saved');
+      if (existing) {
+        // REMOVE it
+        const { error } = await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('id', existing.id);
+
+        if (error) throw error;
+        toast.success('Bookmark removed');
+      } else {
+        // ADD it
+        const { error } = await supabase.from('bookmarks').insert({
+          book_id: bookId,
+          user_id: userId,
+          page_number: currentLocation.currentPage,
+          epub_cfi: currentLocation.currentCFI,
+          progress_percentage: currentLocation.progressPercentage,
+        });
+
+        if (error) throw error;
+        toast.success('Bookmark saved');
+      }
+
       loadBookmarks();
-      setTimeout(() => setIsBookmarking(false), 2000);
+      setTimeout(() => setIsBookmarking(false), 800);
     } catch (error) {
       console.error('Bookmark operation failed:', error);
-      toast.error('Failed to save bookmark');
+      toast.error('Operation failed');
       setIsBookmarking(false);
+    }
+  };
+
+  const handleDeleteBookmark = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('bookmarks')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Bookmark deleted');
+      loadBookmarks();
+    } catch (error) {
+      console.error('Delete bookmark failed:', error);
+      toast.error('Failed to delete bookmark');
     }
   };
 
@@ -375,6 +417,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
             history={history}
             quotes={quotes}
             onNavigate={handleNavigate}
+            onDeleteBookmark={handleDeleteBookmark}
             userId={userId}
             bookId={bookId}
             bookTitle={title}
@@ -418,7 +461,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
               onSaveHighlight: handleSaveHighlight,
               bookTitle: title,
               initialPage: jumpLocation?.page || childElement.props.initialPage,
-              initialLocation: jumpLocation?.cfi || jumpLocation?.progress || childElement.props.initialLocation,
+              initialLocation: jumpLocation?.cfi || jumpLocation?.progress || jumpLocation?.progress_percentage || childElement.props.initialLocation,
             });
           }
           return child;

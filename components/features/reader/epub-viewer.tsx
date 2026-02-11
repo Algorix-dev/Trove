@@ -154,6 +154,7 @@ export function EpubViewer({
         onLocationUpdate({
           currentCFI: cfi,
           progressPercentage: progressValue,
+          currentPage: renditionRef.current?.currentLocation()?.start?.index || 0,
         });
       }
 
@@ -366,20 +367,24 @@ export function EpubViewer({
               bookId={bookId}
               bookTitle={bookTitle}
               author={author}
-              readerTheme={readerTheme}
-              existingHighlight={(selection as any).id ? selection : undefined}
+              pageNumber={renditionRef.current?.currentLocation()?.start?.index}
               onSave={async (data) => {
                 const promise = onSaveHighlight?.({ ...data, selection_data: { cfi: selection.cfi } });
                 await (promise || Promise.resolve());
-                loadHighlights();
                 setSelection(null);
+                // Do NOT remove annotation here, loadHighlights will refresh it
+                loadHighlights();
                 renditionRef.current?.getContents().forEach((c: any) => c.window.getSelection().removeAllRanges());
               }}
               onUpdate={handleUpdateHighlight}
               onDelete={handleDeleteHighlight}
               onClose={() => {
+                // Remove temporary highlight only on cancel
                 if (selection?.cfi) {
-                  renditionRef.current?.annotations.remove(selection.cfi, 'highlight');
+                  const isPermanent = highlights.some(h => (h.selection_data as any)?.cfi === selection.cfi);
+                  if (!isPermanent) {
+                    renditionRef.current?.annotations.remove(selection.cfi, 'highlight');
+                  }
                 }
                 setSelection(null);
                 renditionRef.current?.getContents().forEach((c: any) => c.window.getSelection().removeAllRanges());
