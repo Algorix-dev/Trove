@@ -80,35 +80,11 @@ export function TxtViewer({
     }
   };
 
-  const themeStyles = {
-    light: {
-      background: 'bg-[#ffffff]',
-      text: 'text-[#1a1c1e]',
-      border: 'border-[#e2e8f0]'
-    },
-    sepia: {
-      background: 'bg-[#f4efe1]',
-      text: 'text-[#433422]',
-      border: 'border-[#dcd6bc]'
-    },
-    dark: {
-      background: 'bg-[#1a1b1e]',
-      text: 'text-[#d1d5db]',
-      border: 'border-[#2d2e32]'
-    },
-    night: {
-      background: 'bg-[#0a0a0b]',
-      text: 'text-[#9ca3af]',
-      border: 'border-[#1f1f23]'
-    },
-    custom: {
-      background: 'bg-background',
-      text: 'text-foreground',
-      border: 'border-border'
-    }
+  const currentStyles = {
+    background: 'bg-[var(--reader-bg)]',
+    text: 'text-[var(--reader-text)]',
+    border: 'border-[var(--reader-border)]'
   };
-
-  const currentStyles = themeStyles[readerTheme as keyof typeof themeStyles] || themeStyles.light;
 
   // Robust Heartbeat Activity Tracking
   useEffect(() => {
@@ -119,19 +95,12 @@ export function TxtViewer({
     const interval = setInterval(async () => {
       const elapsed = Date.now() - startTime;
       if (elapsed >= 55000) { // Approx 1 min
-        const supabase = createBrowserClient(
-          process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-          process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
-        );
-
-        await supabase.from('reading_sessions').insert({
-          user_id: userId,
-          book_id: bookId,
-          duration_minutes: 1,
-          session_date: new Date().toISOString().split('T')[0],
+        // For TXT, we don't have pages, so we use progress as a proxy or just 0
+        await GamificationService.awardXP(userId, 1, 'Reading Time', bookId, {
+          startPage: 0,
+          endPage: 0
         });
 
-        await GamificationService.awardXP(userId, 1, 'Reading Time', bookId);
         startTime = Date.now();
       }
     }, 30000); // Check every 30s

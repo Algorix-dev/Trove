@@ -190,6 +190,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       timestamp: new Date().toISOString()
     };
 
+    // Calculate updated history BEFORE setting state to avoid race conditions with upsert
     let updatedHistory: any[] = [];
     setHistory(prev => {
       const existingIndex = prev.findIndex(h => h.label === label);
@@ -202,14 +203,29 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       return updatedHistory;
     });
 
+    // We must wait a tick or use a ref if we want to BE CERTAIN updatedHistory is set, 
+    // but in a functional update, it should be synchronous within this scope.
+    // However, to be absolutely safe, let's calculate it once and reuse.
+    const calculateNewHistory = (prev: any[]) => {
+      const existingIndex = prev.findIndex(h => h.label === label);
+      if (existingIndex !== -1) {
+        const existingItem = { ...prev[existingIndex], timestamp: newHistoryItem.timestamp };
+        return [existingItem, ...prev.filter((_, i) => i !== existingIndex)].slice(0, 20);
+      } else {
+        return [newHistoryItem, ...prev].slice(0, 20);
+      }
+    };
+
     // PERSIST UPDATED HISTORY & PROGRESS TO DB
     try {
+      const currentHistory = calculateNewHistory(history);
+
       await supabase
         .from('reading_progress')
         .upsert({
           book_id: bookId,
           user_id: userId,
-          last_pages: updatedHistory,
+          last_pages: currentHistory,
           current_page: location.currentPage,
           epub_cfi: location.currentCFI,
           progress_percentage: location.progressPercentage,
@@ -229,7 +245,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     } catch (error) {
       console.error('Failed to commit progress to database:', error);
     }
-  }, [bookId, userId, supabase, isTabVisible]);
+  }, [bookId, userId, supabase, isTabVisible, history]);
 
   // STABILITY TIMER (5s)
   useEffect(() => {
@@ -394,7 +410,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   return (
     <div
       style={themeStyles}
-      className="fixed inset-0 z-[100] flex flex-col h-screen transition-colors duration-300 bg-[var(--reader-bg)] text-[var(--reader-text)]"
+      className="fixed inset-0 z-[100] flex flex-col h-screen transition-colors duration-300 text-[var(--reader-text)]"
     >
       {/* Header */}
       <header className="h-14 border-b border-[var(--reader-border)] flex items-center justify-between px-4 z-10 transition-colors bg-[var(--reader-bg-secondary)]">
@@ -460,7 +476,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
               onLocationUpdate: handleLocationUpdate,
               onSaveHighlight: handleSaveHighlight,
               bookTitle: title,
-              initialPage: jumpLocation?.page || childElement.props.initialPage,
+              initialPage: jumpLocation?.page || jumpLocation?.page_number || childElement.props.initialPage,
               initialLocation: jumpLocation?.cfi || jumpLocation?.progress || jumpLocation?.progress_percentage || childElement.props.initialLocation,
             });
           }

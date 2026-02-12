@@ -134,16 +134,11 @@ export function PDFViewer({
     const interval = setInterval(async () => {
       const elapsed = Date.now() - startTime;
       if (elapsed >= 55000) { // Approx 1 min
-        await supabase.from('reading_sessions').insert({
-          user_id: userId,
-          book_id: bookId,
-          duration_minutes: 1,
-          start_page: pageNumber,
-          end_page: pageNumber,
-          session_date: new Date().toISOString().split('T')[0],
+        await GamificationService.awardXP(userId, 1, 'Reading Time', bookId, {
+          startPage: pageNumber,
+          endPage: pageNumber,
         });
 
-        await GamificationService.awardXP(userId, 1, 'Reading Time', bookId);
         startTime = Date.now();
       }
     }, 30000); // Check every 30s

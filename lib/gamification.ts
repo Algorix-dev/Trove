@@ -2,7 +2,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'sonner';
 
 export const GamificationService = {
-  async awardXP(userId: string, amount: number, action: string, bookId?: string) {
+  async awardXP(userId: string, amount: number, action: string, bookId?: string, metadata?: { startPage?: number; endPage?: number }) {
     const supabase = createBrowserClient(
       process.env['NEXT_PUBLIC_SUPABASE_URL']!,
       process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
@@ -32,26 +32,37 @@ export const GamificationService = {
       if (bookId && action === 'Reading Time') {
         const today = new Date().toISOString().split('T')[0];
 
-        // Fetch existing session for today
-        const { data: existingSession } = await supabase
+        // Instead of single(), fetch all for today and aggregate or pick the first
+        // Better yet: we use a sophisticated upsert if the DB has a unique constraint.
+        // For now, let's fetch to be safe but handle multiple.
+        const { data: sessions } = await supabase
           .from('reading_sessions')
           .select('*')
           .eq('user_id', userId)
           .eq('book_id', bookId)
-          .eq('session_date', today)
-          .single();
+          .eq('session_date', today);
 
-        if (existingSession) {
+        if (sessions && sessions.length > 0) {
+          const mainSession = sessions[0];
+          const newStartPage = metadata?.startPage ? Math.min(mainSession.start_page || 99999, metadata.startPage) : mainSession.start_page;
+          const newEndPage = metadata?.endPage ? Math.max(mainSession.end_page || 0, metadata.endPage) : mainSession.end_page;
+
           await supabase
             .from('reading_sessions')
-            .update({ duration_minutes: existingSession.duration_minutes + amount })
-            .eq('id', existingSession.id);
+            .update({
+              duration_minutes: mainSession.duration_minutes + amount,
+              start_page: newStartPage,
+              end_page: newEndPage
+            })
+            .eq('id', mainSession.id);
         } else {
           await supabase.from('reading_sessions').insert({
             user_id: userId,
             book_id: bookId,
             session_date: today,
             duration_minutes: amount,
+            start_page: metadata?.startPage || 0,
+            end_page: metadata?.endPage || 0
           });
         }
       }

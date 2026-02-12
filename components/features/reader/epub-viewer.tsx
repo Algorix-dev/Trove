@@ -171,24 +171,14 @@ export function EpubViewer({
     const interval = setInterval(async () => {
       const elapsed = Date.now() - startTime;
       if (elapsed >= 55000) { // Approx 1 min
-        const supabase = createBrowserClient(
-          process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-          process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
-        );
-
         const currentLocation = renditionRef.current?.currentLocation();
         const page = currentLocation?.start?.index || 0;
 
-        await supabase.from('reading_sessions').insert({
-          user_id: userId,
-          book_id: bookId,
-          duration_minutes: 1,
-          start_page: page, // Using as a snapshot of current page
-          end_page: page,
-          session_date: new Date().toISOString().split('T')[0],
+        await GamificationService.awardXP(userId, 1, 'Reading Time', bookId, {
+          startPage: page + 1,
+          endPage: page + 1
         });
 
-        await GamificationService.awardXP(userId, 1, 'Reading Time', bookId);
         startTime = Date.now();
       }
     }, 30000); // Check every 30s
@@ -394,8 +384,8 @@ export function EpubViewer({
         )}
 
         {!isReady && !error && (
-          <div className="absolute inset-0 flex items-center justify-center backdrop-blur-sm z-20 bg-[var(--reader-bg)]/50">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="absolute inset-0 flex items-center justify-center backdrop-blur-sm z-20 bg-[var(--reader-bg)]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--reader-accent)]"></div>
           </div>
         )}
 

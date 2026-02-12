@@ -15,7 +15,7 @@ export function ReaderSettings({
   currentTheme,
 }: ReaderSettingsProps) {
   return (
-    <Card className="w-72 shadow-xl border-none bg-background/80 backdrop-blur-xl">
+    <Card className="w-72 shadow-xl border border-[var(--reader-border)] bg-[var(--reader-bg-secondary)]/90 backdrop-blur-xl text-[var(--reader-text)]">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-bold">
           Reader Settings

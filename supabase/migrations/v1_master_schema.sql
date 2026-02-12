@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS public.book_quotes (
     color TEXT DEFAULT '#fef08a',
     highlight_type TEXT DEFAULT 'highlight', -- 'highlight', 'quote', 'note'
     selection_data JSONB,
+    progress_percentage INTEGER,
     is_favorite BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -88,8 +89,11 @@ CREATE TABLE IF NOT EXISTS public.reading_sessions (
     user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
     book_id UUID REFERENCES public.books(id) ON DELETE CASCADE NOT NULL,
     duration_minutes INTEGER DEFAULT 1,
+    start_page INTEGER,
+    end_page INTEGER,
     session_date DATE DEFAULT CURRENT_DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    UNIQUE(user_id, book_id, session_date)
 );
 ALTER TABLE public.reading_sessions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can manage own reading sessions" ON public.reading_sessions;
