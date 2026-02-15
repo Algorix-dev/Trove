@@ -10,6 +10,7 @@ import { ReaderNavigation } from '@/components/features/reader/reader-navigation
 import { ReaderSettings } from '@/components/features/reader/reader-settings';
 import { Button } from '@/components/ui/button';
 import { cleanBookTitle, cn } from '@/lib/utils';
+import { GamificationService } from '@/lib/gamification';
 
 interface LocationData {
   currentPage?: number;
@@ -24,9 +25,10 @@ interface ReaderLayoutProps {
   bookId: string;
   userId: string;
   author?: string;
+  initialLocation?: any;
 }
 
-export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutProps) {
+export function ReaderLayout({ children, title, bookId, userId, initialLocation: propLocation }: ReaderLayoutProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
@@ -36,9 +38,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [quotes, setQuotes] = useState<any[]>([]);
   const [isTabVisible, setIsTabVisible] = useState(true);
-  const [showRestorePrompt, setShowRestorePrompt] = useState(false);
-  const [pendingRestore, setPendingRestore] = useState<any>(null);
-  const [jumpLocation, setJumpLocation] = useState<any>(null);
+  const [jumpLocation, setJumpLocation] = useState<any>(propLocation || null);
   const locationChangeTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const supabase = useMemo(
@@ -72,6 +72,9 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   }, [supabase, userId]);
 
   const loadInitialProgress = useCallback(async () => {
+    // Check if we are already navigating somewhere from a URL bookmark
+    const hasInitialNav = jumpLocation?.page || jumpLocation?.cfi || jumpLocation?.progress;
+
     const { data } = await supabase
       .from('reading_progress')
       .select('current_page, epub_cfi, progress_percentage, last_pages')
@@ -88,13 +91,13 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         progress: data.progress_percentage
       };
 
-      // If we have saved progress, ask to restore
-      if (savedPos.page || savedPos.cfi || savedPos.progress) {
-        setPendingRestore(savedPos);
-        setShowRestorePrompt(true);
+      // AUTO-RESUME: If no initial URL navigation, jump to last saved position silently
+      if (!hasInitialNav && (savedPos.page || savedPos.cfi || savedPos.progress)) {
+        setJumpLocation(savedPos.cfi || savedPos.progress || savedPos.page);
+        console.log('[ReaderLayout] Auto-resuming to last position:', savedPos);
       }
     }
-  }, [supabase, bookId, userId]);
+  }, [supabase, bookId, userId, jumpLocation]);
 
   // Load bookmark status and all bookmarks
   const loadBookmarks = useCallback(async () => {
@@ -115,14 +118,20 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         setBookmarks(allBookmarks.map((b: any) => {
           const date = new Date(b.created_at).toLocaleDateString('en-US', {
             month: 'short',
-            day: 'numeric',
-            year: 'numeric'
+            day: 'numeric'
           });
-          const label = b.page_number ? `Page ${b.page_number}` : b.progress_percentage ? `${b.progress_percentage}%` : 'Bookmarked Location';
+          const time = new Date(b.created_at).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          const label = b.page_number && b.page_number > 0 ? `Page ${b.page_number}` :
+            b.progress_percentage && b.progress_percentage > 0 ? `${Math.round(b.progress_percentage)}%` :
+              'Bookmarked';
 
           return {
             id: b.id,
-            label: `${label} - ${date}`,
+            label: `${label} - ${date}, ${time}`,
             subLabel: b.note || 'Saved bookmark',
             data: { page: b.page_number, cfi: b.epub_cfi, progress: b.progress_percentage }
           };
@@ -136,14 +145,22 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   // Reactive bookmark check based on current location
   useEffect(() => {
     const hasCurrentBookmark = bookmarks.some((b: any) => {
-      // For PDF/TXT we check page_number
-      if (currentLocation.currentPage && b.data.page === currentLocation.currentPage) return true;
-      // For EPUB we check CFI
+      // 1. Precise CFI Match (EPUB)
       if (currentLocation.currentCFI && b.data.cfi === currentLocation.currentCFI) return true;
+
+      // 2. Page Number Match (PDF/TXT/EPUB Fallback)
+      // For EPUB, we check if the bookmark's page matches our current page
+      if (currentLocation.currentPage && b.data.page === currentLocation.currentPage && currentLocation.currentPage > 0) return true;
+
+      // 3. Progress Percentage Match (TXT/Fallback) - with 0.5% tolerance
+      if (currentLocation.progressPercentage && b.data.progress && !currentLocation.currentPage) {
+        return Math.abs(currentLocation.progressPercentage - b.data.progress) < 0.5;
+      }
+
       return false;
     });
     setIsBookmarked(hasCurrentBookmark);
-  }, [currentLocation.currentPage, currentLocation.currentCFI, bookmarks]);
+  }, [currentLocation.currentPage, currentLocation.currentCFI, currentLocation.progressPercentage, bookmarks]);
 
   const loadQuotes = useCallback(async () => {
     const { data } = await supabase
@@ -158,11 +175,16 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         const date = new Date(q.created_at).toLocaleDateString('en-US', {
           month: 'short', day: 'numeric'
         });
+        const time = new Date(q.created_at).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
         const label = q.page_number ? `Page ${q.page_number}` : q.chapter || 'Highlight';
 
         return {
           id: q.id,
-          label: `${label} - ${date}`,
+          label: `${label} - ${date}, ${time}`,
           subLabel: q.note || 'Saved from reader',
           data: { ...q, progress: q.progress_percentage, cfi: (q.selection_data as any)?.cfi }
         };
@@ -176,7 +198,10 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     loadBookmarks();
     loadQuotes();
     loadInitialProgress();
-  }, [loadInitialSettings, loadBookmarks, loadQuotes, loadInitialProgress]);
+
+    // Refresh streak immediately on open
+    GamificationService.refreshStreak(userId);
+  }, [loadInitialSettings, loadBookmarks, loadQuotes, loadInitialProgress, userId]);
 
   const addToHistory = useCallback(async (location: LocationData) => {
     // Only save if tab is active and we have meaningful data
@@ -186,27 +211,24 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     const curPage = typeof location.currentPage === 'number' && !isNaN(location.currentPage) ? location.currentPage : 0;
     const progress = typeof location.progressPercentage === 'number' && !isNaN(location.progressPercentage) ? location.progressPercentage : 0;
 
-    const label = curPage > 0 ? `Page ${curPage}` :
+    const labelText = curPage > 0 ? `Page ${curPage}` :
       progress > 0 ? `${Math.round(progress)}% Progress` :
         'Recent Location';
 
-    const newHistoryItem = {
-      id: Date.now(),
-      label,
-      data: { ...location, currentPage: curPage, progressPercentage: progress },
-      timestamp: new Date().toISOString()
-    };
-
     // Use functional update to ensure we have the latest history
     setHistory(prev => {
-      const existingIndex = prev.findIndex(h => h.label === label);
-      let updatedHistory: any[];
-      if (existingIndex !== -1) {
-        const existingItem = { ...prev[existingIndex], timestamp: newHistoryItem.timestamp };
-        updatedHistory = [existingItem, ...prev.filter((_, i) => i !== existingIndex)].slice(0, 20);
-      } else {
-        updatedHistory = [newHistoryItem, ...prev].slice(0, 20);
-      }
+      // Create a unique label including time to avoid folding distinct visits into one history item
+      const timestampLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const fullLabel = `${labelText} (${timestampLabel})`;
+
+      const newHistoryItem = {
+        id: Date.now(),
+        label: fullLabel,
+        data: { ...location, currentPage: curPage, progressPercentage: progress },
+        timestamp: new Date().toISOString()
+      };
+
+      const updatedHistory = [newHistoryItem, ...prev.filter(h => h.label !== fullLabel)].slice(0, 20);
 
       // PERSIST UPDATED HISTORY & PROGRESS TO DB
       // We do this inside a separate function or after the tick, 
@@ -270,8 +292,9 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   }, []);
 
   const handleNavigate = (location: any) => {
-    setJumpLocation(location);
-    setShowRestorePrompt(false);
+    // Navigation priority: CFI (pinpoint) > Page (rough)
+    const target = location.cfi || location.epub_cfi || location.page || location.page_number;
+    setJumpLocation(target);
     loadBookmarks();
     loadQuotes();
   };
@@ -291,8 +314,11 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
 
       // 1. Check if we already have a bookmark for THIS specific location
       const existing = bookmarks.find(b => {
-        if (pageNum > 0 && b.data.page === pageNum) return true;
         if (epubCfi && b.data.cfi === epubCfi) return true;
+        if (pageNum > 0 && b.data.page === pageNum) return true;
+        if (progressPercent > 0 && b.data.progress && !pageNum) {
+          return Math.abs(progressPercent - b.data.progress) < 0.5;
+        }
         return false;
       });
 
@@ -311,7 +337,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
           book_id: bookId,
           user_id: userId,
           page_number: pageNum,
-          epub_cfi: epubCfi,
+          epub_cfi: epubCfi, // Captured from currentLocation.currentCFI
           progress_percentage: progressPercent,
         });
 
@@ -504,40 +530,6 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
               onThemeChange={handleThemeChange}
               currentTheme={readerTheme}
             />
-          </div>
-        )}
-
-        {/* Restore Progress Prompt */}
-        {showRestorePrompt && pendingRestore && (
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[var(--reader-accent)] text-white px-4 py-3 rounded-xl shadow-2xl border border-white/10 animate-in slide-in-from-bottom-8 fade-in duration-500">
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold leading-tight">Pick up where you left off?</span>
-              <span className="text-[10px] opacity-80 uppercase tracking-wider font-bold">
-                {pendingRestore.page ? `Page ${pendingRestore.page}` :
-                  pendingRestore.progress ? `${Math.round(pendingRestore.progress)}% done` : 'Last Position'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 ml-4">
-              <Button
-                size="sm"
-                variant="secondary"
-                className="h-8 px-4 text-xs font-bold rounded-lg shadow-sm hover:scale-105 transition-transform bg-white text-[var(--reader-accent)] hover:bg-white/90"
-                onClick={() => {
-                  handleNavigate(pendingRestore);
-                  setShowRestorePrompt(false);
-                }}
-              >
-                Restore
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 px-2 text-xs opacity-60 hover:opacity-100 text-white hover:bg-white/10"
-                onClick={() => setShowRestorePrompt(false)}
-              >
-                Dismiss
-              </Button>
-            </div>
           </div>
         )}
       </main>

@@ -116,8 +116,10 @@ export default async function ReaderPage({
     ? parseFloat(search['progress'] as string)
     : undefined;
 
+  const initialLoc = bookmarkCFI || bookmarkProgress || bookmarkPage;
+
   return (
-    <ReaderLayout title={book.title} bookId={id} userId={user.id} author={book.author}>
+    <ReaderLayout title={book.title} bookId={id} userId={user.id} author={book.author} initialLocation={initialLoc}>
       {format === 'epub' ? (
         <EpubViewer url={fileUrl} userId={user.id} bookId={id} initialLocation={bookmarkCFI} bookTitle={book.title} author={book.author} />
       ) : format === 'txt' ? (

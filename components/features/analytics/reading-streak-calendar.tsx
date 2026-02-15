@@ -2,7 +2,7 @@
 
 import { createBrowserClient } from '@supabase/ssr';
 import { Flame } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/components/providers/auth-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,14 @@ export function ReadingStreakCalendar() {
   const { user } = useAuth();
   const [readingData, setReadingData] = useState<ReadingDay[]>([]);
   const [loading, setLoading] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to today
+  useEffect(() => {
+    if (!loading && scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    }
+  }, [loading]);
 
   useEffect(() => {
     if (!user) return;
@@ -209,7 +217,7 @@ export function ReadingStreakCalendar() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto pb-4">
+        <div ref={scrollRef} className="overflow-x-auto pb-4 scroll-smooth">
           <div className="inline-flex gap-1">
             {weeks.map((week, weekIndex) => (
               <div key={weekIndex} className="flex flex-col gap-1">

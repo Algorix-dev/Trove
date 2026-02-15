@@ -137,8 +137,9 @@ export function HighlightMenu({
     if (view === 'prompt') {
         return (
             <div className={cn(
-                "flex flex-col gap-2 border shadow-2xl rounded-2xl p-2 min-w-[220px] animate-in fade-in zoom-in-95 duration-200 border-[var(--reader-border)] bg-[var(--reader-bg)]",
-            )}>
+                "flex flex-col gap-2 border shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-2xl p-2 min-w-[220px] animate-in fade-in zoom-in-95 duration-200 border-[var(--reader-border)] bg-[var(--reader-bg)]",
+                "backdrop-blur-xl ring-1 ring-black/5"
+            )} style={{ backgroundColor: 'var(--reader-bg, #ffffff)' }}>
                 <div className="flex flex-col gap-1">
                     <Button
                         variant="ghost"
@@ -181,8 +182,9 @@ export function HighlightMenu({
 
     return (
         <div className={cn(
-            "flex flex-col gap-2 border shadow-2xl rounded-2xl p-2 min-w-[240px] animate-in fade-in zoom-in-95 duration-200 border-[var(--reader-border)] bg-[var(--reader-bg)]",
-        )}>
+            "flex flex-col gap-2 border shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-2xl p-2 min-w-[240px] animate-in fade-in zoom-in-95 duration-200 border-[var(--reader-border)] bg-[var(--reader-bg)]",
+            "backdrop-blur-xl ring-1 ring-black/5"
+        )} style={{ backgroundColor: 'var(--reader-bg, #ffffff)' }}>
             <div className="flex items-center justify-between px-2 py-1">
                 <span className="text-[10px] font-bold text-[var(--reader-text-muted)] uppercase tracking-widest">
                     {existingHighlight ? 'Edit Highlight' : 'Options'}

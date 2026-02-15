@@ -134,6 +134,15 @@ export function EpubViewer({
     loadHighlights();
   };
 
+  // REACTIVE NAVIGATION: Handle jumps from history/bookmarks
+  useEffect(() => {
+    if (isReady && renditionRef.current && initialLocation) {
+      renditionRef.current.display(initialLocation.toString()).then(() => {
+        updateProgress();
+      });
+    }
+  }, [initialLocation, isReady]);
+
   const updateProgress = () => {
     if (!bookRef.current || !renditionRef.current) return;
 
@@ -234,15 +243,26 @@ export function EpubViewer({
           // Account for iframe offset in the viewport
           const iframeRect = contents.window.frameElement.getBoundingClientRect();
 
+          // Debugging log for visibility
+          console.log('[EpubViewer] Selection Rect:', rect, 'Iframe Rect:', iframeRect);
+
           setSelection({
             text: text.trim(),
             cfi: cfiRange,
+            // Calculate absolute position in the main window
             x: iframeRect.left + rect.left + rect.width / 2,
-            y: iframeRect.top + rect.top, // Anchored to top in viewport
+            y: iframeRect.top + rect.top,
           });
 
-          // Visual highlight (optional, but requested for feedback)
-          rendition.annotations.add('highlight', cfiRange, {}, () => { });
+          // Visual highlight (Temporary until save/cancel)
+          rendition.annotations.add(
+            'highlight',
+            cfiRange,
+            {},
+            () => { },
+            'hl-temp',
+            { fill: '#fef08a', 'fill-opacity': '0.3' }
+          );
         });
 
         // Ensure clicking outside clears selection
@@ -252,6 +272,16 @@ export function EpubViewer({
             rendition.annotations.remove(selection.cfi, 'highlight');
           }
         });
+
+        // REACTIVE NAVIGATION: Watch for external jump requests
+        const displayLocation = async (loc: string | number) => {
+          if (rendition && loc) {
+            await rendition.display(loc.toString());
+            updateProgress();
+          }
+        };
+
+        renditionRef.current.displayLocation = displayLocation;
 
         rendition.on('relocated', () => {
           updateProgress();
@@ -355,8 +385,11 @@ export function EpubViewer({
 
         {selection && (
           <div
-            className="fixed z-[200] -translate-x-1/2 -translate-y-4"
-            style={{ left: selection.x, top: selection.y }}
+            className="fixed z-[300] -translate-x-1/2 -translate-y-full mb-4 pointer-events-auto"
+            style={{
+              left: Math.max(120, Math.min(window.innerWidth - 120, selection.x)),
+              top: Math.max(80, selection.y - 10)
+            }}
           >
             <HighlightMenu
               selectedText={selection.text}

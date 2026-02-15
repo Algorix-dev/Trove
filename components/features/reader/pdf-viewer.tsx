@@ -288,8 +288,11 @@ export function PDFViewer({
 
         {selection && onSaveHighlight && (
           <div
-            className="fixed z-[200] -translate-x-1/2 -translate-y-4"
-            style={{ left: selection.x, top: selection.y }}
+            className="fixed z-[300] -translate-x-1/2 -translate-y-full mb-4"
+            style={{
+              left: Math.max(120, Math.min(window.innerWidth - 120, selection.x)),
+              top: Math.max(80, selection.y - 10)
+            }}
           >
             <HighlightMenu
               selectedText={selection.text}

@@ -12,7 +12,7 @@ export const GamificationService = {
       // 1. Get current stats
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('total_xp, current_level')
+        .select('total_xp, current_level, current_streak, highest_streak, last_read_date')
         .eq('id', userId)
         .single();
 
@@ -20,10 +20,43 @@ export const GamificationService = {
 
       const newXP = (profile?.total_xp || 0) + amount;
 
-      // 2. Update XP
+      // streak logic
+      let newStreak = profile?.current_streak || 0;
+      let newHighest = profile?.highest_streak || 0;
+      const today = new Date().toLocaleDateString('en-CA'); // yyyy-mm-dd (local)
+      const lastRead = profile?.last_read_date;
+
+      if (!lastRead) {
+        // First time reading
+        newStreak = 1;
+      } else if (lastRead === today) {
+        // Already read today, no change
+      } else {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+
+        if (lastRead === yesterdayStr) {
+          newStreak += 1;
+        } else {
+          // Break in streak
+          newStreak = 1;
+        }
+      }
+
+      if (newStreak > newHighest) {
+        newHighest = newStreak;
+      }
+
+      // 2. Update Profile (XP + Streak)
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ total_xp: newXP })
+        .update({
+          total_xp: newXP,
+          current_streak: newStreak,
+          highest_streak: newHighest,
+          last_read_date: today
+        })
         .eq('id', userId);
 
       if (updateError) throw updateError;
@@ -116,10 +149,14 @@ export const GamificationService = {
       // 5. Notify
       toast.success(`Achievement Unlocked: ${achievement.name}!`, {
         description: `You earned ${achievement.xp_reward} XP`,
-        icon: '🏆', // We can replace with actual icon component later
       });
     } catch (error) {
       console.error('[Gamification] Error checking achievement:', error);
     }
   },
+
+  async refreshStreak(userId: string) {
+    // Calling awardXP with 0 still triggers the streak calculation logic
+    return this.awardXP(userId, 0, 'Streak Refresh');
+  }
 };

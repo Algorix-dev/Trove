@@ -122,7 +122,9 @@ export function ReaderNavigation({
                     if (s.start_page && !groups[date].pageRange.start) groups[date].pageRange.start = s.start_page;
                 });
 
-                setActivity(Object.values(groups));
+                setActivity(Object.values(groups).sort((a, b) => {
+                    return new Date(b.id).getTime() - new Date(a.id).getTime();
+                }));
             }
         } catch (err) {
             console.error('Failed to fetch activity:', err);
@@ -159,8 +161,8 @@ export function ReaderNavigation({
                     <List className="h-5 w-5" />
                 </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[350px] sm:w-[400px] p-0 flex flex-col bg-[var(--reader-bg)] border-[var(--reader-border)]">
-                <div className="flex flex-col h-full">
+            <SheetContent side="right" className="w-[350px] sm:w-[400px] p-0 flex flex-col bg-[var(--reader-bg)] border-[var(--reader-border)] h-screen">
+                <div className="flex flex-col h-full overflow-hidden">
                     <SheetHeader className="px-6 py-6 border-b border-[var(--reader-border)] bg-[var(--reader-bg-secondary)]/10">
                         <SheetTitle className="text-[var(--reader-text)] text-xl font-extrabold tracking-tight flex items-center gap-2">
                             <Sparkles className="h-5 w-5 text-[var(--reader-accent)]" />
@@ -187,7 +189,7 @@ export function ReaderNavigation({
                         </form>
                     )}
 
-                    <Tabs defaultValue="activity" className="h-full flex flex-col pt-2">
+                    <Tabs defaultValue="activity" className="flex-1 flex flex-col pt-2 min-h-0">
                         <div className="px-6 mb-4">
                             <TabsList className="grid w-full grid-cols-4 bg-[var(--reader-bg-secondary)]/50 p-1 rounded-2xl border border-[var(--reader-border)] h-12">
                                 <TabsTrigger value="activity" title="Reading Timeline" className="rounded-xl data-[state=active]:bg-[var(--reader-bg)] data-[state=active]:shadow-sm text-[var(--reader-text-muted)] data-[state=active]:text-[var(--reader-text)] transition-all">
@@ -205,8 +207,8 @@ export function ReaderNavigation({
                             </TabsList>
                         </div>
 
-                        <ScrollArea className="flex-1">
-                            <TabsContent value="activity" className="m-0 p-4">
+                        <ScrollArea className="flex-1 min-h-0 overflow-x-hidden">
+                            <TabsContent value="activity" className="m-0 p-4 min-h-0">
                                 <div className="space-y-3">
                                     {isLoadingActivity ? (
                                         <div className="flex flex-col items-center justify-center py-12 space-y-4">
@@ -360,7 +362,7 @@ export function ReaderNavigation({
                                 </div>
                             </TabsContent>
 
-                            <TabsContent value="ai" className="m-0 p-4 shrink-0">
+                            <TabsContent value="ai" className="m-0 p-4 min-h-0">
                                 <div className="space-y-5">
                                     <div className="p-6 rounded-3xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 backdrop-blur-xl">
                                         <div className="h-12 w-12 rounded-2xl bg-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/30 mb-4">
