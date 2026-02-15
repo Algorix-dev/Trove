@@ -9,6 +9,7 @@ import { LevelProgress } from '@/components/features/gamification/level-progress
 import { QuickActions } from '@/components/features/quick-actions';
 import { ShareInviteModal } from '@/components/features/share-invite-modal';
 import { createClient } from '@/lib/supabase/server';
+import { DashboardReminders } from '@/components/features/dashboard-reminders';
 
 // Lazy load heavy components for better performance
 const DashboardCharts = dynamic(
@@ -134,7 +135,8 @@ export default async function DashboardPage() {
       </div>
 
       <div className="p-1 rounded-[2.5rem] bg-gradient-to-br from-primary/20 via-transparent to-purple-500/20 shadow-2xl">
-        <div className="bg-card/40 backdrop-blur-2xl p-6 rounded-[2.4rem] border border-white/10">
+        <div className="bg-card/40 backdrop-blur-2xl p-6 md:p-10 rounded-[2.4rem] border border-white/10 space-y-12">
+          <DashboardReminders />
           <DashboardStats />
         </div>
       </div>

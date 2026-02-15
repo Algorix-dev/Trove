@@ -111,15 +111,6 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         return;
       }
 
-      // Check if CURRENT page is bookmarked
-      const hasCurrentBookmark = allBookmarks && allBookmarks.some((b: any) => {
-        if (currentLocation.currentPage && b.page_number === currentLocation.currentPage) return true;
-        if (currentLocation.currentCFI && b.epub_cfi === currentLocation.currentCFI) return true;
-        return false;
-      });
-
-      setIsBookmarked(!!hasCurrentBookmark);
-
       if (allBookmarks) {
         setBookmarks(allBookmarks.map((b: any) => {
           const date = new Date(b.created_at).toLocaleDateString('en-US', {
@@ -140,7 +131,19 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     } catch (error) {
       console.error('Failed to load bookmark:', error);
     }
-  }, [bookId, userId, supabase, currentLocation.currentPage, currentLocation.currentCFI]);
+  }, [bookId, userId, supabase]);
+
+  // Reactive bookmark check based on current location
+  useEffect(() => {
+    const hasCurrentBookmark = bookmarks.some((b: any) => {
+      // For PDF/TXT we check page_number
+      if (currentLocation.currentPage && b.data.page === currentLocation.currentPage) return true;
+      // For EPUB we check CFI
+      if (currentLocation.currentCFI && b.data.cfi === currentLocation.currentCFI) return true;
+      return false;
+    });
+    setIsBookmarked(hasCurrentBookmark);
+  }, [currentLocation.currentPage, currentLocation.currentCFI, bookmarks]);
 
   const loadQuotes = useCallback(async () => {
     const { data } = await supabase
@@ -251,7 +254,13 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
   useEffect(() => {
     if (locationChangeTimeout.current) clearTimeout(locationChangeTimeout.current);
 
-    if (isTabVisible && !showSettings && (currentLocation.currentPage || currentLocation.currentCFI || currentLocation.progressPercentage)) {
+    // Only set timer if we have valid location data and it's DIFFERENT from what we last saved
+    // to avoid constant resets while just idling or scrolling slightly
+    const hasData = currentLocation.currentPage || currentLocation.currentCFI || currentLocation.progressPercentage;
+    const isDifferent = currentLocation.currentPage !== history[0]?.data?.currentPage ||
+      currentLocation.currentCFI !== history[0]?.data?.currentCFI;
+
+    if (isTabVisible && !showSettings && hasData && isDifferent) {
       locationChangeTimeout.current = setTimeout(() => {
         addToHistory(currentLocation);
       }, 5000);
@@ -260,7 +269,7 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     return () => {
       if (locationChangeTimeout.current) clearTimeout(locationChangeTimeout.current);
     };
-  }, [currentLocation, isTabVisible, showSettings, addToHistory]);
+  }, [currentLocation, isTabVisible, showSettings, addToHistory, history]);
 
   const handleLocationUpdate = useCallback((data: LocationData) => {
     setCurrentLocation((prev) => ({ ...prev, ...data }));
@@ -298,9 +307,9 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         const { error } = await supabase.from('bookmarks').insert({
           book_id: bookId,
           user_id: userId,
-          page_number: currentLocation.currentPage,
-          epub_cfi: currentLocation.currentCFI,
-          progress_percentage: currentLocation.progressPercentage,
+          page_number: currentLocation.currentPage || 0,
+          epub_cfi: currentLocation.currentCFI || '',
+          progress_percentage: currentLocation.progressPercentage || 0,
         });
 
         if (error) throw error;
@@ -337,14 +346,14 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
       const { error } = await supabase.from('book_quotes').insert({
         user_id: userId,
         book_id: bookId,
-        quote_text: data.quote_text,
-        page_number: data.page_number || currentLocation.currentPage,
-        chapter: data.chapter,
+        quote_text: data.quote_text || 'Annotated Note',
+        page_number: data.page_number || currentLocation.currentPage || 0,
+        chapter: data.chapter || 'Current Chapter',
         note: data.note,
-        color: data.color,
-        highlight_type: data.highlight_type,
-        selection_data: data.selection_data,
-        progress_percentage: data.progress_percentage || currentLocation.progressPercentage,
+        color: data.color || '#fef08a',
+        highlight_type: data.highlight_type || 'highlight',
+        selection_data: data.selection_data || {},
+        progress_percentage: data.progress_percentage || currentLocation.progressPercentage || 0,
       });
 
       if (error) throw error;

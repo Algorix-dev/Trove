@@ -1,11 +1,12 @@
 'use client';
 
 import { createBrowserClient } from '@supabase/ssr';
-import { Bookmark, BookOpen, Clock, Trash2 } from 'lucide-react';
+import { Bookmark, BookOpen, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -166,67 +167,80 @@ export function BookmarksList({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="grid gap-8 grid-cols-1 lg:grid-cols-2">
       {Object.entries(groupedBookmarks).map(([bookId, { book, bookmarks: bookBookmarks }]) => (
-        <Card key={bookId}>
-          <CardContent className="p-6">
-            {/* Book Header */}
-            <div className="flex gap-4 mb-4 pb-4 border-b">
-              <div className="w-16 h-24 rounded overflow-hidden flex-shrink-0 bg-gradient-to-br from-purple-500 to-pink-500">
-                {book.cover_url && !book.cover_url.startsWith('gradient:') ? (
-                  <img
-                    src={book.cover_url}
-                    alt={book.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <BookOpen className="h-8 w-8 text-white opacity-80" />
+        <Card key={bookId} className="border-none shadow-2xl bg-card/30 backdrop-blur-xl rounded-[2.5rem] overflow-hidden group/book hover:bg-card/40 transition-all duration-500">
+          <CardContent className="p-0">
+            {/* Book Header with immersive background */}
+            <div className="relative p-6 border-b border-border/10">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-50" />
+              <div className="relative flex gap-6 items-start">
+                <div className="w-24 h-36 rounded-2xl overflow-hidden flex-shrink-0 shadow-xl border border-white/10 transition-transform duration-500 group-hover/book:scale-105">
+                  {book.cover_url && !book.cover_url.startsWith('gradient:') ? (
+                    <img
+                      src={book.cover_url}
+                      alt={book.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-purple-600">
+                      <BookOpen className="h-10 w-10 text-white opacity-80" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 pt-2">
+                  <h3 className="font-extrabold text-2xl line-clamp-2 tracking-tight mb-2 group-hover/book:text-primary transition-colors">{book.title}</h3>
+                  <p className="text-sm font-medium text-muted-foreground mb-4">{book.author}</p>
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className="rounded-full px-3 py-1 bg-primary/5 border-primary/20 text-[10px] uppercase tracking-widest font-bold">
+                      {book.format}
+                    </Badge>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                      {bookBookmarks.length} Saved Moment{bookBookmarks.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-lg line-clamp-2">{book.title}</h3>
-                <p className="text-sm text-muted-foreground truncate">{book.author}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs bg-secondary px-2 py-1 rounded uppercase">
-                    {book.format}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {bookBookmarks.length} bookmark{bookBookmarks.length !== 1 ? 's' : ''}
-                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Bookmarks List */}
-            <div className="space-y-3">
-              {bookBookmarks.slice(0, 1).map((bookmark) => (
+            {/* Bookmarks List with scroll constraint if too many */}
+            <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+              {bookBookmarks.map((bookmark) => (
                 <div
                   key={bookmark.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  className="group/item flex items-center justify-between p-4 rounded-3xl border border-border/50 bg-white/5 hover:bg-white/10 hover:border-primary/30 transition-all duration-300"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Bookmark className="h-4 w-4 text-primary flex-shrink-0" />
-                      <span className="font-medium text-sm">{formatLocation(bookmark)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      <span>Saved {formatDate(bookmark.created_at)}</span>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <Bookmark className="h-4 w-4 text-primary fill-primary/20" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-sm block tracking-tight">{formatLocation(bookmark)}</span>
+                        <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Saved {formatDate(bookmark.created_at)}</span>
+                      </div>
                     </div>
                     {bookmark.note && (
-                      <p className="text-sm text-muted-foreground mt-2 italic">"{bookmark.note}"</p>
+                      <div className="ml-11 relative">
+                        <div className="absolute left-[-1.5rem] top-0 bottom-0 w-0.5 bg-primary/20 rounded-full" />
+                        <p className="text-[13px] text-muted-foreground leading-relaxed italic">
+                          "{bookmark.note}"
+                        </p>
+                      </div>
                     )}
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     <Link href={buildReaderUrl(bookmark)}>
-                      <Button size="sm" variant="default">
-                        <BookOpen className="h-4 w-4 mr-2" />
-                        Read
+                      <Button size="sm" variant="outline" className="h-10 w-10 rounded-xl border-border/50 hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all">
+                        <BookOpen className="h-4 w-4" />
                       </Button>
                     </Link>
-                    <Button size="sm" variant="ghost" onClick={() => deleteBookmark(bookmark.id)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => deleteBookmark(bookmark.id)}
+                      className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:text-destructive text-muted-foreground/40 transition-all"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>

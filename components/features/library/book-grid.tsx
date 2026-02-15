@@ -290,45 +290,18 @@ export function BookGrid({
 
             <CardFooter className="p-4 flex-1 flex flex-col items-start">
               <div className="w-full">
-                <h3 className="font-medium text-sm line-clamp-2 mb-1 group-hover:text-primary transition-colors">
+                <h3 className="font-bold text-sm line-clamp-1 mb-1 group-hover:text-primary transition-colors tracking-tight">
                   {cleanBookTitle(book.title)}
                 </h3>
-                <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
-                  {book.author || 'Unknown Author'}
+                <p className="text-[11px] font-medium text-muted-foreground/80 mb-3">
+                  Progress: {progress}%
                 </p>
 
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  {book.format && (
-                    <Badge variant="secondary" className="text-xs uppercase">
-                      {book.format}
-                    </Badge>
-                  )}
-                  {book.pages && (
-                    <Badge variant="outline" className="text-xs">
-                      {book.pages} pages
-                    </Badge>
-                  )}
-                  {book.rating && (
-                    <Badge variant="outline" className="text-xs">
-                      <Star className="h-3 w-3 mr-1 text-yellow-500 fill-yellow-500" />
-                      {book.rating.toFixed(1)}
-                    </Badge>
-                  )}
-                </div>
-
                 {showProgress && (
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium">{progress}% complete</span>
-                      {book.last_read && (
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(book.last_read), { addSuffix: true })}
-                        </span>
-                      )}
-                    </div>
-                    <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div className="w-full">
+                    <div className="relative h-1 w-full overflow-hidden rounded-full bg-muted/60">
                       <div
-                        className={cn('h-full transition-all', getProgressColor(progress))}
+                        className={cn('h-full transition-all duration-500', getProgressColor(progress))}
                         style={{ width: `${progress}%` }}
                       />
                     </div>
