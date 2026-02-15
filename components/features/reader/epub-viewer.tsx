@@ -143,17 +143,19 @@ export function EpubViewer({
     }
   }, [initialLocation, isReady]);
 
-  const updateProgress = () => {
+  const updateProgress = useCallback(() => {
     if (!bookRef.current || !renditionRef.current) return;
 
     const currentLocation = renditionRef.current.currentLocation();
     if (currentLocation && currentLocation.start) {
       const cfi = currentLocation.start.cfi;
+
       // Get percentage
       const percentage = bookRef.current.locations.percentageFromCfi(cfi);
       const progressValue = Math.round(percentage * 100);
 
-      // EPUBjs page calculation (rough but better than index)
+      // EPUBjs page calculation
+      // Ensure locations are generated for accurate mapping
       const loc = bookRef.current.locations.locationFromCfi(cfi);
       const calculatedPage = loc > 0 ? loc : (currentLocation.start.index + 1);
 
@@ -168,12 +170,11 @@ export function EpubViewer({
           currentCFI: cfi,
           progressPercentage: progressValue,
           currentPage: calculatedPage,
+          totalPages: bookRef.current.locations.total || 0
         });
       }
-
-      // Removed debouncedSave call as per instruction to remove local persistence logic.
     }
-  };
+  }, [onLocationChange, onLocationUpdate]);
 
   // Track reading time and award XP (Robust Heartbeat)
   useEffect(() => {
@@ -227,8 +228,9 @@ export function EpubViewer({
           await rendition.display();
         }
 
-        // Generate locations
-        book.locations.generate(1000).then(() => {
+        // Generate locations - INCREASE precision for better page numbers
+        book.locations.generate(1600).then(() => {
+          console.log('[EpubViewer] Locations generated:', (book.locations as any).length || (book.locations as any).total);
           setIsReady(true);
           updateProgress();
         });
@@ -240,18 +242,21 @@ export function EpubViewer({
           const rect = range.getBoundingClientRect();
           const text = rendition.getRange(cfiRange).toString();
 
-          // Account for iframe offset in the viewport
-          const iframeRect = contents.window.frameElement.getBoundingClientRect();
+          // Account for iframe offset AND scroll position within the iframe
+          const iframe = contents.window.frameElement;
+          const iframeRect = iframe.getBoundingClientRect();
 
-          // Debugging log for visibility
-          console.log('[EpubViewer] Selection Rect:', rect, 'Iframe Rect:', iframeRect);
+          // Selection position in the main viewport
+          const x = iframeRect.left + rect.left + rect.width / 2;
+          const y = iframeRect.top + rect.top;
+
+          console.log('[EpubViewer] Selection:', { text: text.trim(), x, y, cfi: cfiRange });
 
           setSelection({
             text: text.trim(),
             cfi: cfiRange,
-            // Calculate absolute position in the main window
-            x: iframeRect.left + rect.left + rect.width / 2,
-            y: iframeRect.top + rect.top,
+            x: x,
+            y: y,
           });
 
           // Visual highlight (Temporary until save/cancel)
@@ -268,9 +273,6 @@ export function EpubViewer({
         // Ensure clicking outside clears selection
         rendition.on('click', () => {
           setSelection(null);
-          if (selection?.cfi) {
-            rendition.annotations.remove(selection.cfi, 'highlight');
-          }
         });
 
         // REACTIVE NAVIGATION: Watch for external jump requests

@@ -152,7 +152,10 @@ export function PDFViewer({
     setLoading(false);
 
     if (onLocationUpdate) {
-      onLocationUpdate({ totalPages: pdf.numPages });
+      onLocationUpdate({
+        totalPages: pdf.numPages,
+        currentPage: pageNumber || 1
+      });
     }
 
     // Extract TOC (Outline)

@@ -150,11 +150,12 @@ export function ReaderLayout({ children, title, bookId, userId, initialLocation:
 
       // 2. Page Number Match (PDF/TXT/EPUB Fallback)
       // For EPUB, we check if the bookmark's page matches our current page
+      // This is slightly more lenient but ensures the icon "ticks" when on the page
       if (currentLocation.currentPage && b.data.page === currentLocation.currentPage && currentLocation.currentPage > 0) return true;
 
-      // 3. Progress Percentage Match (TXT/Fallback) - with 0.5% tolerance
+      // 3. Progress Percentage Match (TXT/Fallback) - with 1.0% tolerance for better "ticking"
       if (currentLocation.progressPercentage && b.data.progress && !currentLocation.currentPage) {
-        return Math.abs(currentLocation.progressPercentage - b.data.progress) < 0.5;
+        return Math.abs(currentLocation.progressPercentage - b.data.progress) < 1.0;
       }
 
       return false;
@@ -287,14 +288,41 @@ export function ReaderLayout({ children, title, bookId, userId, initialLocation:
     };
   }, [currentLocation, isTabVisible, showSettings, addToHistory, history]);
 
-  const handleLocationUpdate = useCallback((data: LocationData) => {
+  const handleLocationUpdate = useCallback(async (data: LocationData) => {
     setCurrentLocation((prev) => ({ ...prev, ...data }));
-  }, []);
+
+    // Auto-save progress to DB (debounced/throttled via the stability timer logic elsewhere, 
+    // but we can also do a direct save here for absolute certainty on exit/nav)
+    try {
+      await supabase
+        .from('reading_progress')
+        .upsert({
+          user_id: userId,
+          book_id: bookId,
+          current_page: data.currentPage || 0,
+          epub_cfi: data.currentCFI || null,
+          progress_percentage: data.progressPercentage || 0,
+          last_read_at: new Date().toISOString()
+        }, { onConflict: 'user_id,book_id' });
+    } catch (e) {
+      console.error('[ReaderLayout] Direct progress save failed:', e);
+    }
+  }, [supabase, userId, bookId]);
 
   const handleNavigate = (location: any) => {
     // Navigation priority: CFI (pinpoint) > Page (rough)
-    const target = location.cfi || location.epub_cfi || location.page || location.page_number;
+    const target = location.cfi || location.epub_cfi || location.progress || location.progress_percentage || location.page || location.page_number || location;
+    if (!target) return;
+
+    console.log('[ReaderLayout] Navigating to:', target);
     setJumpLocation(target);
+
+    // If jump fails (viewer not ready), retry once after a short delay
+    setTimeout(() => {
+      setJumpLocation(null);
+      setTimeout(() => setJumpLocation(target), 50);
+    }, 100);
+
     loadBookmarks();
     loadQuotes();
   };
