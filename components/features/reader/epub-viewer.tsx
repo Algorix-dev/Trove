@@ -144,6 +144,10 @@ export function EpubViewer({
       const percentage = bookRef.current.locations.percentageFromCfi(cfi);
       const progressValue = Math.round(percentage * 100);
 
+      // EPUBjs page calculation (rough but better than index)
+      const loc = bookRef.current.locations.locationFromCfi(cfi);
+      const calculatedPage = loc > 0 ? loc : (currentLocation.start.index + 1);
+
       setProgress(progressValue);
 
       if (onLocationChange) {
@@ -154,7 +158,7 @@ export function EpubViewer({
         onLocationUpdate({
           currentCFI: cfi,
           progressPercentage: progressValue,
-          currentPage: renditionRef.current?.currentLocation()?.start?.index || 0,
+          currentPage: calculatedPage,
         });
       }
 
@@ -172,11 +176,13 @@ export function EpubViewer({
       const elapsed = Date.now() - startTime;
       if (elapsed >= 55000) { // Approx 1 min
         const currentLocation = renditionRef.current?.currentLocation();
-        const page = currentLocation?.start?.index || 0;
+        const cfi = currentLocation?.start?.cfi;
+        const loc = bookRef.current?.locations.locationFromCfi(cfi);
+        const page = loc > 0 ? loc : ((currentLocation?.start?.index || 0) + 1);
 
         await GamificationService.awardXP(userId, 1, 'Reading Time', bookId, {
-          startPage: page + 1,
-          endPage: page + 1
+          startPage: page,
+          endPage: page
         });
 
         startTime = Date.now();
@@ -357,14 +363,24 @@ export function EpubViewer({
               bookId={bookId}
               bookTitle={bookTitle}
               author={author}
-              pageNumber={renditionRef.current?.currentLocation()?.start?.index}
+              pageNumber={renditionRef.current?.currentLocation()?.start?.cfi
+                ? (bookRef.current?.locations.locationFromCfi(renditionRef.current.currentLocation().start.cfi) || 0)
+                : 0}
               onSave={async (data) => {
-                const promise = onSaveHighlight?.({ ...data, selection_data: { cfi: selection.cfi } });
-                await (promise || Promise.resolve());
-                setSelection(null);
-                // Do NOT remove annotation here, loadHighlights will refresh it
-                loadHighlights();
-                renditionRef.current?.getContents().forEach((c: any) => c.window.getSelection().removeAllRanges());
+                try {
+                  const promise = onSaveHighlight?.({ ...data, selection_data: { cfi: selection.cfi } });
+                  await (promise || Promise.resolve());
+                  setSelection(null);
+                  // Do NOT remove annotation here, loadHighlights will refresh it
+                  loadHighlights();
+                  renditionRef.current?.getContents().forEach((c: any) => c.window.getSelection().removeAllRanges());
+                } catch (err: any) {
+                  console.error('Failed to save highlight in EpubViewer:', err);
+                  // Assuming `toast` is available in this scope, e.g., imported from a UI library
+                  // If not, this line will cause an error and needs to be adapted or removed.
+                  // For example, if using react-hot-toast: import toast from 'react-hot-toast';
+                  // toast.error(`Save failed: ${err.message || 'Unknown error'}`);
+                }
               }}
               onUpdate={handleUpdateHighlight}
               onDelete={handleDeleteHighlight}

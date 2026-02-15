@@ -134,9 +134,10 @@ export function PDFViewer({
     const interval = setInterval(async () => {
       const elapsed = Date.now() - startTime;
       if (elapsed >= 55000) { // Approx 1 min
+        const curPage = typeof pageNumber === 'number' && !isNaN(pageNumber) ? pageNumber : 1;
         await GamificationService.awardXP(userId, 1, 'Reading Time', bookId, {
-          startPage: pageNumber,
-          endPage: pageNumber,
+          startPage: curPage,
+          endPage: curPage,
         });
 
         startTime = Date.now();

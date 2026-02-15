@@ -5,6 +5,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { HighlightMenu } from '@/components/features/reader/highlight-menu';
 import { GamificationService } from '@/lib/gamification';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 export interface TxtViewerProps {
@@ -149,9 +150,14 @@ export function TxtViewer({
     const target = e.currentTarget;
     const maxScroll = target.scrollHeight - target.clientHeight;
     const currentScroll = target.scrollTop;
-    const scrollPercent = maxScroll > 0 ? Math.round((currentScroll / maxScroll) * 100) : 0;
 
-    if (scrollPercent !== progress) {
+    // Ensure we don't divide by zero and handle NaN
+    let scrollPercent = 0;
+    if (maxScroll > 0) {
+      scrollPercent = Math.round((currentScroll / maxScroll) * 100);
+    }
+
+    if (!isNaN(scrollPercent) && scrollPercent !== progress) {
       setProgress(scrollPercent);
       if (onLocationUpdate) {
         onLocationUpdate({ progressPercentage: scrollPercent });
@@ -191,9 +197,14 @@ export function TxtViewer({
               readerTheme={readerTheme}
               onSave={async (data) => {
                 if (selection) {
-                  await onSaveHighlight({ ...data, progress_percentage: progress });
-                  setSelection(null);
-                  window.getSelection()?.removeAllRanges();
+                  try {
+                    await onSaveHighlight?.({ ...data, progress_percentage: progress });
+                    setSelection(null);
+                    window.getSelection()?.removeAllRanges();
+                  } catch (err: any) {
+                    console.error('Failed to save highlight in TxtViewer:', err);
+                    toast.error(`Save failed: ${err.message || 'Unknown error'}`);
+                  }
                 }
               }}
               onClose={() => {

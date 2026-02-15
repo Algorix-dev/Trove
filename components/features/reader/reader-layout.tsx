@@ -182,73 +182,67 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     // Only save if tab is active and we have meaningful data
     if (!isTabVisible || (!location.currentPage && !location.currentCFI && !location.progressPercentage)) return;
 
-    const label = location.currentPage ? `Page ${location.currentPage}` :
-      location.progressPercentage ? `${Math.round(location.progressPercentage)}% Progress` :
+    // Validate data to prevent NaN
+    const curPage = typeof location.currentPage === 'number' && !isNaN(location.currentPage) ? location.currentPage : 0;
+    const progress = typeof location.progressPercentage === 'number' && !isNaN(location.progressPercentage) ? location.progressPercentage : 0;
+
+    const label = curPage > 0 ? `Page ${curPage}` :
+      progress > 0 ? `${Math.round(progress)}% Progress` :
         'Recent Location';
 
     const newHistoryItem = {
       id: Date.now(),
       label,
-      data: { ...location },
+      data: { ...location, currentPage: curPage, progressPercentage: progress },
       timestamp: new Date().toISOString()
     };
 
-    // Calculate updated history BEFORE setting state to avoid race conditions with upsert
-    let updatedHistory: any[] = [];
+    // Use functional update to ensure we have the latest history
     setHistory(prev => {
       const existingIndex = prev.findIndex(h => h.label === label);
+      let updatedHistory: any[];
       if (existingIndex !== -1) {
         const existingItem = { ...prev[existingIndex], timestamp: newHistoryItem.timestamp };
         updatedHistory = [existingItem, ...prev.filter((_, i) => i !== existingIndex)].slice(0, 20);
       } else {
         updatedHistory = [newHistoryItem, ...prev].slice(0, 20);
       }
+
+      // PERSIST UPDATED HISTORY & PROGRESS TO DB
+      // We do this inside a separate function or after the tick, 
+      // but for simplicity and reliability here, we use the calculated value.
+      (async () => {
+        try {
+          await supabase
+            .from('reading_progress')
+            .upsert({
+              book_id: bookId,
+              user_id: userId,
+              last_pages: updatedHistory,
+              current_page: curPage,
+              epub_cfi: location.currentCFI,
+              progress_percentage: progress,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'book_id,user_id' });
+
+          // Mirror to books table for library view
+          await supabase
+            .from('books')
+            .update({
+              progress_percentage: progress,
+              current_page: curPage,
+              last_read_at: new Date().toISOString(),
+            })
+            .eq('id', bookId)
+            .eq('user_id', userId);
+        } catch (error) {
+          console.error('Failed to commit progress to database:', error);
+        }
+      })();
+
       return updatedHistory;
     });
-
-    // We must wait a tick or use a ref if we want to BE CERTAIN updatedHistory is set, 
-    // but in a functional update, it should be synchronous within this scope.
-    // However, to be absolutely safe, let's calculate it once and reuse.
-    const calculateNewHistory = (prev: any[]) => {
-      const existingIndex = prev.findIndex(h => h.label === label);
-      if (existingIndex !== -1) {
-        const existingItem = { ...prev[existingIndex], timestamp: newHistoryItem.timestamp };
-        return [existingItem, ...prev.filter((_, i) => i !== existingIndex)].slice(0, 20);
-      } else {
-        return [newHistoryItem, ...prev].slice(0, 20);
-      }
-    };
-
-    // PERSIST UPDATED HISTORY & PROGRESS TO DB
-    try {
-      const currentHistory = calculateNewHistory(history);
-
-      await supabase
-        .from('reading_progress')
-        .upsert({
-          book_id: bookId,
-          user_id: userId,
-          last_pages: currentHistory,
-          current_page: location.currentPage,
-          epub_cfi: location.currentCFI,
-          progress_percentage: location.progressPercentage,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'book_id,user_id' });
-
-      // Mirror to books table for library view
-      await supabase
-        .from('books')
-        .update({
-          progress_percentage: location.progressPercentage,
-          current_page: location.currentPage,
-          last_read_at: new Date().toISOString(),
-        })
-        .eq('id', bookId)
-        .eq('user_id', userId);
-    } catch (error) {
-      console.error('Failed to commit progress to database:', error);
-    }
-  }, [bookId, userId, supabase, isTabVisible, history]);
+  }, [bookId, userId, supabase, isTabVisible]);
 
   // STABILITY TIMER (5s)
   useEffect(() => {
@@ -286,10 +280,19 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
     try {
       setIsBookmarking(true);
 
+      // Validate location data to prevent NaN errors in Supabase
+      const pageNum = typeof currentLocation.currentPage === 'number' && !isNaN(currentLocation.currentPage)
+        ? currentLocation.currentPage
+        : 0;
+      const progressPercent = typeof currentLocation.progressPercentage === 'number' && !isNaN(currentLocation.progressPercentage)
+        ? currentLocation.progressPercentage
+        : 0;
+      const epubCfi = currentLocation.currentCFI || '';
+
       // 1. Check if we already have a bookmark for THIS specific location
       const existing = bookmarks.find(b => {
-        if (currentLocation.currentPage && b.data.page === currentLocation.currentPage) return true;
-        if (currentLocation.currentCFI && b.data.cfi === currentLocation.currentCFI) return true;
+        if (pageNum > 0 && b.data.page === pageNum) return true;
+        if (epubCfi && b.data.cfi === epubCfi) return true;
         return false;
       });
 
@@ -307,9 +310,9 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
         const { error } = await supabase.from('bookmarks').insert({
           book_id: bookId,
           user_id: userId,
-          page_number: currentLocation.currentPage || 0,
-          epub_cfi: currentLocation.currentCFI || '',
-          progress_percentage: currentLocation.progressPercentage || 0,
+          page_number: pageNum,
+          epub_cfi: epubCfi,
+          progress_percentage: progressPercent,
         });
 
         if (error) throw error;
@@ -318,9 +321,9 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
 
       loadBookmarks();
       setTimeout(() => setIsBookmarking(false), 800);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Bookmark operation failed:', error);
-      toast.error('Operation failed');
+      toast.error(`Operation failed: ${error.message || 'Unknown error'}`);
       setIsBookmarking(false);
     }
   };
@@ -343,25 +346,29 @@ export function ReaderLayout({ children, title, bookId, userId }: ReaderLayoutPr
 
   const handleSaveHighlight = async (data: any) => {
     try {
+      // Guards for valid numbers
+      const pageNum = typeof data.page_number === 'number' && !isNaN(data.page_number) ? data.page_number : (currentLocation.currentPage || 0);
+      const progressPercent = typeof data.progress_percentage === 'number' && !isNaN(data.progress_percentage) ? data.progress_percentage : (currentLocation.progressPercentage || 0);
+
       const { error } = await supabase.from('book_quotes').insert({
         user_id: userId,
         book_id: bookId,
         quote_text: data.quote_text || 'Annotated Note',
-        page_number: data.page_number || currentLocation.currentPage || 0,
+        page_number: pageNum,
         chapter: data.chapter || 'Current Chapter',
         note: data.note,
         color: data.color || '#fef08a',
         highlight_type: data.highlight_type || 'highlight',
         selection_data: data.selection_data || {},
-        progress_percentage: data.progress_percentage || currentLocation.progressPercentage || 0,
+        progress_percentage: progressPercent,
       });
 
       if (error) throw error;
-      toast.success('Highlight saved!');
+      toast.success(data.highlight_type === 'quote' ? 'Quote saved!' : 'Highlight saved!');
       loadQuotes();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Save highlight error:', error);
-      toast.error('Failed to save highlight');
+      toast.error(`Failed to save: ${error.message || 'Unknown error'}`);
     }
   };
 
