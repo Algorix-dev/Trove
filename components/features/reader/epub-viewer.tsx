@@ -134,14 +134,6 @@ export function EpubViewer({
     loadHighlights();
   };
 
-  // REACTIVE NAVIGATION: Handle jumps from history/bookmarks
-  useEffect(() => {
-    if (isReady && renditionRef.current && initialLocation) {
-      renditionRef.current.display(initialLocation.toString()).then(() => {
-        updateProgress();
-      });
-    }
-  }, [initialLocation, isReady]);
 
   const updateProgress = useCallback(() => {
     if (!bookRef.current || !renditionRef.current) return;
@@ -230,9 +222,8 @@ export function EpubViewer({
 
         // Generate locations - INCREASE precision for better page numbers
         book.locations.generate(1600).then(() => {
-          console.log('[EpubViewer] Locations generated:', (book.locations as any).length || (book.locations as any).total);
+          console.log('[EpubViewer] Locations generated');
           setIsReady(true);
-          updateProgress();
         });
 
         // Set up events
@@ -322,10 +313,12 @@ export function EpubViewer({
       // Check if we are already at this location to prevent loops
       const currentLocation = renditionRef.current.currentLocation();
       if (currentLocation?.start?.cfi !== initialLocation) {
-        renditionRef.current.display(initialLocation.toString());
+        renditionRef.current.display(initialLocation.toString()).then(() => {
+          updateProgress();
+        });
       }
     }
-  }, [isReady, initialLocation]);
+  }, [isReady, initialLocation, updateProgress]);
 
   // Reactive Theme & Font Size
   useEffect(() => {

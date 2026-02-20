@@ -73,7 +73,9 @@ export function ReaderLayout({ children, title, bookId, userId, initialLocation:
 
   const loadInitialProgress = useCallback(async () => {
     // Check if we are already navigating somewhere from a URL bookmark
-    const hasInitialNav = jumpLocation?.page || jumpLocation?.cfi || jumpLocation?.progress;
+    const hasInitialNav = jumpLocation?.page || jumpLocation?.cfi || jumpLocation?.progress ||
+      (typeof jumpLocation === 'number' && jumpLocation > 0) ||
+      (typeof jumpLocation === 'string' && jumpLocation.length > 5);
 
     const { data } = await supabase
       .from('reading_progress')
@@ -91,10 +93,19 @@ export function ReaderLayout({ children, title, bookId, userId, initialLocation:
         progress: data.progress_percentage
       };
 
-      // AUTO-RESUME: If no initial URL navigation, jump to last saved position silently
+      // "START FROM BEGINNING" LOGIC
+      // If no initial URL navigation, we start at 0 but offer to resume
       if (!hasInitialNav && (savedPos.page || savedPos.cfi || savedPos.progress)) {
-        setJumpLocation(savedPos.cfi || savedPos.progress || savedPos.page);
-        console.log('[ReaderLayout] Auto-resuming to last position:', savedPos);
+        toast('Resume Reading?', {
+          description: `You were at ${savedPos.page ? 'page ' + savedPos.page : Math.round((savedPos.progress || 0) * 100) + '%'} last time.`,
+          action: {
+            label: 'Jump to Page',
+            onClick: () => {
+              setJumpLocation(savedPos.cfi || savedPos.progress || savedPos.page);
+            }
+          },
+          duration: 10000,
+        });
       }
     }
   }, [supabase, bookId, userId, jumpLocation]);
@@ -149,13 +160,11 @@ export function ReaderLayout({ children, title, bookId, userId, initialLocation:
       if (currentLocation.currentCFI && b.data.cfi === currentLocation.currentCFI) return true;
 
       // 2. Page Number Match (PDF/TXT/EPUB Fallback)
-      // For EPUB, we check if the bookmark's page matches our current page
-      // This is slightly more lenient but ensures the icon "ticks" when on the page
       if (currentLocation.currentPage && b.data.page === currentLocation.currentPage && currentLocation.currentPage > 0) return true;
 
-      // 3. Progress Percentage Match (TXT/Fallback) - with 1.0% tolerance for better "ticking"
+      // 3. Progress Percentage Match (TXT/Fallback)
       if (currentLocation.progressPercentage && b.data.progress && !currentLocation.currentPage) {
-        return Math.abs(currentLocation.progressPercentage - b.data.progress) < 1.0;
+        return Math.abs(currentLocation.progressPercentage - b.data.progress) < 0.5;
       }
 
       return false;
@@ -311,23 +320,24 @@ export function ReaderLayout({ children, title, bookId, userId, initialLocation:
 
   const handleNavigate = (location: any) => {
     // Navigation priority: CFI (pinpoint) > Page (rough)
-    const target = location.cfi || location.epub_cfi || location.progress || location.progress_percentage || location.page || location.page_number || location;
-    if (!target) return;
+    const target = location?.cfi || location?.epub_cfi || location?.progress || location?.progress_percentage || location?.page || location?.page_number || location;
+    if (target === undefined || target === null) return;
 
     console.log('[ReaderLayout] Navigating to:', target);
     setJumpLocation(target);
 
-    // If jump fails (viewer not ready), retry once after a short delay
+    // Reset jump location after a short delay to allow re-triggering the same location
     setTimeout(() => {
       setJumpLocation(null);
-      setTimeout(() => setJumpLocation(target), 50);
-    }, 100);
+    }, 500);
 
     loadBookmarks();
     loadQuotes();
   };
 
   const handleBookmark = async () => {
+    if (isBookmarking) return;
+
     try {
       setIsBookmarking(true);
 
@@ -341,6 +351,7 @@ export function ReaderLayout({ children, title, bookId, userId, initialLocation:
       const epubCfi = currentLocation.currentCFI || '';
 
       // 1. Check if we already have a bookmark for THIS specific location
+      // Using bookmarks list from state which is kept in sync
       const existing = bookmarks.find(b => {
         if (epubCfi && b.data.cfi === epubCfi) return true;
         if (pageNum > 0 && b.data.page === pageNum) return true;
@@ -373,12 +384,12 @@ export function ReaderLayout({ children, title, bookId, userId, initialLocation:
         toast.success('Bookmark saved');
       }
 
-      loadBookmarks();
-      setTimeout(() => setIsBookmarking(false), 800);
+      await loadBookmarks();
     } catch (error: any) {
       console.error('Bookmark operation failed:', error);
       toast.error(`Operation failed: ${error.message || 'Unknown error'}`);
-      setIsBookmarking(false);
+    } finally {
+      setTimeout(() => setIsBookmarking(false), 500);
     }
   };
 
@@ -546,8 +557,8 @@ export function ReaderLayout({ children, title, bookId, userId, initialLocation:
               onLocationUpdate: handleLocationUpdate,
               onSaveHighlight: handleSaveHighlight,
               bookTitle: title,
-              initialPage: jumpLocation?.page || jumpLocation?.page_number || childElement.props.initialPage,
-              initialLocation: jumpLocation?.cfi || jumpLocation?.progress || jumpLocation?.progress_percentage || childElement.props.initialLocation,
+              initialPage: jumpLocation && (typeof jumpLocation === 'number' || !isNaN(parseInt(jumpLocation))) ? parseInt(jumpLocation) : (jumpLocation?.page || jumpLocation?.page_number || childElement.props.initialPage),
+              initialLocation: jumpLocation && (typeof jumpLocation === 'string' && jumpLocation.length > 5) ? jumpLocation : (jumpLocation?.cfi || jumpLocation?.progress || jumpLocation?.progress_percentage || childElement.props.initialLocation),
             });
           }
           return child;

@@ -63,6 +63,18 @@ export function TxtViewer({
     fetchContent();
   }, [url, bookId, userId]);
 
+  // Handle external progress jumps
+  useEffect(() => {
+    if (initialLocation !== undefined && !loading) {
+      const scrollArea = document.querySelector('.txt-viewer-scroll > div:first-child') as HTMLElement;
+      if (scrollArea) {
+        const maxScroll = scrollArea.scrollHeight - scrollArea.clientHeight;
+        scrollArea.scrollTop = (initialLocation / 100) * maxScroll;
+        setProgress(initialLocation);
+      }
+    }
+  }, [initialLocation, loading]);
+
   const loadInitialProgress = async () => {
     const supabase = createBrowserClient(
       process.env['NEXT_PUBLIC_SUPABASE_URL']!,
@@ -174,7 +186,7 @@ export function TxtViewer({
   return (
     <div className={cn("flex flex-col h-full transition-colors duration-300", currentStyles.background)}>
       <ScrollArea
-        className="flex-1 px-8 py-10"
+        className="flex-1 px-8 py-10 txt-viewer-scroll"
         onScrollCapture={handleScroll}
       >
         <div
