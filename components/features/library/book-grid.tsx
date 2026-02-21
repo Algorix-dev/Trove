@@ -10,7 +10,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { DeleteConfirmDialog } from '@/components/features/delete-confirm-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import {
