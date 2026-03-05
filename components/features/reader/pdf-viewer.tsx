@@ -76,7 +76,7 @@ export function PDFViewer({
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (data?.current_page) {
+      if (data?.current_page && data.current_page > 0) {
         setPageNumber(data.current_page);
       }
     };
@@ -97,6 +97,8 @@ export function PDFViewer({
 
   // Save progress when page changes (DEBOUNCED)
   useEffect(() => {
+    // numPages > 0 ensures the document is loaded
+    // pageNumber > 1 or some check to prevent initial "Page 1" report if we loaded a higher page
     if (pageNumber > 0 && numPages > 0) {
       const progressPercentage = Math.round((pageNumber / numPages) * 100);
 
@@ -134,13 +136,14 @@ export function PDFViewer({
     const interval = setInterval(async () => {
       const elapsed = Date.now() - startTime;
       if (elapsed >= 55000) { // Approx 1 min
-        const curPage = typeof pageNumber === 'number' && !isNaN(pageNumber) ? pageNumber : 1;
-        await GamificationService.awardXP(userId, 1, 'Reading Time', bookId, {
-          startPage: curPage,
-          endPage: curPage,
-        });
-
-        startTime = Date.now();
+        // Only award if we have a valid page and the document is stable
+        if (pageNumber > 0 && !loading) {
+          await GamificationService.awardXP(userId, 1, 'Reading Time', bookId, {
+            startPage: pageNumber,
+            endPage: pageNumber,
+          });
+          startTime = Date.now();
+        }
       }
     }, 30000); // Check every 30s
 

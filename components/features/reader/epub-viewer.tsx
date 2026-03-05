@@ -136,7 +136,7 @@ export function EpubViewer({
 
 
   const updateProgress = useCallback(() => {
-    if (!bookRef.current || !renditionRef.current) return;
+    if (!bookRef.current || !renditionRef.current || !isReady) return;
 
     const currentLocation = renditionRef.current.currentLocation();
     if (currentLocation && currentLocation.start) {
@@ -151,22 +151,28 @@ export function EpubViewer({
       const loc = bookRef.current.locations.locationFromCfi(cfi);
       const calculatedPage = loc > 0 ? loc : (currentLocation.start.index + 1);
 
-      setProgress(progressValue);
+      // GUARD: Only report if it's a "real" page (loc > 0) OR if we are deep into the book
+      // to avoid initial Page 1/14 sticking if generation is slow.
+      const isMeaningfulPage = loc > 0 || currentLocation.start.index > 0;
 
-      if (onLocationChange) {
-        onLocationChange(cfi, progressValue);
-      }
+      if (isMeaningfulPage) {
+        setProgress(progressValue);
 
-      if (onLocationUpdate) {
-        onLocationUpdate({
-          currentCFI: cfi,
-          progressPercentage: progressValue,
-          currentPage: calculatedPage,
-          totalPages: bookRef.current.locations.total || 0
-        });
+        if (onLocationChange) {
+          onLocationChange(cfi, progressValue);
+        }
+
+        if (onLocationUpdate) {
+          onLocationUpdate({
+            currentCFI: cfi,
+            progressPercentage: progressValue,
+            currentPage: calculatedPage,
+            totalPages: bookRef.current.locations.total || 0
+          });
+        }
       }
     }
-  }, [onLocationChange, onLocationUpdate]);
+  }, [onLocationChange, onLocationUpdate, isReady]);
 
   // Track reading time and award XP (Robust Heartbeat)
   useEffect(() => {
@@ -179,15 +185,19 @@ export function EpubViewer({
       if (elapsed >= 55000) { // Approx 1 min
         const currentLocation = renditionRef.current?.currentLocation();
         const cfi = currentLocation?.start?.cfi;
+        if (!cfi) return;
+
         const loc = bookRef.current?.locations.locationFromCfi(cfi);
         const page = loc > 0 ? loc : ((currentLocation?.start?.index || 0) + 1);
 
-        await GamificationService.awardXP(userId, 1, 'Reading Time', bookId, {
-          startPage: page,
-          endPage: page
-        });
-
-        startTime = Date.now();
+        // Only award if we have a valid page (not stuck at beginning incorrectly)
+        if (page > 0) {
+          await GamificationService.awardXP(userId, 1, 'Reading Time', bookId, {
+            startPage: page,
+            endPage: page
+          });
+          startTime = Date.now();
+        }
       }
     }, 30000); // Check every 30s
 
@@ -312,8 +322,17 @@ export function EpubViewer({
     if (isReady && renditionRef.current && initialLocation) {
       // Check if we are already at this location to prevent loops
       const currentLocation = renditionRef.current.currentLocation();
-      if (currentLocation?.start?.cfi !== initialLocation) {
-        renditionRef.current.display(initialLocation.toString()).then(() => {
+      const locString = initialLocation.toString();
+
+      if (currentLocation?.start?.cfi !== locString) {
+        // If it's a number and we have locations, try to get CFI
+        let target = locString;
+        if (!isNaN(parseInt(locString)) && !locString.startsWith('epubcfi') && bookRef.current?.locations?.total > 0) {
+          const cfi = bookRef.current.locations.cfiFromLocation(parseInt(locString));
+          if (cfi) target = cfi;
+        }
+
+        renditionRef.current.display(target).then(() => {
           updateProgress();
         });
       }

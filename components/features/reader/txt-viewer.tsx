@@ -65,7 +65,7 @@ export function TxtViewer({
 
   // Handle external progress jumps
   useEffect(() => {
-    if (initialLocation !== undefined && !loading) {
+    if (initialLocation !== undefined && !loading && initialLocation > 0) {
       const scrollArea = document.querySelector('.txt-viewer-scroll > div:first-child') as HTMLElement;
       if (scrollArea) {
         const maxScroll = scrollArea.scrollHeight - scrollArea.clientHeight;
@@ -169,7 +169,7 @@ export function TxtViewer({
       scrollPercent = Math.round((currentScroll / maxScroll) * 100);
     }
 
-    if (!isNaN(scrollPercent) && scrollPercent !== progress) {
+    if (!isNaN(scrollPercent) && scrollPercent !== progress && !loading) {
       setProgress(scrollPercent);
       if (onLocationUpdate) {
         onLocationUpdate({ progressPercentage: scrollPercent });

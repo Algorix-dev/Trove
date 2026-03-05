@@ -114,68 +114,60 @@ export function DashboardReminders() {
     if (!latestBookmark && !latestHighlight) return null;
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between px-2">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">
-                    Pick up where you left off
-                </h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {latestBookmark && (
-                    <Link href={latestBookmark.url} className="group h-full">
-                        <Card className="h-full border-none shadow-xl bg-card/40 backdrop-blur-xl rounded-[2.5rem] overflow-hidden hover:bg-card/60 transition-all duration-500 group-hover:-translate-y-1">
-                            <CardContent className="p-7">
-                                <div className="flex gap-5 items-start">
-                                    <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                                        <Bookmark className="h-5 w-5 text-primary fill-primary/20" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Last Bookmark</span>
-                                            <span className="text-[10px] text-muted-foreground">• {latestBookmark.location}</span>
-                                        </div>
-                                        <h4 className="font-extrabold text-base truncate mb-2">{cleanBookTitle(latestBookmark.title)}</h4>
-                                        <p className="text-[13px] text-muted-foreground line-clamp-2 leading-relaxed italic">
-                                            "{latestBookmark.content}"
-                                        </p>
-                                    </div>
-                                    <div className="self-center">
-                                        <ArrowRight className="h-5 w-5 text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                                    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {latestBookmark && (
+                <Link href={latestBookmark.url} className="group h-full">
+                    <Card className="h-full border-none shadow-xl bg-card/40 backdrop-blur-xl rounded-[2.5rem] overflow-hidden hover:bg-card/60 transition-all duration-500 group-hover:-translate-y-1">
+                        <CardContent className="p-7">
+                            <div className="flex gap-5 items-start">
+                                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                                    <Bookmark className="h-5 w-5 text-primary fill-primary/20" />
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </Link>
-                )}
-
-                {latestHighlight && (
-                    <Link href={latestHighlight.url} className="group h-full">
-                        <Card className="h-full border-none shadow-xl bg-card/40 backdrop-blur-xl rounded-[2.5rem] overflow-hidden hover:bg-card/60 transition-all duration-500 group-hover:-translate-y-1">
-                            <CardContent className="p-7">
-                                <div className="flex gap-5 items-start">
-                                    <div className="h-12 w-12 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0 group-hover:bg-amber-500/20 transition-colors">
-                                        <Sparkles className="h-5 w-5 text-amber-500 fill-amber-500/10" />
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Last Bookmark</span>
+                                        <span className="text-[10px] text-muted-foreground">• {latestBookmark.location}</span>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Last Insight</span>
-                                            <span className="text-[10px] text-muted-foreground">• {latestHighlight.location}</span>
-                                        </div>
-                                        <h4 className="font-extrabold text-base truncate mb-2">{cleanBookTitle(latestHighlight.title)}</h4>
-                                        <p className="text-[13px] text-muted-foreground line-clamp-2 leading-relaxed font-serif">
-                                            "{latestHighlight.content}"
-                                        </p>
-                                    </div>
-                                    <div className="self-center">
-                                        <ArrowRight className="h-5 w-5 text-amber-500 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                                    </div>
+                                    <h4 className="font-extrabold text-base truncate mb-2">{cleanBookTitle(latestBookmark.title)}</h4>
+                                    <p className="text-[13px] text-muted-foreground line-clamp-2 leading-relaxed italic">
+                                        "{latestBookmark.content}"
+                                    </p>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </Link>
-                )}
-            </div>
+                                <div className="self-center">
+                                    <ArrowRight className="h-5 w-5 text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </Link>
+            )}
+
+            {latestHighlight && (
+                <Link href={latestHighlight.url} className="group h-full">
+                    <Card className="h-full border-none shadow-xl bg-card/40 backdrop-blur-xl rounded-[2.5rem] overflow-hidden hover:bg-card/60 transition-all duration-500 group-hover:-translate-y-1">
+                        <CardContent className="p-7">
+                            <div className="flex gap-5 items-start">
+                                <div className="h-12 w-12 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0 group-hover:bg-amber-500/20 transition-colors">
+                                    <Sparkles className="h-5 w-5 text-amber-500 fill-amber-500/10" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Last Insight</span>
+                                        <span className="text-[10px] text-muted-foreground">• {latestHighlight.location}</span>
+                                    </div>
+                                    <h4 className="font-extrabold text-base truncate mb-2">{cleanBookTitle(latestHighlight.title)}</h4>
+                                    <p className="text-[13px] text-muted-foreground line-clamp-2 leading-relaxed font-serif">
+                                        "{latestHighlight.content}"
+                                    </p>
+                                </div>
+                                <div className="self-center">
+                                    <ArrowRight className="h-5 w-5 text-amber-500 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </Link>
+            )}
         </div>
     );
 }

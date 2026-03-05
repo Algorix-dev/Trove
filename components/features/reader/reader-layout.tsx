@@ -298,24 +298,30 @@ export function ReaderLayout({ children, title, bookId, userId, initialLocation:
   }, [currentLocation, isTabVisible, showSettings, addToHistory, history]);
 
   const handleLocationUpdate = useCallback(async (data: LocationData) => {
-    setCurrentLocation((prev) => ({ ...prev, ...data }));
+    // Merge with current location data to prevent zeroing out existing fields
+    setCurrentLocation((prev) => {
+      const updated = { ...prev, ...data };
 
-    // Auto-save progress to DB (debounced/throttled via the stability timer logic elsewhere, 
-    // but we can also do a direct save here for absolute certainty on exit/nav)
-    try {
-      await supabase
-        .from('reading_progress')
-        .upsert({
-          user_id: userId,
-          book_id: bookId,
-          current_page: data.currentPage || 0,
-          epub_cfi: data.currentCFI || null,
-          progress_percentage: data.progressPercentage || 0,
-          last_read_at: new Date().toISOString()
-        }, { onConflict: 'user_id,book_id' });
-    } catch (e) {
-      console.error('[ReaderLayout] Direct progress save failed:', e);
-    }
+      // Silently sync to DB for immediate persistence
+      (async () => {
+        try {
+          await supabase
+            .from('reading_progress')
+            .upsert({
+              user_id: userId,
+              book_id: bookId,
+              current_page: updated.currentPage || prev.currentPage || 0,
+              epub_cfi: updated.currentCFI || prev.currentCFI || null,
+              progress_percentage: updated.progressPercentage || prev.progressPercentage || 0,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id,book_id' });
+        } catch (e) {
+          console.error('[ReaderLayout] Direct progress save failed:', e);
+        }
+      })();
+
+      return updated;
+    });
   }, [supabase, userId, bookId]);
 
   const handleNavigate = (location: any) => {
@@ -552,13 +558,27 @@ export function ReaderLayout({ children, title, bookId, userId, initialLocation:
         {React.Children.map(children, (child) => {
           if (React.isValidElement(child)) {
             const childElement = child as ReactElement<any>;
+
+            // Extract jump info safely
+            const jumpPage = jumpLocation && (typeof jumpLocation === 'number' || !isNaN(parseInt(jumpLocation)))
+              ? parseInt(jumpLocation)
+              : (jumpLocation?.page || jumpLocation?.page_number);
+
+            const jumpCfi = jumpLocation && typeof jumpLocation === 'string' && jumpLocation.length > 5
+              ? jumpLocation
+              : jumpLocation?.cfi;
+
+            const jumpProgress = (jumpLocation && typeof jumpLocation === 'number' && jumpLocation < 100)
+              ? jumpLocation
+              : (jumpLocation?.progress || jumpLocation?.progress_percentage);
+
             return React.cloneElement(childElement, {
               readerTheme,
               onLocationUpdate: handleLocationUpdate,
               onSaveHighlight: handleSaveHighlight,
               bookTitle: title,
-              initialPage: jumpLocation && (typeof jumpLocation === 'number' || !isNaN(parseInt(jumpLocation))) ? parseInt(jumpLocation) : (jumpLocation?.page || jumpLocation?.page_number || childElement.props.initialPage),
-              initialLocation: jumpLocation && (typeof jumpLocation === 'string' && jumpLocation.length > 5) ? jumpLocation : (jumpLocation?.cfi || jumpLocation?.progress || jumpLocation?.progress_percentage || childElement.props.initialLocation),
+              initialPage: jumpPage || childElement.props.initialPage,
+              initialLocation: jumpCfi || jumpProgress || jumpPage || childElement.props.initialLocation,
             });
           }
           return child;

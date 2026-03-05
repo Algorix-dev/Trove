@@ -165,17 +165,20 @@ export default async function DashboardPage() {
       <DailyGoalCelebration />
       <LevelUpCelebration />
 
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-1 md:col-span-2 lg:col-span-3 space-y-8">
-          <div className="bg-card/30 backdrop-blur-md p-6 rounded-[2rem] border border-border/50 shadow-lg">
-            <ContinueReading />
+      <div className="grid gap-8 lg:grid-cols-7">
+        <div className="col-span-1 lg:col-span-4 space-y-8">
+          <ContinueReading />
+          <div className="bg-card/30 backdrop-blur-md p-8 rounded-[2.5rem] border border-border/50 shadow-xl">
+            <DashboardReminders />
           </div>
+        </div>
+        <div className="col-span-1 lg:col-span-3 space-y-8">
           <div className="bg-card/30 backdrop-blur-md p-6 rounded-[2rem] border border-border/50 shadow-lg">
             <QuickActions />
           </div>
-        </div>
-        <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-card/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-border/50 shadow-xl">
-          <DashboardCharts />
+          <div className="bg-card/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-border/50 shadow-xl min-h-[400px]">
+            <DashboardCharts />
+          </div>
         </div>
       </div>
     </div>
