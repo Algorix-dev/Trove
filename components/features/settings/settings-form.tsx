@@ -55,8 +55,8 @@ export function SettingsForm() {
   const loadProfile = async (userId: string) => {
     try {
       const [profileRes, preferencesRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', userId).single(),
-        supabase.from('user_preferences').select('*').eq('user_id', userId).single(),
+        supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+        supabase.from('user_preferences').select('*').eq('user_id', userId).maybeSingle(),
       ]);
 
       if (profileRes.data) {

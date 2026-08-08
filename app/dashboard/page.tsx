@@ -80,7 +80,7 @@ export default async function DashboardPage() {
       'full_name, username, nickname, onboarding_completed, tutorial_completed, total_xp, current_level'
     )
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   // Redirect to onboarding if not completed
   if (!profile?.onboarding_completed) {

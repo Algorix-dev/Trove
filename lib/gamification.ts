@@ -14,7 +14,7 @@ export const GamificationService = {
         .from('profiles')
         .select('total_xp, current_level, current_streak, highest_streak, last_read_date')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
 
@@ -114,29 +114,29 @@ export const GamificationService = {
     );
 
     try {
-      // 1. Get achievement ID
+      // 1. Get achievement details using code column as id doesn't exist
       const { data: achievement } = await supabase
         .from('achievements')
-        .select('id, name, xp_reward')
+        .select('code, name, xp_reward')
         .eq('code', achievementCode)
-        .single();
+        .maybeSingle();
 
       if (!achievement) return;
 
-      // 2. Check if already unlocked
+      // 2. Check if already unlocked (using maybeSingle to prevent 406 error on empty result)
       const { data: existing } = await supabase
         .from('user_achievements')
         .select('id')
         .eq('user_id', userId)
-        .eq('achievement_id', achievement.id)
-        .single();
+        .eq('achievement_id', achievement.code)
+        .maybeSingle();
 
       if (existing) return; // Already unlocked
 
       // 3. Unlock
       const { error: matchError } = await supabase
         .from('user_achievements')
-        .insert({ user_id: userId, achievement_id: achievement.id });
+        .insert({ user_id: userId, achievement_id: achievement.code });
 
       if (matchError) {
         // likely unique constraint race condition

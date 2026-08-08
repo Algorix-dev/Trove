@@ -30,7 +30,7 @@ export function DailyGoalCelebration() {
         .from('user_preferences')
         .select('reading_goal_minutes')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!preferences) return;
 

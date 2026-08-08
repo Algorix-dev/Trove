@@ -99,6 +99,7 @@ CREATE TABLE public.books (
   -- Metadata
   genres TEXT[],
   description TEXT,
+  summary TEXT,
   published_year INTEGER,
   
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
@@ -109,9 +110,11 @@ CREATE TABLE public.reading_progress (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
   book_id UUID REFERENCES public.books(id) ON DELETE CASCADE NOT NULL,
-  progress_percentage INTEGER DEFAULT 0,
   current_page INTEGER DEFAULT 0,
-  last_read_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  epub_cfi TEXT,
+  progress_percentage INTEGER DEFAULT 0,
+  last_pages JSONB DEFAULT '[]'::jsonb,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   UNIQUE(user_id, book_id)
 );
 
@@ -124,23 +127,79 @@ CREATE TABLE public.notes (
   user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
   book_id UUID REFERENCES public.books(id) ON DELETE CASCADE, -- Can be null for general notes
   content TEXT NOT NULL,
-  color TEXT DEFAULT 'yellow', -- For highlighting
+  highlight_text TEXT,
+  page_number INTEGER,
+  color TEXT DEFAULT '#fef08a', -- For highlighting
   location_data JSONB, -- Coordinates or CFI range
   is_public BOOLEAN DEFAULT FALSE, -- For sharing in community
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+CREATE TABLE public.bookmarks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  book_id UUID REFERENCES public.books(id) ON DELETE CASCADE NOT NULL,
+  page_number INTEGER,
+  epub_cfi TEXT,
+  progress_percentage INTEGER,
+  note TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.bookmarks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own bookmarks" ON public.bookmarks FOR ALL USING (auth.uid() = user_id);
+
+CREATE TABLE public.book_quotes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  book_id UUID REFERENCES public.books(id) ON DELETE CASCADE NOT NULL,
+  quote_text TEXT NOT NULL,
+  page_number INTEGER,
+  chapter TEXT,
+  note TEXT,
+  color TEXT DEFAULT '#fef08a',
+  highlight_type TEXT DEFAULT 'highlight', -- 'highlight', 'quote', 'note'
+  selection_data JSONB,
+  progress_percentage INTEGER,
+  is_favorite BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.book_quotes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own quotes" ON public.book_quotes FOR ALL USING (auth.uid() = user_id);
+
+
 CREATE TABLE public.reading_sessions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  book_id UUID REFERENCES public.books(id) ON DELETE CASCADE,
-  start_time TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  end_time TIMESTAMP WITH TIME ZONE,
-  duration_minutes INTEGER DEFAULT 0,
-  session_date DATE DEFAULT CURRENT_DATE, -- For easy streak calculation
-  pages_read INTEGER DEFAULT 0
+  book_id UUID REFERENCES public.books(id) ON DELETE CASCADE NOT NULL,
+  duration_minutes INTEGER DEFAULT 1,
+  start_page INTEGER,
+  end_page INTEGER,
+  session_date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(user_id, book_id, session_date)
 );
+
+ALTER TABLE public.reading_sessions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own reading sessions" ON public.reading_sessions FOR ALL USING (auth.uid() = user_id);
+
+CREATE TABLE public.reading_goals (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  year INTEGER NOT NULL,
+  target_books INTEGER DEFAULT 12,
+  books_completed INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(user_id, year)
+);
+
+ALTER TABLE public.reading_goals ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own goals" ON public.reading_goals FOR ALL USING (auth.uid() = user_id);
+
 
 -- ==============================================================================
 -- 5. GAMIFICATION (Levels, Achievements, XP)
@@ -185,10 +244,12 @@ INSERT INTO public.achievements (code, name, description, xp_reward, icon_name, 
 ('MARATHON_30', 'Marathon Reader', 'Maintain a 30-day streak', 500, 'trophy', 'streak', 30);
 
 CREATE TABLE public.user_achievements (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  achievement_code TEXT REFERENCES public.achievements(code) ON DELETE CASCADE NOT NULL,
+  achievement_id TEXT REFERENCES public.achievements(code) ON DELETE CASCADE NOT NULL,
   unlocked_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  PRIMARY KEY (user_id, achievement_code)
+  notified BOOLEAN DEFAULT FALSE,
+  UNIQUE(user_id, achievement_id)
 );
 
 CREATE TABLE public.xp_history (

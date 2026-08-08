@@ -15,7 +15,7 @@ export default async function ProfilePage() {
   }
 
   // Fetch profile data
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
 
   // Fetch books read count
   const { count: booksRead } = await supabase

@@ -25,7 +25,7 @@ function ConfirmEmailContent() {
       const token_hash = searchParams.get('token_hash');
       const type = searchParams.get('type');
 
-      if (!token_hash || type !== 'email') {
+      if (!token_hash || (type !== 'email' && type !== 'signup')) {
         setStatus('error');
         setMessage('Invalid confirmation link. Please try signing up again.');
         return;
@@ -34,7 +34,7 @@ function ConfirmEmailContent() {
       try {
         const { error } = await supabase.auth.verifyOtp({
           token_hash,
-          type: 'email',
+          type: type as 'email' | 'signup',
         });
 
         if (error) throw error;

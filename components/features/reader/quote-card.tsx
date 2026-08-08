@@ -9,6 +9,8 @@ import { Card } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
+    DialogTitle,
+    DialogDescription,
 } from '@/components/ui/dialog';
 
 interface QuoteCardProps {
@@ -65,6 +67,8 @@ export function QuoteCard({ quote, bookTitle, author, isOpen, onClose }: QuoteCa
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-[var(--reader-bg-secondary)] border-[var(--reader-border)]">
+                <DialogTitle className="sr-only">Quote Card</DialogTitle>
+                <DialogDescription className="sr-only">View and customize this book quote card.</DialogDescription>
                 <div className="flex flex-col gap-6 p-6">
                     <Card
                         ref={cardRef}

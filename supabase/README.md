@@ -8,7 +8,7 @@ This directory contains the SQL script for setting up your Trove database.
 
 1. **Go to your Supabase Dashboard** → SQL Editor
 2. **Click "New Query"**
-3. **Open `setup_database.sql`** in this directory
+3. **Open `master_setup.sql`** in this directory
 4. **Copy the entire contents**
 5. **Paste into Supabase SQL Editor**
 6. **Click "Run"** (or press Ctrl+Enter)

@@ -62,7 +62,7 @@ export default async function ReaderPage({
     redirect('/login');
   }
 
-  const { data: book } = await supabase.from('books').select('*').eq('id', id).single();
+  const { data: book } = await supabase.from('books').select('*').eq('id', id).maybeSingle();
 
   if (!book) {
     return (

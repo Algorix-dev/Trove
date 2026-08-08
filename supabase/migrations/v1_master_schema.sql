@@ -21,15 +21,28 @@ CREATE TABLE IF NOT EXISTS public.reading_progress (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
     book_id UUID REFERENCES public.books(id) ON DELETE CASCADE NOT NULL,
-    current_page INTEGER DEFAULT 0,
-    epub_cfi TEXT,
-    progress_percentage INTEGER DEFAULT 0,
-    last_pages JSONB DEFAULT '[]'::jsonb,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     UNIQUE(user_id, book_id)
 );
+ALTER TABLE public.reading_progress ADD COLUMN IF NOT EXISTS current_page INTEGER DEFAULT 0;
+ALTER TABLE public.reading_progress ADD COLUMN IF NOT EXISTS epub_cfi TEXT;
+ALTER TABLE public.reading_progress ADD COLUMN IF NOT EXISTS progress_percentage INTEGER DEFAULT 0;
+ALTER TABLE public.reading_progress ADD COLUMN IF NOT EXISTS last_pages JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.reading_progress ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL;
+
+-- If last_read_at existed and updated_at is brand new, copy values
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'reading_progress' AND column_name = 'last_read_at'
+    ) THEN
+        UPDATE public.reading_progress SET updated_at = last_read_at WHERE updated_at IS NULL;
+    END IF;
+END $$;
+
 ALTER TABLE public.reading_progress ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can manage own reading progress" ON public.reading_progress;
+DROP POLICY IF EXISTS "Users can manage own progress" ON public.reading_progress;
 CREATE POLICY "Users can manage own reading progress" ON public.reading_progress FOR ALL USING (auth.uid() = user_id);
 
 -- 3. BOOKMARKS
@@ -72,13 +85,14 @@ CREATE POLICY "Users can manage own quotes" ON public.book_quotes FOR ALL USING 
 CREATE TABLE IF NOT EXISTS public.notes (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-    book_id UUID REFERENCES public.books(id) ON DELETE CASCADE,
-    content TEXT NOT NULL,
-    highlight_text TEXT,
-    page_number INTEGER,
-    color TEXT DEFAULT '#fef08a',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    content TEXT NOT NULL
 );
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS book_id UUID REFERENCES public.books(id) ON DELETE CASCADE;
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS highlight_text TEXT;
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS page_number INTEGER;
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#fef08a';
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL;
+
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can manage own notes" ON public.notes;
 CREATE POLICY "Users can manage own notes" ON public.notes FOR ALL USING (auth.uid() = user_id);
@@ -88,13 +102,24 @@ CREATE TABLE IF NOT EXISTS public.reading_sessions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
     book_id UUID REFERENCES public.books(id) ON DELETE CASCADE NOT NULL,
-    duration_minutes INTEGER DEFAULT 1,
-    start_page INTEGER,
-    end_page INTEGER,
-    session_date DATE DEFAULT CURRENT_DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    UNIQUE(user_id, book_id, session_date)
+    session_date DATE DEFAULT CURRENT_DATE
 );
+ALTER TABLE public.reading_sessions ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 1;
+ALTER TABLE public.reading_sessions ADD COLUMN IF NOT EXISTS start_page INTEGER;
+ALTER TABLE public.reading_sessions ADD COLUMN IF NOT EXISTS end_page INTEGER;
+ALTER TABLE public.reading_sessions ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL;
+
+-- Handle UNIQUE constraint addition
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'reading_sessions_user_id_book_id_session_date_key'
+    ) THEN
+        ALTER TABLE public.reading_sessions ADD CONSTRAINT reading_sessions_user_id_book_id_session_date_key UNIQUE (user_id, book_id, session_date);
+    END IF;
+END $$;
+
 ALTER TABLE public.reading_sessions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can manage own reading sessions" ON public.reading_sessions;
 CREATE POLICY "Users can manage own reading sessions" ON public.reading_sessions FOR ALL USING (auth.uid() = user_id);
@@ -118,7 +143,21 @@ CREATE POLICY "Users can manage own goals" ON public.reading_goals FOR ALL USING
 ALTER TABLE public.user_achievements DROP CONSTRAINT IF EXISTS user_achievements_pkey;
 ALTER TABLE public.user_achievements ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid() UNIQUE;
 ALTER TABLE public.user_achievements ADD COLUMN IF NOT EXISTS achievement_id TEXT;
+ALTER TABLE public.user_achievements ADD COLUMN IF NOT EXISTS notified BOOLEAN DEFAULT FALSE;
+
+-- Copy values
 UPDATE public.user_achievements SET achievement_id = achievement_code WHERE achievement_id IS NULL;
+
+-- Add UNIQUE constraint to prevent duplicate user unlocks for the same achievement
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'user_achievements_user_id_achievement_id_key'
+    ) THEN
+        ALTER TABLE public.user_achievements ADD CONSTRAINT user_achievements_user_id_achievement_id_key UNIQUE (user_id, achievement_id);
+    END IF;
+END $$;
 
 -- 8. UTILITIES & TRIGGERS
 CREATE OR REPLACE FUNCTION public.set_updated_at()

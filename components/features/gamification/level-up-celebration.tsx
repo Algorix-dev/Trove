@@ -21,7 +21,7 @@ export function LevelUpCelebration() {
         .from('profiles')
         .select('current_level')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!profile) return;
 
